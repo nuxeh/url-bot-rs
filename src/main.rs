@@ -26,8 +26,8 @@ fn main() {
 
                     let url = msg.parse::<hyper::Uri>().unwrap();
                     match url.scheme() {
-                        Some("http") => { resolve_url(url); }
-                        Some("https") => { resolve_url(url); }
+                        Some("http") => { resolve_url(msg); }
+                        Some("https") => { resolve_url(msg); }
                         _ => {println!("This example only works with 'http' URLs.");}
                     }
 
@@ -41,15 +41,17 @@ fn main() {
     }).unwrap()
 }
 
-fn resolve_url(url: hyper::Uri) {
+fn resolve_url(url: &str) {
 
+    let mut dst = Vec::new();
     let mut easy = Easy::new();
-    easy.url("https://www.rust-lang.org/").unwrap();
-    easy.write_function(|data| {
-        Ok(stdout().write(data).unwrap())
-    }).unwrap();
-    easy.perform().unwrap();
+    easy.url(url).unwrap();
 
-    println!("{}", easy.response_code().unwrap());
+    let mut transfer = easy.transfer();
+    transfer.write_function(|data| {
+        dst.extend_from_slice(data);
+        Ok(data.len())
+    }).unwrap();
+    transfer.perform().unwrap();
 
 }
