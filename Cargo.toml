@@ -6,3 +6,4 @@ authors = ["Edward Cragg <drq.11235@gmail.com>"]
 [dependencies]
 irc = "0.12"
 hyper = "0.11.14"
+tokio-core = "0.1"
