@@ -19,8 +19,10 @@ fn main() {
 					println!("{:?}", t);
 
 					let url = msg.parse::<hyper::Uri>().unwrap();
-					if url.scheme() != Some("http") {
-						println!("This example only works with 'http' URLs.");
+					match url.scheme() {
+						Some("http") => { }
+						Some("https") => { }
+						_ => {println!("This example only works with 'http' URLs.");}
 					}
 
 					server.send_privmsg(
