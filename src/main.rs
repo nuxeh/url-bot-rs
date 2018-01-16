@@ -1,8 +1,11 @@
 extern crate irc;
 extern crate hyper;
 extern crate tokio_core;
+extern crate curl;
 
-use std::io::{self, Write};
+use curl::easy::Easy;
+use std::io::{stdout, Write};
+
 use irc::client::prelude::*;
 use hyper::Client;
 
@@ -40,20 +43,13 @@ fn main() {
 
 fn resolve_url(url: hyper::Uri) {
 
-    let mut core = tokio_core::reactor::Core::new().unwrap();
-    let handle = core.handle();
-    let client = Client::new(&handle);
+	let mut easy = Easy::new();
+	easy.url("https://www.rust-lang.org/").unwrap();
+	easy.write_function(|data| {
+		Ok(stdout().write(data).unwrap())
+	}).unwrap();
+	easy.perform().unwrap();
 
-    let work = client.get(url).and_then(|res| {
-        println!("Response: {}", res.status());
-        println!("Headers: \n{}", res.headers());
+	println!("{}", easy.response_code().unwrap());
 
-        res.body().for_each(|chunk| {
-            io::stdout().write_all(&chunk).map_err(From::from)
-        })
-    }).map(|_| {
-        println!("\n\nDone.");
-    });
-
-    core.run(work).unwrap();
 }
