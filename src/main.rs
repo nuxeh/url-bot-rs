@@ -61,5 +61,9 @@ fn resolve_url(url: &str) {
 	easy.perform().unwrap();
 
 	let contents = easy.get_ref();
-	println!("{}", String::from_utf8_lossy(&contents.0));
+//	println!("{}", String::from_utf8_lossy(&contents.0));
+	let s = String::from_utf8_lossy(&contents.0);
+	let s1: Vec<_> = s.split("<title>").collect();
+	let s2: Vec<_> = s1[1].split("</title>").collect();
+	println!("{:?}", s2[0]);
 }
