@@ -6,6 +6,8 @@ extern crate curl;
 use curl::easy::Easy;
 use std::io::{stdout, Write};
 
+use curl::easy::{Easy2, Handler, WriteError};
+
 use irc::client::prelude::*;
 use hyper::Client;
 
@@ -41,17 +43,23 @@ fn main() {
 	}).unwrap()
 }
 
+struct Collector(Vec<u8>);
+
+impl Handler for Collector {
+    fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
+        self.0.extend_from_slice(data);
+        Ok(data.len())
+    }
+}
+
 fn resolve_url(url: &str) {
 
-	let mut dst = Vec::new();
-	let mut easy = Easy::new();
-	easy.url(url).unwrap();
+	let mut easy = Easy2::new(Collector(Vec::new()));
 
-	let mut transfer = easy.transfer();
-	transfer.write_function(|data| {
-		dst.extend_from_slice(data);
-		Ok(data.len())
-	}).unwrap();
-	transfer.perform().unwrap();
+	easy.get(true).unwrap();
+	easy.url("https://www.rust-lang.org/").unwrap();
+	easy.perform().unwrap();
 
+	let contents = easy.get_ref();
+	println!("{}", String::from_utf8_lossy(&contents.0));
 }
