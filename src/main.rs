@@ -57,7 +57,7 @@ fn resolve_url(url: &str) {
 	let mut easy = Easy2::new(Collector(Vec::new()));
 
 	easy.get(true).unwrap();
-	easy.url("https://www.rust-lang.org/").unwrap();
+	easy.url(url).unwrap();
 	easy.perform().unwrap();
 
 	let contents = easy.get_ref();
