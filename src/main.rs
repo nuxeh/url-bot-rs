@@ -19,27 +19,36 @@ fn main() {
 	server.identify().unwrap();
 	server.for_each_incoming(|message| {
 
-	match message.command {
+		match message.command {
+
 			Command::PRIVMSG(ref target, ref msg) => {
+
 				let tokens: Vec<_> = msg.split(' ').collect();
 
 				for t in tokens {
-					println!("{:?}", t);
-
+					let mut title = None;
 					let url = msg.parse::<hyper::Uri>().unwrap();
+
 					match url.scheme() {
-						Some("http") => { resolve_url(msg); }
-						Some("https") => { resolve_url(msg); }
-						_ => {println!("This example only works with 'http' URLs.");}
+						Some("http")  => { title = resolve_url(msg); }
+						Some("https") => { title = resolve_url(msg); }
+						_ => ()
 					}
 
-					server.send_privmsg(
-						message.response_target().unwrap_or(target), msg
-					).unwrap();
+					match title {
+						Some(s) => {
+							server.send_privmsg(
+								message.response_target().unwrap_or(target), &s
+							).unwrap();
+						}
+						_ => ()
+					}
 				}
 			}
+
 			_ => (),
 		}
+
 	}).unwrap()
 }
 
@@ -52,7 +61,7 @@ impl Handler for Collector {
     }
 }
 
-fn resolve_url(url: &str) {
+fn resolve_url(url: &str) -> Option<String> {
 
 	let mut easy = Easy2::new(Collector(Vec::new()));
 
@@ -61,9 +70,13 @@ fn resolve_url(url: &str) {
 	easy.perform().unwrap();
 
 	let contents = easy.get_ref();
-//	println!("{}", String::from_utf8_lossy(&contents.0));
+
 	let s = String::from_utf8_lossy(&contents.0);
 	let s1: Vec<_> = s.split("<title>").collect();
 	let s2: Vec<_> = s1[1].split("</title>").collect();
-	println!("{:?}", s2[0]);
+
+	match s2[0].chars().count() {
+		0 => None,
+		_ => Some(s2[0].to_string())
+	}
 }
