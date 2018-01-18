@@ -12,6 +12,8 @@ use curl::easy::{Easy2, Handler, WriteError};
 use irc::client::prelude::*;
 use hyper::Client;
 
+use htmlescape::decode_html;
+
 /* Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") } */
 
 fn main() {
@@ -75,14 +77,16 @@ fn resolve_url(url: &str) -> Option<String> {
 	let s = String::from_utf8_lossy(&contents.0);
 	let s1: Vec<_> = s.split("<title>").collect();
 	let s2: Vec<_> = s1[1].split("</title>").collect();
+	let title_enc = s2[0];
 
-	let decoded = match decode_html(encoded) {
-		Err(reason) => panic!("Error {:?} at character {}", reason.kind, reason.position),
-		Ok(s) => s
+	let mut title_dec = String::new();
+	match decode_html(title_enc) {
+		Err(reason) => { }
+		Ok(s)       => { title_dec = s; }
 	};
 
-	match s2[0].chars().count() {
+	match title_dec.chars().count() {
 		0 => None,
-		_ => Some(s2[0].to_string())
+		_ => Some(title_dec.to_string())
 	}
 }
