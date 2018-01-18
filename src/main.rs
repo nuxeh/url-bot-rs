@@ -33,8 +33,8 @@ fn main() {
                     let url = msg.parse::<hyper::Uri>().unwrap();
 
                     match url.scheme() {
-                        Some("http")  => { title = resolve_url(msg); }
-                        Some("https") => { title = resolve_url(msg); }
+                        Some("http")  => { title = resolve_url(t); }
+                        Some("https") => { title = resolve_url(t); }
                         _ => ()
                     }
 
