@@ -2,6 +2,7 @@ extern crate irc;
 extern crate hyper;
 extern crate tokio_core;
 extern crate curl;
+extern crate htmlescape;
 
 use curl::easy::Easy;
 use std::io::{stdout, Write};
@@ -74,6 +75,11 @@ fn resolve_url(url: &str) -> Option<String> {
     let s = String::from_utf8_lossy(&contents.0);
     let s1: Vec<_> = s.split("<title>").collect();
     let s2: Vec<_> = s1[1].split("</title>").collect();
+
+    let decoded = match decode_html(encoded) {
+        Err(reason) => panic!("Error {:?} at character {}", reason.kind, reason.position),
+        Ok(s) => s
+    };
 
     match s2[0].chars().count() {
         0 => None,
