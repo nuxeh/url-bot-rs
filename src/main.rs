@@ -70,7 +70,10 @@ fn resolve_url(url: &str) -> Option<String> {
 
     easy.get(true).unwrap();
     easy.url(url).unwrap();
-    easy.perform().unwrap();
+
+    match easy.perform() {
+        _ => ()
+    }
 
     let contents = easy.get_ref();
 
