@@ -85,8 +85,8 @@ fn resolve_url(url: &str) -> Option<String> {
 
 	let mut title_dec = String::new();
 	match decode_html(title_enc) {
-		Err(reason) => { }
-		Ok(s)       => { title_dec = s; }
+		Ok(s) => { title_dec = s; }
+		_ => ()
 	};
 
 	match title_dec.chars().count() {
