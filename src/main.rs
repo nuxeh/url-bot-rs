@@ -1,17 +1,10 @@
 extern crate irc;
 extern crate hyper;
-extern crate tokio_core;
 extern crate curl;
 extern crate htmlescape;
 
-use curl::easy::Easy;
-use std::io::{stdout, Write};
-
 use curl::easy::{Easy2, Handler, WriteError};
-
 use irc::client::prelude::*;
-use hyper::Client;
-
 use htmlescape::decode_html;
 
 /* Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") } */
