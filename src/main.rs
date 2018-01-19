@@ -30,7 +30,7 @@ fn main() {
 
 				for t in tokens {
 					let mut title = None;
-					let url = msg.parse::<hyper::Uri>().unwrap();
+					let url = t.parse::<hyper::Uri>().unwrap();
 
 					match url.scheme() {
 						Some("http")  => { title = resolve_url(t); }
