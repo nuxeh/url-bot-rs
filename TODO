@@ -2,3 +2,4 @@
 
  - extended network dropouts
  - messages with a space at the end
+ - poorly formatted toml configuration
