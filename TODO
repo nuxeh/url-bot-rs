@@ -1,0 +1,4 @@
+# Panics on:
+
+ - extended network dropouts
+ - messages with a space at the end
