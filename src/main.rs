@@ -21,9 +21,14 @@ fn main() {
 
 				let tokens: Vec<_> = msg.split(' ').collect();
 
-				for t in tokens.iter().filter(|&&a| a != "") {
+				for t in tokens {
 					let mut title = None;
-					let url = t.parse::<hyper::Uri>().unwrap();
+
+					let url;
+					match t.parse::<hyper::Uri>() {
+						Ok(u) => { url = u; }
+						_	 => { continue; }
+					}
 
 					match url.scheme() {
 						Some("http")  => { title = resolve_url(t); }
