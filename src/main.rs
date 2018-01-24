@@ -21,7 +21,7 @@ fn main() {
 
                 let tokens: Vec<_> = msg.split(' ').collect();
 
-                for t in tokens {
+                for t in tokens.iter().filter(|&&a| a != "") {
                     let mut title = None;
                     let url = t.parse::<hyper::Uri>().unwrap();
 
