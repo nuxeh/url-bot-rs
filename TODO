@@ -3,3 +3,7 @@
  - extended network dropouts
  - messages with a space at the end
  - poorly formatted toml configuration
+
+# Extra features
+
+ - more efficient use of curl (stop fetching page once title has been obtained)
