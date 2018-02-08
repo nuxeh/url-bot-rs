@@ -7,6 +7,10 @@
  - From Tom: https://scontent-lhr3-1.xx.fbcdn.net/v/t1.0-9/26230631_2308544615838414_3079601079174313392_n.png?oh=66f8652dbbda929cb51e2b784cfbe009&oe=5ADC20D9
  - https://upload.wikimedia.org/wikipedia/commons/5/55/Toad_and_spiny_lumpsuckers.jpg
 
+# Other panics
+
+ - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: Error(Io(Error { repr: Os { code: 101, message: "Network is unreachable" } })
+
 # Extra features
 
  - more efficient use of curl (stop fetching page once title has been obtained)
