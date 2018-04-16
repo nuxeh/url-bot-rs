@@ -68,6 +68,7 @@ fn resolve_url(url: &str) -> Option<String> {
 
     easy.get(true).unwrap();
     easy.url(url).unwrap();
+    easy.follow_location(true).unwrap();
 
     match easy.perform() {
         Err(_) => { return None; }
