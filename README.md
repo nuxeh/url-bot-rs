@@ -10,9 +10,14 @@ URL title fetching bot for IRC in Rust
 
 [https://www.rust-lang.org/en-US/install.html](https://www.rust-lang.org/en-US/install.html)
 
+### Build
+
     cd url-bot-rs
     cargo build
-    cargo run
+
+### Run tests
+
+    cargo test
 
 ## Configuration
 
