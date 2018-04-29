@@ -9,7 +9,9 @@ extern crate irc;
 extern crate hyper;
 extern crate curl;
 extern crate htmlescape;
+extern crate regex;
 
+use regex::Regex;
 use curl::easy::{Easy2, Handler, WriteError};
 use irc::client::prelude::*;
 use htmlescape::decode_html;
@@ -111,7 +113,9 @@ fn parse_content(page_contents: &String) -> Option<String> {
     match title_dec.chars().count() {
         0 => None,
         _ => {
-            let res = title_dec.to_string();
+            /* strip leading and tailing whitespace from title */
+            let re = Regex::new(r"^[\s\n]*(?P<title>.*?)[\s\n]*$").unwrap();
+            let res = re.captures(&title_dec).unwrap()["title"].to_string();
             println!("SUCCESS \"{}\"", res);
             Some(res)
         }
