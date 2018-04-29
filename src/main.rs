@@ -110,12 +110,13 @@ fn parse_content(page_contents: &String) -> Option<String> {
 		_     => ()
 	};
 
-	match title_dec.chars().count() {
+	/* strip leading and tailing whitespace from title */
+	let re = Regex::new(r"^[\s\n]*(?P<title>.*?)[\s\n]*$").unwrap();
+	let res = re.captures(&title_dec).unwrap()["title"].to_string();
+
+	match res.chars().count() {
 		0 => None,
 		_ => {
-			/* strip leading and tailing whitespace from title */
-			let re = Regex::new(r"^[\s\n]*(?P<title>.*?)[\s\n]*$").unwrap();
-			let res = re.captures(&title_dec).unwrap()["title"].to_string();
 			println!("SUCCESS \"{}\"", res);
 			Some(res)
 		}
@@ -136,7 +137,9 @@ mod tests {
 	#[test]
 	fn parse_contents() {
 		assert_eq!(None, parse_content(&"".to_string()));
+		assert_eq!(None, parse_content(&"    ".to_string()));
 		assert_eq!(None, parse_content(&"<title></title>".to_string()));
+		assert_eq!(None, parse_content(&"<title>    </title>".to_string()));
 		assert_eq!(None, parse_content(&"floofynips, not a real webpage".to_string()));
 		assert_eq!(Some("cheese is nice".to_string()), parse_content(&"<title>cheese is nice</title>".to_string()));
 		assert_eq!(Some("squanch".to_string()), parse_content(&"<title>     squanch</title>".to_string()));
