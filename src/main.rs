@@ -60,6 +60,7 @@ fn main() {
     }).unwrap()
 }
 
+#[derive(Debug)]
 struct Collector(Vec<u8>);
 
 impl Handler for Collector {
@@ -70,6 +71,8 @@ impl Handler for Collector {
 }
 
 fn resolve_url(url: &str) -> Option<String> {
+
+    println!("RESOLVE {}", url);
 
     let mut easy = Easy2::new(Collector(Vec::new()));
 
@@ -98,6 +101,10 @@ fn resolve_url(url: &str) -> Option<String> {
 
     match title_dec.chars().count() {
         0 => None,
-        _ => Some(title_dec.to_string())
+        _ => {
+            let res = title_dec.to_string();
+            println!("SUCCESS \"{}\"", res);
+            Some(res)
+        }
     }
 }
