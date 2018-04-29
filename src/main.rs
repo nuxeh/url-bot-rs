@@ -1,3 +1,10 @@
+/*
+ * url-bot-rs
+ *
+ * URL parsing IRC bot
+ *
+ */
+
 extern crate irc;
 extern crate hyper;
 extern crate curl;
@@ -53,6 +60,7 @@ fn main() {
     }).unwrap()
 }
 
+#[derive(Debug)]
 struct Collector(Vec<u8>);
 
 impl Handler for Collector {
@@ -64,6 +72,8 @@ impl Handler for Collector {
 
 fn resolve_url(url: &str) -> Option<String> {
 
+    println!("RESOLVE {}", url);
+
     let mut easy = Easy2::new(Collector(Vec::new()));
 
     easy.get(true).unwrap();
@@ -73,24 +83,47 @@ fn resolve_url(url: &str) -> Option<String> {
 
     match easy.perform() {
         Err(_) => { return None; }
-        _ => ()
+        _      => ()
     }
 
     let contents = easy.get_ref();
 
     let s = String::from_utf8_lossy(&contents.0);
+
     let s1: Vec<_> = s.split("<title>").collect();
+    if s1.len() < 2 { return None }
     let s2: Vec<_> = s1[1].split("</title>").collect();
+    if s2.len() < 2 { return None }
+
     let title_enc = s2[0];
 
     let mut title_dec = String::new();
     match decode_html(title_enc) {
         Ok(s) => { title_dec = s; }
-        _ => ()
+        _     => ()
     };
 
     match title_dec.chars().count() {
         0 => None,
-        _ => Some(title_dec.to_string())
+        _ => {
+            let res = title_dec.to_string();
+            println!("SUCCESS \"{}\"", res);
+            Some(res)
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_urls() {
+        assert_ne!(None, resolve_url("https://youtube.com"));
+        assert_ne!(None, resolve_url("https://google.co.uk"));
+        assert_eq!(None, resolve_url("https://github.com/nuxeh/url-bot-rs/commit/26cece9bc6d8f469ec7cd8c2edf86e190b5a597e.patch"));
+        assert_eq!(None, resolve_url("https://upload.wikimedia.org/wikipedia/commons/5/55/Toad_and_spiny_lumpsuckers.jpg"));
+        assert_eq!(None, resolve_url("https://i.redd.it/cvgvwb3bi3c01.jpg"));
     }
 }
