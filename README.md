@@ -12,7 +12,10 @@ URL title fetching bot for IRC in Rust
 
     cd url-bot-rs
     cargo build
-    cargo run
+
+### Run tests
+
+    cargo test
 
 ## Configuration
 

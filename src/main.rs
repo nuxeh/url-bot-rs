@@ -108,3 +108,18 @@ fn resolve_url(url: &str) -> Option<String> {
         }
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_urls() {
+        assert_ne!(None, resolve_url("https://youtube.com"));
+        assert_ne!(None, resolve_url("https://google.co.uk"));
+        assert_eq!(None, resolve_url("https://github.com/nuxeh/url-bot-rs/commit/26cece9bc6d8f469ec7cd8c2edf86e190b5a597e.patch"));
+        assert_eq!(None, resolve_url("https://upload.wikimedia.org/wikipedia/commons/5/55/Toad_and_spiny_lumpsuckers.jpg"));
+        assert_eq!(None, resolve_url("https://i.redd.it/cvgvwb3bi3c01.jpg"));
+    }
+}
