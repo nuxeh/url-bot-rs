@@ -26,7 +26,7 @@ fn main() {
 
 			Command::PRIVMSG(ref target, ref msg) => {
 
-				let tokens: Vec<_> = msg.split(' ').collect();
+				let tokens: Vec<_> = msg.split_whitespace().collect();
 
 				for t in tokens {
 					let mut title = None;
