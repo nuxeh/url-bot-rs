@@ -1,3 +1,5 @@
+[![build status](https://api.travis-ci.org/nuxeh/url-bot-rs.png?branch=master)](https://api.travis-ci.org/nuxeh/url-bot-rs)
+
 # url-bot-rs
 
 URL title fetching bot for IRC in Rust
