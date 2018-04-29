@@ -1,4 +1,4 @@
-[![build status](https://api.travis-ci.org/nuxeh/url-bot-rs.png?branch=master)](https://api.travis-ci.org/nuxeh/url-bot-rs)
+[![build status](https://api.travis-ci.org/nuxeh/url-bot-rs.png?branch=master)](https://travis-ci.org/nuxeh/url-bot-rs)
 
 # url-bot-rs
 
