@@ -89,8 +89,12 @@ fn resolve_url(url: &str) -> Option<String> {
     let contents = easy.get_ref();
 
     let s = String::from_utf8_lossy(&contents.0);
+
     let s1: Vec<_> = s.split("<title>").collect();
+    if s1.len() < 2 { return None }
     let s2: Vec<_> = s1[1].split("</title>").collect();
+    if s2.len() < 2 { return None }
+
     let title_enc = s2[0];
 
     let mut title_dec = String::new();
