@@ -88,9 +88,14 @@ fn resolve_url(url: &str) -> Option<String> {
 
     let contents = easy.get_ref();
 
-    let s = String::from_utf8_lossy(&contents.0);
+    let s = String::from_utf8_lossy(&contents.0).to_string();
 
-    let s1: Vec<_> = s.split("<title>").collect();
+    parse_content(&s)
+}
+
+fn parse_content(page_contents: &String) -> Option<String> {
+
+    let s1: Vec<_> = page_contents.split("<title>").collect();
     if s1.len() < 2 { return None }
     let s2: Vec<_> = s1[1].split("</title>").collect();
     if s2.len() < 2 { return None }
@@ -122,8 +127,19 @@ mod tests {
     fn resolve_urls() {
         assert_ne!(None, resolve_url("https://youtube.com"));
         assert_ne!(None, resolve_url("https://google.co.uk"));
-        assert_eq!(None, resolve_url("https://github.com/nuxeh/url-bot-rs/commit/26cece9bc6d8f469ec7cd8c2edf86e190b5a597e.patch"));
-        assert_eq!(None, resolve_url("https://upload.wikimedia.org/wikipedia/commons/5/55/Toad_and_spiny_lumpsuckers.jpg"));
-        assert_eq!(None, resolve_url("https://i.redd.it/cvgvwb3bi3c01.jpg"));
+    }
+
+    #[test]
+    fn parse_contents() {
+        assert_eq!(None, parse_content(&"".to_string()));
+        assert_eq!(None, parse_content(&"<title></title>".to_string()));
+        assert_eq!(None, parse_content(&"floofynips, not a real webpage".to_string()));
+        assert_eq!(Some("cheese is nice".to_string()), parse_content(&"<title>cheese is nice</title>".to_string()));
+        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>     squanch</title>".to_string()));
+        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>squanch     </title>".to_string()));
+        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>\nsquanch</title>".to_string()));
+        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>\n  \n  squanch</title>".to_string()));
+        assert_eq!(Some("we like the moon".to_string()), parse_content(&"<title>\n  \n  we like the moon</title>".to_string()));
+        assert_eq!(Some("&hello123&<>''~".to_string()), parse_content(&"<title>&amp;hello123&amp;&lt;&gt;''~</title>".to_string()));
     }
 }
