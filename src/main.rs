@@ -1,3 +1,10 @@
+/*
+ * url-bot-rs
+ *
+ * URL parsing IRC bot
+ *
+ */
+
 extern crate irc;
 extern crate hyper;
 extern crate curl;
@@ -73,7 +80,7 @@ fn resolve_url(url: &str) -> Option<String> {
 
     match easy.perform() {
         Err(_) => { return None; }
-        _ => ()
+        _      => ()
     }
 
     let contents = easy.get_ref();
@@ -86,7 +93,7 @@ fn resolve_url(url: &str) -> Option<String> {
     let mut title_dec = String::new();
     match decode_html(title_enc) {
         Ok(s) => { title_dec = s; }
-        _ => ()
+        _     => ()
     };
 
     match title_dec.chars().count() {
