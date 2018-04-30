@@ -66,10 +66,10 @@ fn main() {
 struct Collector(Vec<u8>);
 
 impl Handler for Collector {
-    fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
-        self.0.extend_from_slice(data);
-        Ok(data.len())
-    }
+	fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
+		self.0.extend_from_slice(data);
+		Ok(data.len())
+	}
 }
 
 fn resolve_url(url: &str) -> Option<String> {
