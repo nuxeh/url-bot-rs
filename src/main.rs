@@ -12,7 +12,7 @@ extern crate htmlescape;
 extern crate regex;
 
 use regex::Regex;
-use curl::easy::{Easy2, Handler, WriteError};
+use curl::easy::{Easy2, Handler, WriteError, List};
 use irc::client::prelude::*;
 use htmlescape::decode_html;
 
@@ -82,6 +82,10 @@ fn resolve_url(url: &str) -> Option<String> {
 	easy.url(url).unwrap();
 	easy.follow_location(true).unwrap();
 	easy.useragent("url-bot-rs/0.1").unwrap();
+
+	let mut headers = List::new();
+	headers.append("Accept-Language: en").unwrap();
+	easy.http_headers(headers).unwrap();
 
 	match easy.perform() {
 		Err(_) => { return None; }
