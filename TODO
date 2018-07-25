@@ -14,3 +14,4 @@
 # Extra features
 
  - more efficient use of curl (stop fetching page once title has been obtained)
+ - log URLs and check for previous postings
