@@ -10,18 +10,83 @@ extern crate hyper;
 extern crate curl;
 extern crate htmlescape;
 extern crate regex;
+extern crate rusqlite;
+extern crate time;
+extern crate docopt;
+#[macro_use]
+extern crate serde_derive;
 
+use docopt::Docopt;
 use regex::Regex;
 use curl::easy::{Easy2, Handler, WriteError, List};
 use irc::client::prelude::*;
 use htmlescape::decode_html;
+use time::Timespec;
+use rusqlite::Connection;
+
+/* docopt usage string */
+const USAGE: &'static str = "
+URL munching IRC bot.
+
+Usage:
+       url-bot-rs [--db=PATH]
+
+Options:
+    -h --help       Show this help message.
+    -d --db=PATH    Use a sqlite database at PATH.
+";
+
+#[derive(Debug, Deserialize, Default)]
+struct Args {
+    flag_db: String,
+}
+
+#[derive(Debug)]
+struct LogEntry {
+    id: i32,
+    url: String,
+    user: String,
+    channel: String,
+    time_created: Timespec,
+}
+
+fn add_log(db: &Connection, e: &LogEntry) {
+    db.execute("INSERT INTO posts (url, user, channel, time_created)
+        VALUES (?1, ?2, ?3, ?4)",
+        &[&e.url, &e.user, &e.channel, &e.time_created]).unwrap();
+}
 
 /* Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") } */
 
 fn main() {
 
+    let mut args: Args = Docopt::new(USAGE)
+               .and_then(|d| d.deserialize())
+               .unwrap_or_else(|e| e.exit());
+
+    let db;
+    if !args.flag_db.is_empty()
+    {
+        /* open the sqlite database for logging */
+        /* TODO: get database path from configuration */
+        /* TODO: make logging optional */
+        println!("Using database at: {}", args.flag_db);
+
+        db = Connection::open(&args.flag_db).unwrap();
+        db.execute("CREATE TABLE IF NOT EXISTS posts (
+            id        INTEGER PRIMARY KEY,
+            url        TEXT NOT NULL,
+            user        TEXT NOT NULL,
+            channel        TEXT NOT NULL,
+            time_created    TEXT NOT NULL
+            )", &[]).unwrap();
+    } else {
+        db = Connection::open_in_memory().unwrap();
+    }
+
     let server = IrcServer::new("config.toml").unwrap();
     server.identify().unwrap();
+
     server.for_each_incoming(|message| {
 
         match message.command {
@@ -50,6 +115,16 @@ fn main() {
                             server.send_privmsg(
                                 message.response_target().unwrap_or(target), &s
                             ).unwrap();
+                            let entry = LogEntry {
+                                id: 0,
+                                url: s,
+                                user: message.clone().prefix.unwrap(),
+                                channel: target.to_string(),
+                                time_created: time::get_time(),
+                            };
+                            if !args.flag_db.is_empty() {
+                                add_log(&db, &entry);
+                            }
                         }
                         _ => ()
                     }
@@ -127,7 +202,6 @@ fn parse_content(page_contents: &String) -> Option<String> {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
