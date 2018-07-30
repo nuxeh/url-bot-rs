@@ -3,9 +3,10 @@
  - extended network dropouts
  - messages with a space at the end
  - poorly formatted toml configuration
- - https://i.redd.it/cvgvwb3bi3c01.jpg
- - From Tom: https://scontent-lhr3-1.xx.fbcdn.net/v/t1.0-9/26230631_2308544615838414_3079601079174313392_n.png?oh=66f8652dbbda929cb51e2b784cfbe009&oe=5ADC20D9
- - https://upload.wikimedia.org/wikipedia/commons/5/55/Toad_and_spiny_lumpsuckers.jpg
+ - RESOLVE https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-11235
+   thread 'main' panicked at 'called `Option::unwrap()` on a `None` value', /checkout/src/libcore/option.rs:335:20
+ - RESOLVE https://m.facebook.com/story.php?story_fbid=10155189370831082&id=10261391081
+   thread 'main' panicked at 'called `Option::unwrap()` on a `None` value', /checkout/src/libcore/option.rs:335:20
 
 # Other panics
 
@@ -15,3 +16,6 @@
 
  - more efficient use of curl (stop fetching page once title has been obtained)
  - log URLs and check for previous postings
+ - Better handling of IRC connection errors (don't panic)
+ - Set config file path on command line option / have default search paths, local last
+ - Update to updated rust IRC API

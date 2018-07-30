@@ -116,6 +116,7 @@ fn parse_content(page_contents: &String) -> Option<String> {
 
     /* strip leading and tailing whitespace from title */
     let re = Regex::new(r"^[\s\n]*(?P<title>.*?)[\s\n]*$").unwrap();
+    /* TODO: use trim https://doc.rust-lang.org/std/string/struct.String.html#method.trim */
     let res = re.captures(&title_dec).unwrap()["title"].to_string();
 
     match res.chars().count() {
