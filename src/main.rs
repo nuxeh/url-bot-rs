@@ -42,25 +42,28 @@ struct Args {
 }
 
 #[derive(Debug)]
-struct LogEntry {
+struct LogEntry<'a> {
     id: i32,
     url: String,
-    user: String,
+    prefix: &'a String,
     channel: String,
     time_created: Timespec,
 }
 
 fn add_log(db: &Connection, e: &LogEntry) {
+    let u: Vec<_> = e.prefix
+        .split("!")
+        .collect();
     db.execute("INSERT INTO posts (url, user, channel, time_created)
         VALUES (?1, ?2, ?3, ?4)",
-        &[&e.url, &e.user, &e.channel, &e.time_created]).unwrap();
+        &[&e.url, &String::from(u[0]), &e.channel, &e.time_created]).unwrap();
 }
 
 /* Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") } */
 
 fn main() {
 
-    let mut args: Args = Docopt::new(USAGE)
+    let args: Args = Docopt::new(USAGE)
                .and_then(|d| d.deserialize())
                .unwrap_or_else(|e| e.exit());
 
@@ -118,7 +121,7 @@ fn main() {
                             let entry = LogEntry {
                                 id: 0,
                                 url: s,
-                                user: message.clone().prefix.unwrap(),
+                                prefix: &message.prefix.clone().unwrap(),
                                 channel: target.to_string(),
                                 time_created: time::get_time(),
                             };
