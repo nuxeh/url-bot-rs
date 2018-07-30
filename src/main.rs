@@ -29,7 +29,7 @@ const USAGE: &'static str = "
 URL munching IRC bot.
 
 Usage:
-       url-bot-rs [--db=PATH]
+       url-bot-rs [options] [--db=PATH]
 
 Options:
     -h --help       Show this help message.
