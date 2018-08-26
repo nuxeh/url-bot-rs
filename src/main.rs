@@ -23,6 +23,7 @@ use irc::client::prelude::*;
 use htmlescape::decode_html;
 use time::Timespec;
 use rusqlite::Connection;
+use std::process;
 
 /* docopt usage string */
 const USAGE: &'static str = "
@@ -34,11 +35,13 @@ Usage:
 Options:
     -h --help       Show this help message.
     -d --db=PATH    Use a sqlite database at PATH.
+    -c --conf=PATH  Use configuration file at PATH [default: ./config.toml].
 ";
 
 #[derive(Debug, Deserialize, Default)]
 struct Args {
     flag_db: String,
+    flag_conf: String,
 }
 
 #[derive(Debug)]
@@ -87,7 +90,17 @@ fn main() {
         db = Connection::open_in_memory().unwrap();
     }
 
-    let server = IrcServer::new("config.toml").unwrap();
+    /* configure IRC */
+    let server = IrcServer::new(args.flag_conf.clone());
+    let server = match server {
+        Ok(serv) => serv,
+        Err(err) => {
+            eprintln!("Error: {}", err);
+            process::exit(1);
+        },
+    };
+    println!("Using configuration at: {}", args.flag_conf);
+
     server.identify().unwrap();
 
     server.for_each_incoming(|message| {
