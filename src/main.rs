@@ -47,6 +47,7 @@ struct Args {
 #[derive(Debug)]
 struct LogEntry<'a> {
     id: i32,
+    title: String,
     url: String,
     prefix: &'a String,
     channel: String,
@@ -57,9 +58,17 @@ fn add_log(db: &Connection, e: &LogEntry) {
     let u: Vec<_> = e.prefix
         .split("!")
         .collect();
-    db.execute("INSERT INTO posts (url, user, channel, time_created)
-        VALUES (?1, ?2, ?3, ?4)",
-        &[&e.url, &String::from(u[0]), &e.channel, &e.time_created]).unwrap();
+    match db.execute("INSERT INTO posts (title, url, user, channel, time_created)
+        VALUES (?1, ?2, ?3, ?4, ?5)",
+        &[&e.title,
+          &e.url,
+          &String::from(u[0]),
+          &e.channel,
+          &e.time_created])
+    {
+        Err(e) => {eprintln!("SQL error: {}", e); process::exit(1)},
+        _      => (),
+    }
 }
 
 /* Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") } */
@@ -81,6 +90,7 @@ fn main() {
         db = Connection::open(&args.flag_db).unwrap();
         db.execute("CREATE TABLE IF NOT EXISTS posts (
             id        INTEGER PRIMARY KEY,
+            title        TEXT NOT NULL,
             url        TEXT NOT NULL,
             user        TEXT NOT NULL,
             channel        TEXT NOT NULL,
@@ -133,7 +143,8 @@ fn main() {
                             ).unwrap();
                             let entry = LogEntry {
                                 id: 0,
-                                url: s,
+                                title: s.clone(),
+                                url: t.clone().to_string(),
                                 prefix: &message.prefix.clone().unwrap(),
                                 channel: target.to_string(),
                                 time_created: time::get_time(),
