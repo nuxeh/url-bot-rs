@@ -29,7 +29,7 @@ const USAGE: &'static str = "
 URL munching IRC bot.
 
 Usage:
-       url-bot-rs [options] [--db=PATH]
+    url-bot-rs [options] [--db=PATH]
 
 Options:
     -h --help       Show this help message.
@@ -80,8 +80,8 @@ struct PrevPost {
 fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
 {
     let query = format!("SELECT user, time_created, channel
-        FROM posts
-        WHERE title LIKE \"{}\"",
+                         FROM posts
+                         WHERE title LIKE \"{}\"",
             e.title.clone()
             .replace("\"", "\"\"")
             .replace("'", "''"));
@@ -107,8 +107,8 @@ fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
 fn main() {
 
     let args: Args = Docopt::new(USAGE)
-               .and_then(|d| d.deserialize())
-               .unwrap_or_else(|e| e.exit());
+                     .and_then(|d| d.deserialize())
+                     .unwrap_or_else(|e| e.exit());
 
     let db;
     if !args.flag_db.is_empty()
@@ -120,11 +120,11 @@ fn main() {
 
         db = Connection::open(&args.flag_db).unwrap();
         db.execute("CREATE TABLE IF NOT EXISTS posts (
-            id        INTEGER PRIMARY KEY,
-            title        TEXT NOT NULL,
-            url        TEXT NOT NULL,
-            user        TEXT NOT NULL,
-            channel        TEXT NOT NULL,
+            id              INTEGER PRIMARY KEY,
+            title           TEXT NOT NULL,
+            url             TEXT NOT NULL,
+            user            TEXT NOT NULL,
+            channel         TEXT NOT NULL,
             time_created    TEXT NOT NULL
             )", &[]).unwrap();
     } else {
@@ -207,10 +207,8 @@ fn main() {
                     }
                 }
             }
-
             _ => (),
         }
-
     }).unwrap()
 }
 
