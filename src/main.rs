@@ -11,7 +11,6 @@ extern crate curl;
 extern crate htmlescape;
 extern crate regex;
 extern crate rusqlite;
-extern crate time;
 extern crate docopt;
 #[macro_use]
 extern crate serde_derive;
@@ -23,6 +22,8 @@ use irc::client::prelude::*;
 use htmlescape::decode_html;
 use rusqlite::Connection;
 use std::process;
+
+mod sqlite;
 
 /* docopt usage string */
 const USAGE: &'static str = "
@@ -45,64 +46,6 @@ struct Args {
     flag_lang: String,
 }
 
-#[derive(Debug)]
-struct LogEntry<'a> {
-    id: i32,
-    title: String,
-    url: String,
-    prefix: &'a String,
-    channel: String,
-    time_created: String,
-}
-
-fn add_log(db: &Connection, e: &LogEntry) {
-    let u: Vec<_> = e.prefix
-        .split("!")
-        .collect();
-    match db.execute("INSERT INTO posts (title, url, user, channel, time_created)
-        VALUES (?1, ?2, ?3, ?4, ?5)",
-        &[&e.title,
-          &e.url,
-          &String::from(u[0]),
-          &e.channel,
-          &time::now().to_local().ctime().to_string()])
-    {
-        Err(e) => {eprintln!("SQL error: {}", e); process::exit(1)},
-        _      => (),
-    }
-}
-
-#[derive(Debug, Default)]
-struct PrevPost {
-    user: String,
-    time_created: String,
-    channel: String
-}
-
-fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
-{
-    let query = format!("SELECT user, time_created, channel
-                         FROM posts
-                         WHERE title LIKE \"{}\"",
-            e.title.clone()
-            .replace("\"", "\"\""));
-
-    let mut st = db.prepare(&query).unwrap();
-
-    let mut res = st.query_map(&[], |r| {
-        PrevPost {
-            user: r.get(0),
-            time_created: r.get(1),
-            channel: r.get(2)
-        }
-        }).unwrap();
-
-    match res.nth(0) {
-        Some(r) => Some(r.unwrap()),
-        None    => None
-    }
-}
-
 /* Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") } */
 
 fn main() {
@@ -118,16 +61,7 @@ fn main() {
         /* TODO: get database path from configuration */
         /* TODO: make logging optional */
         println!("Using database at: {}", args.flag_db);
-
-        db = Connection::open(&args.flag_db).unwrap();
-        db.execute("CREATE TABLE IF NOT EXISTS posts (
-            id              INTEGER PRIMARY KEY,
-            title           TEXT NOT NULL,
-            url             TEXT NOT NULL,
-            user            TEXT NOT NULL,
-            channel         TEXT NOT NULL,
-            time_created    TEXT NOT NULL
-            )", &[]).unwrap();
+        db = sqlite::create_db(&args.flag_db).unwrap();
     } else {
         db = Connection::open_in_memory().unwrap();
     }
@@ -170,7 +104,7 @@ fn main() {
 
                     match title {
                         Some(s) => {
-                            let entry = LogEntry {
+                            let entry = sqlite::LogEntry {
                                 id: 0,
                                 title: s.clone(),
                                 url: t.clone().to_string(),
@@ -180,7 +114,7 @@ fn main() {
                             };
 
                             /* check for pre-post */
-                            let p = check_prepost(&db, &entry);
+                            let p = sqlite::check_prepost(&db, &entry);
                             let msg = match p {
                                 Some(p) => {
                                     format!("⤷ {} → {} {} ({})",
@@ -192,7 +126,7 @@ fn main() {
                                 None    => {
                                     /* add log entry to database */
                                     if !args.flag_db.is_empty() {
-                                        add_log(&db, &entry);
+                                        sqlite::add_log(&db, &entry);
                                     }
                                     format!("⤷ {}", s)
                                 }
