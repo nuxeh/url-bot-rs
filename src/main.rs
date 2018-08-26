@@ -71,6 +71,38 @@ fn add_log(db: &Connection, e: &LogEntry) {
     }
 }
 
+#[derive(Debug)]
+struct PrevPost {
+    user: String,
+    time_created: String,
+    channel: String
+}
+
+fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
+{
+    let query = format!("SELECT user, time_created, channel
+        FROM posts
+        WHERE title LIKE \"{}\"",
+            e.title.clone()
+            .replace("\"", "\"\"")
+            .replace("'", "''"));
+
+    let mut st = db.prepare(&query).unwrap();
+
+    let mut res = st.query_map(&[], |r| {
+        PrevPost {
+            user: r.get(0),
+            time_created: r.get(1),
+            channel: r.get(2)
+        }
+        }).unwrap();
+
+    match res.nth(0) {
+        Some(r) => Some(r.unwrap()),
+        None    => None
+    }
+}
+
 /* Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") } */
 
 fn main() {
@@ -138,9 +170,6 @@ fn main() {
 
                     match title {
                         Some(s) => {
-                            server.send_privmsg(
-                                message.response_target().unwrap_or(target), &s
-                            ).unwrap();
                             let entry = LogEntry {
                                 id: 0,
                                 title: s.clone(),
@@ -149,9 +178,31 @@ fn main() {
                                 channel: target.to_string(),
                                 time_created: time::get_time(),
                             };
-                            if !args.flag_db.is_empty() {
-                                add_log(&db, &entry);
-                            }
+
+                            /* check for pre-post */
+                            let p = check_prepost(&db, &entry);
+                            let msg = match p {
+                                Some(p) => {
+                                    format!("⤷ {} → {} {} ({})",
+                                            s,
+                                            p.time_created,
+                                            p.user,
+                                            p.channel)
+                                },
+                                None    => {
+                                    /* add log entry to database */
+                                    if !args.flag_db.is_empty() {
+                                        add_log(&db, &entry);
+                                    }
+                                    format!("⤷ {}", s)
+                                }
+                            };
+
+                            /* send the IRC response */
+                            server.send_privmsg(
+                                message.response_target().unwrap_or(target), &msg
+                            ).unwrap();
+
                         }
                         _ => ()
                     }
