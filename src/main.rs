@@ -21,7 +21,6 @@ use regex::Regex;
 use curl::easy::{Easy2, Handler, WriteError, List};
 use irc::client::prelude::*;
 use htmlescape::decode_html;
-use time::Timespec;
 use rusqlite::Connection;
 use std::process;
 
@@ -51,7 +50,7 @@ struct LogEntry<'a> {
     url: String,
     prefix: &'a String,
     channel: String,
-    time_created: Timespec,
+    time_created: String,
 }
 
 fn add_log(db: &Connection, e: &LogEntry) {
@@ -64,7 +63,7 @@ fn add_log(db: &Connection, e: &LogEntry) {
           &e.url,
           &String::from(u[0]),
           &e.channel,
-          &e.time_created])
+          &time::now().to_local().ctime().to_string()])
     {
         Err(e) => {eprintln!("SQL error: {}", e); process::exit(1)},
         _      => (),
@@ -176,7 +175,7 @@ fn main() {
                                 url: t.clone().to_string(),
                                 prefix: &message.prefix.clone().unwrap(),
                                 channel: target.to_string(),
-                                time_created: time::get_time(),
+                                time_created: "".to_string()
                             };
 
                             /* check for pre-post */
