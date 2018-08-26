@@ -83,8 +83,7 @@ fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
                          FROM posts
                          WHERE title LIKE \"{}\"",
             e.title.clone()
-            .replace("\"", "\"\"")
-            .replace("'", "''"));
+            .replace("\"", "\"\""));
 
     let mut st = db.prepare(&query).unwrap();
 
