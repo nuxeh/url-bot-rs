@@ -35,12 +35,14 @@ Options:
     -h --help       Show this help message.
     -d --db=PATH    Use a sqlite database at PATH.
     -c --conf=PATH  Use configuration file at PATH [default: ./config.toml].
+    -l --lang=LANG  Language to request in http headers [default: en]
 ";
 
 #[derive(Debug, Deserialize, Default)]
 struct Args {
     flag_db: String,
     flag_conf: String,
+    flag_lang: String,
 }
 
 #[derive(Debug)]
@@ -70,7 +72,7 @@ fn add_log(db: &Connection, e: &LogEntry) {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct PrevPost {
     user: String,
     time_created: String,
@@ -161,8 +163,8 @@ fn main() {
                     }
 
                     match url.scheme() {
-                        Some("http")  => { title = resolve_url(t); }
-                        Some("https") => { title = resolve_url(t); }
+                        Some("http")  => { title = resolve_url(t, &args); }
+                        Some("https") => { title = resolve_url(t, &args); }
                         _ => ()
                     }
 
@@ -221,7 +223,7 @@ impl Handler for Collector {
     }
 }
 
-fn resolve_url(url: &str) -> Option<String> {
+fn resolve_url(url: &str, args: &Args) -> Option<String> {
 
     println!("RESOLVE {}", url);
 
@@ -233,7 +235,8 @@ fn resolve_url(url: &str) -> Option<String> {
     easy.useragent("url-bot-rs/0.1").unwrap();
 
     let mut headers = List::new();
-    headers.append("Accept-Language: en").unwrap();
+    let lang = format!("Accept-Language: {}", args.flag_lang);
+    headers.append(&lang).unwrap();
     easy.http_headers(headers).unwrap();
 
     match easy.perform() {
@@ -283,8 +286,9 @@ mod tests {
 
     #[test]
     fn resolve_urls() {
-        assert_ne!(None, resolve_url("https://youtube.com"));
-        assert_ne!(None, resolve_url("https://google.co.uk"));
+        let args = Args::default();
+        assert_ne!(None, resolve_url("https://youtube.com", &args));
+        assert_ne!(None, resolve_url("https://google.co.uk", &args));
     }
 
     #[test]
