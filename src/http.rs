@@ -88,14 +88,22 @@ mod tests {
         assert_eq!(None, parse_content(&"    ".to_string()));
         assert_eq!(None, parse_content(&"<title></title>".to_string()));
         assert_eq!(None, parse_content(&"<title>    </title>".to_string()));
-        assert_eq!(None, parse_content(&"floofynips, not a real webpage".to_string()));
-        assert_eq!(Some("cheese is nice".to_string()), parse_content(&"<title>cheese is nice</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>     squanch</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>squanch     </title>".to_string()));
-        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>\nsquanch</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>\n  \n  squanch</title>".to_string()));
-        assert_eq!(Some("we like the moon".to_string()), parse_content(&"<title>\n  \n  we like the moon</title>".to_string()));
-        assert_eq!(Some("&hello123&<>''~".to_string()), parse_content(&"<title>&amp;hello123&amp;&lt;&gt;''~</title>".to_string()));
+        assert_eq!(None,
+             parse_content(&"floofynips, not a real webpage".to_string()));
+        assert_eq!(Some("cheese is nice".to_string()),
+            parse_content(&"<title>cheese is nice</title>".to_string()));
+        assert_eq!(Some("squanch".to_string()),
+            parse_content(&"<title>     squanch</title>".to_string()));
+        assert_eq!(Some("squanch".to_string()),
+            parse_content(&"<title>squanch     </title>".to_string()));
+        assert_eq!(Some("squanch".to_string()),
+            parse_content(&"<title>\nsquanch</title>".to_string()));
+        assert_eq!(Some("squanch".to_string()),
+            parse_content(&"<title>\n  \n  squanch</title>".to_string()));
+        assert_eq!(Some("we like the moon".to_string()),
+            parse_content(&"<title>\n  \n  we like the moon</title>".to_string()));
+        assert_eq!(Some("&hello123&<>''~".to_string()),
+            parse_content(&"<title>&amp;hello123&amp;&lt;&gt;''~</title>".to_string()));
         assert_eq!(Some("CVE - CVE-2018-11235".to_string()),
             parse_content(&"<title>CVE -\nCVE-2018-11235\n</title>".to_string()));
     }
