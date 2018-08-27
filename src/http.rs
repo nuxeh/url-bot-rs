@@ -1,8 +1,6 @@
 extern crate curl;
 extern crate htmlescape;
-extern crate regex;
 
-use self::regex::Regex;
 use self::curl::easy::{Easy2, Handler, WriteError, List};
 use self::htmlescape::decode_html;
 
@@ -18,7 +16,7 @@ impl Handler for Collector {
 
 pub fn resolve_url(url: &str, lang: &str) -> Option<String> {
 
-    println!("RESOLVE {}", url);
+    eprintln!("RESOLVE {}", url);
 
     let mut easy = Easy2::new(Collector(Vec::new()));
 
@@ -53,23 +51,24 @@ fn parse_content(page_contents: &String) -> Option<String> {
 
     let title_enc = s2[0];
 
-    let mut title_dec = String::new();
-    match decode_html(title_enc) {
-        Ok(s) => { title_dec = s; }
-        _     => ()
+    let title_dec = match decode_html(title_enc) {
+        Ok(s) => s,
+        _     => {return None}
     };
 
-    /* strip leading and tailing whitespace from title */
-    let re = Regex::new(r"^[\s\n]*(?P<title>.*?)[\s\n]*$").unwrap();
-    /* TODO: use trim https://doc.rust-lang.org/std/string/struct.String.html#method.trim */
-    let res = re.captures(&title_dec).unwrap()["title"].to_string();
+    /* make any multi-line title string into a single line */
+    let mut title_one_line =
+        title_dec.lines()
+        .fold("".to_string(),
+        |string, line| string.to_owned() + " " + line);
 
-    match res.chars().count() {
-        0 => None,
-        _ => {
-            println!("SUCCESS \"{}\"", res);
-            Some(res)
-        }
+    /* trim leading and trailing whitespace */
+    title_one_line = title_one_line.trim().to_string();
+
+    match title_one_line.is_empty() {
+        false => {eprintln!("SUCCESS \"{}\"", title_one_line);
+                 Some(title_one_line)},
+        true  => None,
     }
 }
 
@@ -89,14 +88,24 @@ mod tests {
         assert_eq!(None, parse_content(&"    ".to_string()));
         assert_eq!(None, parse_content(&"<title></title>".to_string()));
         assert_eq!(None, parse_content(&"<title>    </title>".to_string()));
-        assert_eq!(None, parse_content(&"floofynips, not a real webpage".to_string()));
-        assert_eq!(Some("cheese is nice".to_string()), parse_content(&"<title>cheese is nice</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>     squanch</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>squanch     </title>".to_string()));
-        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>\nsquanch</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()), parse_content(&"<title>\n  \n  squanch</title>".to_string()));
-        assert_eq!(Some("we like the moon".to_string()), parse_content(&"<title>\n  \n  we like the moon</title>".to_string()));
-        assert_eq!(Some("&hello123&<>''~".to_string()), parse_content(&"<title>&amp;hello123&amp;&lt;&gt;''~</title>".to_string()));
+        assert_eq!(None,
+             parse_content(&"floofynips, not a real webpage".to_string()));
+        assert_eq!(Some("cheese is nice".to_string()),
+            parse_content(&"<title>cheese is nice</title>".to_string()));
+        assert_eq!(Some("squanch".to_string()),
+            parse_content(&"<title>     squanch</title>".to_string()));
+        assert_eq!(Some("squanch".to_string()),
+            parse_content(&"<title>squanch     </title>".to_string()));
+        assert_eq!(Some("squanch".to_string()),
+            parse_content(&"<title>\nsquanch</title>".to_string()));
+        assert_eq!(Some("squanch".to_string()),
+            parse_content(&"<title>\n  \n  squanch</title>".to_string()));
+        assert_eq!(Some("we like the moon".to_string()),
+            parse_content(&"<title>\n  \n  we like the moon</title>".to_string()));
+        assert_eq!(Some("&hello123&<>''~".to_string()),
+            parse_content(&"<title>&amp;hello123&amp;&lt;&gt;''~</title>".to_string()));
+        assert_eq!(Some("CVE - CVE-2018-11235".to_string()),
+            parse_content(&"<title>CVE -\nCVE-2018-11235\n</title>".to_string()));
     }
 }
 
