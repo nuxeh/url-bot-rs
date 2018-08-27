@@ -42,8 +42,8 @@ pub fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
 {
     let query = format!("SELECT user, time_created, channel
                          FROM posts
-                         WHERE title LIKE \"{}\"",
-            e.title.clone()
+                         WHERE url LIKE \"{}\"",
+            e.url.clone()
             .replace("\"", "\"\""));
 
     let mut st = db.prepare(&query).unwrap();
