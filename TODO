@@ -13,3 +13,7 @@
  - Better handling of IRC connection errors (don't panic)
  - Set config file path on command line option / have default search paths, local last
  - Update to updated rust IRC API
+
+# Tests
+
+ - Previous postings
