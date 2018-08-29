@@ -3,7 +3,7 @@
 # url-bot-rs
 
 URL title fetching bot for IRC in Rust. The bot monitors all messages sent to
-it in any IRC channels it's joined, if any messages contain URLs, the bot
+it in any IRC channels it's joined to, if any messages contain URLs, the bot
 fetches the page and extracts the title, posting the result on the same
 channel, adding a certain je ne sais quoi to your IRC experience.
 
@@ -25,7 +25,7 @@ channel, adding a certain je ne sais quoi to your IRC experience.
 ## Configuration
 
 A configuration file is required to specify IRC server settings for the bot,
-this can be specified with --conf=<path>. If not provided, a default search
+this can be specified with `--conf=<path>`. If not provided, a default search
 path will be used:
 
 * `./config.toml`
