@@ -17,7 +17,7 @@
    local last
  - Update to updated rust IRC API
  - Batch log processor to add historical logs to the database
- - Investigate [reqwest](https://github.com/seanmonstar/reqwest)) as an
+ - Investigate [reqwest](https://github.com/seanmonstar/reqwest) as an
    alternative to curl
 
 # Tests
