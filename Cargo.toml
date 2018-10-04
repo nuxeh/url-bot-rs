@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Edward Cragg <drq.11235@gmail.com>"]
 
 [dependencies]
-irc = "0.12"
+irc = "0.13.6"
 hyper = "0.11.14"
 tokio-core = "0.1"
 curl = "0.4.11"
