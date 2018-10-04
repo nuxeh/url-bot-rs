@@ -61,28 +61,32 @@ fn main() {
         db = Connection::open_in_memory().unwrap();
     }
 
-    /* configure IRC */
-    let server = IrcServer::new(args.flag_conf.clone());
-    let server = match server {
-        Ok(serv) => serv,
+    /* load IRC configuration */
+    println!("Using configuration at: {}", args.flag_conf);
+    let conf = Config::load(args.flag_conf.clone());
+    let config = match conf {
+        Ok(c)    => c,
         Err(err) => {
-            eprintln!("Error: {}", err);
+            eprintln!("IRC configuration error: {}", err);
             process::exit(1);
         },
     };
-    println!("Using configuration at: {}", args.flag_conf);
 
-    server.identify().unwrap();
+    /* create IRC reactor */
+    let mut reactor = IrcReactor::new().unwrap();
+    let client = reactor.prepare_client_and_connect(&config).unwrap();
+    client.identify().unwrap();
 
-    server.for_each_incoming(|message| {
-
+    /* register handler */
+    reactor.register_client_with_handler(client, move |client, message| {
         match message.command {
-
             Command::PRIVMSG(ref target, ref msg) => {
 
+                /* get all the words/tokens, put them into an array */
                 let tokens: Vec<_> = msg.split_whitespace().collect();
 
-                for t in tokens {
+                for t in tokens
+                {
                     let mut title = None;
 
                     let url;
@@ -99,6 +103,7 @@ fn main() {
 
                     match title {
                         Some(s) => {
+                            /* create a log entry struct */
                             let entry = sqlite::LogEntry {
                                 id: 0,
                                 title: s.clone(),
@@ -110,6 +115,7 @@ fn main() {
 
                             /* check for pre-post */
                             let p = sqlite::check_prepost(&db, &entry);
+
                             let msg = match p {
                                 Some(p) => {
                                     format!("⤷ {} → {} {} ({})",
@@ -128,16 +134,21 @@ fn main() {
                             };
 
                             /* send the IRC response */
-                            server.send_privmsg(
-                                message.response_target().unwrap_or(target), &msg
-                            ).unwrap();
-
+                            client.send_privmsg(
+                                message.response_target().unwrap_or(target),
+                                &msg).unwrap();
                         }
                         _ => ()
-                    }
-                }
-            }
+                    } /* match title */
+
+                } /* for t in tokens */
+
+            } /* Command::PRIVMSG */
             _ => (),
-        }
-    }).unwrap()
+        } /* match message.command */
+
+        Ok(())
+    }); /* reactor.register_client_with_handler */
+
+    reactor.run().unwrap();
 }
