@@ -114,7 +114,9 @@ fn main() {
                             };
 
                             /* check for pre-post */
-                            let p = sqlite::check_prepost(&db, &entry);
+                            let p = if !args.flag_db.is_empty() {
+                                sqlite::check_prepost(&db, &entry)
+                            } else {None};
 
                             let msg = match p {
                                 Some(p) => {
