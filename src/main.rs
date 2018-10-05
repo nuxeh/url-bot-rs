@@ -20,7 +20,7 @@ use std::process;
 mod sqlite;
 mod http;
 
-/* docopt usage string */
+// docopt usage string
 const USAGE: &'static str = "
 URL munching IRC bot.
 
@@ -41,116 +41,101 @@ struct Args {
     flag_lang: String,
 }
 
-/* Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") } */
+// Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") }
 
 fn main() {
-
     let args: Args = Docopt::new(USAGE)
                      .and_then(|d| d.deserialize())
                      .unwrap_or_else(|e| e.exit());
 
-    let db;
-    if !args.flag_db.is_empty()
-    {
-        /* open the sqlite database for logging */
-        /* TODO: get database path from configuration */
-        /* TODO: make logging optional */
-        println!("Using database at: {}", args.flag_db);
-        db = sqlite::create_db(&args.flag_db).unwrap();
+    // open the sqlite database for logging
+    // TODO: get database path from configuration
+    // TODO: make logging optional
+    let db = if args.flag_db.is_empty() {
+        println!("Using in-memory database");
+        sqlite::create_db(None).unwrap()
     } else {
-        db = Connection::open_in_memory().unwrap();
-    }
+        println!("Using database at: {}", args.flag_db);
+        sqlite::create_db(Some(&args.flag_db)).unwrap()
+    };
 
-    /* load IRC configuration */
+    // load IRC configuration
     println!("Using configuration at: {}", args.flag_conf);
     let conf = Config::load(args.flag_conf.clone());
     let config = match conf {
-        Ok(c)    => c,
+        Ok(c) => c,
         Err(err) => {
             eprintln!("IRC configuration error: {}", err);
             process::exit(1);
         },
     };
 
-    /* create IRC reactor */
+    // create IRC reactor
     let mut reactor = IrcReactor::new().unwrap();
     let client = reactor.prepare_client_and_connect(&config).unwrap();
     client.identify().unwrap();
 
-    /* register handler */
+    // register handler
     reactor.register_client_with_handler(client, move |client, message| {
-        match message.command {
-            Command::PRIVMSG(ref target, ref msg) => {
+        let (target, msg) = match message.command {
+            Command::PRIVMSG(ref target, ref msg) => (target, msg),
+            _ => return Ok(()),
+        };
 
-                /* get all the words/tokens, put them into an array */
-                let tokens: Vec<_> = msg.split_whitespace().collect();
+        // look at each space seperated message token
+        for token in msg.split_whitespace() {
+            // the token must be a valid url
+            let url = match token.parse::<hyper::Uri>() {
+                Ok(url) => url,
+                _ => continue,
+            };
 
-                for t in tokens
-                {
-                    let mut title = None;
+            // the schema must be http or https
+            let scheme = url.scheme().unwrap_or("");
+            if !["http", "https"].contains(&scheme) {
+                continue;
+            }
 
-                    let url;
-                    match t.parse::<hyper::Uri>() {
-                        Ok(u) => { url = u; }
-                        _     => { continue; }
-                    }
+            // try to get the title from the url
+            let title = match http::resolve_url(token, &args.flag_lang) {
+                Some(title) => title,
+                _ => continue,
+            };
 
-                    match url.scheme() {
-                        Some("http")  => {title = http::resolve_url(t, &args.flag_lang);}
-                        Some("https") => {title = http::resolve_url(t, &args.flag_lang);}
-                        _ => ()
-                    }
+            // create a log entry struct
+            let entry = sqlite::LogEntry {
+                id: 0,
+                title: &title,
+                url: token,
+                prefix: message.prefix.as_ref().unwrap(),
+                channel: target,
+                time_created: "",
+            };
 
-                    match title {
-                        Some(s) => {
-                            /* create a log entry struct */
-                            let entry = sqlite::LogEntry {
-                                id: 0,
-                                title: s.clone(),
-                                url: t.clone().to_string(),
-                                prefix: &message.prefix.clone().unwrap(),
-                                channel: target.to_string(),
-                                time_created: "".to_string()
-                            };
+            // check for pre-post
+            let msg = match sqlite::check_prepost(&db, &entry) {
+                Some(previous_post) => {
+                    format!("⤷ {} → {} {} ({})",
+                        title,
+                        previous_post.time_created,
+                        previous_post.user,
+                        previous_post.channel
+                    )
+                },
+                None => {
+                    // add new log entry to database
+                    sqlite::add_log(&db, &entry);
+                    format!("⤷ {}", title)
+                }
+            };
 
-                            /* check for pre-post */
-                            let p = if !args.flag_db.is_empty() {
-                                sqlite::check_prepost(&db, &entry)
-                            } else {None};
-
-                            let msg = match p {
-                                Some(p) => {
-                                    format!("⤷ {} → {} {} ({})",
-                                            s,
-                                            p.time_created,
-                                            p.user,
-                                            p.channel)
-                                },
-                                None    => {
-                                    /* add log entry to database */
-                                    if !args.flag_db.is_empty() {
-                                        sqlite::add_log(&db, &entry);
-                                    }
-                                    format!("⤷ {}", s)
-                                }
-                            };
-
-                            /* send the IRC response */
-                            client.send_privmsg(
-                                message.response_target().unwrap_or(target),
-                                &msg).unwrap();
-                        }
-                        _ => ()
-                    } /* match title */
-
-                } /* for t in tokens */
-
-            } /* Command::PRIVMSG */
-            _ => (),
-        } /* match message.command */
+            // send the IRC response
+            let target = message.response_target().unwrap_or(target);
+            client.send_privmsg(target, &msg).unwrap();
+        }
 
         Ok(())
-    }); /* reactor.register_client_with_handler */
+    });
 
     reactor.run().unwrap();
 }
