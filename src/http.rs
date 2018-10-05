@@ -26,6 +26,7 @@ pub fn resolve_url(url: &str, lang: &str) -> Option<String> {
     easy.follow_location(true).unwrap();
     easy.max_redirections(10).unwrap();
     easy.timeout(Duration::from_secs(5)).unwrap();
+    easy.max_recv_speed(10 * 1024 * 1024).unwrap();
     easy.useragent("url-bot-rs/0.1").unwrap();
 
     let mut headers = List::new();
