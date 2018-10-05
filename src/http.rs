@@ -23,6 +23,7 @@ pub fn resolve_url(url: &str, lang: &str) -> Option<String> {
     easy.get(true).unwrap();
     easy.url(url).unwrap();
     easy.follow_location(true).unwrap();
+    easy.max_redirections(10).unwrap();
     easy.useragent("url-bot-rs/0.1").unwrap();
 
     let mut headers = List::new();
