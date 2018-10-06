@@ -14,7 +14,6 @@ extern crate serde_derive;
 
 use docopt::Docopt;
 use irc::client::prelude::*;
-use rusqlite::Connection;
 use std::process;
 
 mod sqlite;
@@ -36,7 +35,7 @@ Options:
 
 #[derive(Debug, Deserialize, Default)]
 struct Args {
-    flag_db: String,
+    flag_db: Option<String>,
     flag_conf: String,
     flag_lang: String,
 }
@@ -51,12 +50,12 @@ fn main() {
     // open the sqlite database for logging
     // TODO: get database path from configuration
     // TODO: make logging optional
-    let db = if args.flag_db.is_empty() {
+    let db = if let Some(ref path) = args.flag_db {
+        println!("Using database at: {}", path);
+        sqlite::create_db(Some(path)).unwrap()
+    } else {
         println!("Using in-memory database");
         sqlite::create_db(None).unwrap()
-    } else {
-        println!("Using database at: {}", args.flag_db);
-        sqlite::create_db(Some(&args.flag_db)).unwrap()
     };
 
     // load IRC configuration
