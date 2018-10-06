@@ -6,6 +6,7 @@ use self::htmlescape::decode_html;
 use std::time::Duration;
 use itertools::Itertools;
 use regex::Regex;
+use failure::Error;
 
 #[derive(Debug)]
 struct Collector(Vec<u8>);
@@ -17,29 +18,31 @@ impl Handler for Collector {
     }
 }
 
-pub fn resolve_url(url: &str, lang: &str) -> Option<String> {
+pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
     let mut easy = Easy2::new(Collector(Vec::new()));
 
-    easy.get(true).unwrap();
-    easy.url(url).unwrap();
-    easy.follow_location(true).unwrap();
-    easy.max_redirections(10).unwrap();
-    easy.timeout(Duration::from_secs(5)).unwrap();
-    easy.max_recv_speed(10 * 1024 * 1024).unwrap();
-    easy.useragent("url-bot-rs/0.1").unwrap();
+    easy.get(true)?;
+    easy.url(url)?;
+    easy.follow_location(true)?;
+    easy.max_redirections(10)?;
+    easy.timeout(Duration::from_secs(5))?;
+    easy.max_recv_speed(10 * 1024 * 1024)?;
+    easy.useragent("url-bot-rs/0.1")?;
 
     let mut headers = List::new();
     let lang = format!("Accept-Language: {}", lang);
-    headers.append(&lang).unwrap();
-    easy.http_headers(headers).unwrap();
+    headers.append(&lang)?;
+    easy.http_headers(headers)?;
 
-    easy.perform().ok()?;
+    easy.perform()?;
 
     let contents = String::from_utf8_lossy(&easy.get_ref().0);
+    let title = parse_content(&contents)
+        .ok_or_else(|| format_err!("failed to parse title"))?;
 
-    parse_content(&contents)
+    Ok(title)
 }
 
 fn parse_content(page_contents: &str) -> Option<String> {
@@ -71,8 +74,8 @@ mod tests {
 
     #[test]
     fn resolve_urls() {
-        assert_ne!(None, resolve_url("https://youtube.com", "en"));
-        assert_ne!(None, resolve_url("https://google.co.uk", "en"));
+        resolve_url("https://youtube.com", "en").unwrap();
+        resolve_url("https://google.co.uk", "en").unwrap();
     }
 
     #[test]

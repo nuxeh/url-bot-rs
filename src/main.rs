@@ -15,6 +15,8 @@ extern crate itertools;
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate failure;
 
 use docopt::Docopt;
 use irc::client::prelude::*;
@@ -97,8 +99,11 @@ fn main() {
 
             // try to get the title from the url
             let title = match http::resolve_url(token, &args.flag_lang) {
-                Some(title) => title,
-                _ => continue,
+                Ok(title) => title,
+                Err(err) => {
+                    println!("ERROR {:?}", err);
+                    continue
+                },
             };
 
             // create a log entry struct
@@ -113,7 +118,7 @@ fn main() {
 
             // check for pre-post
             let msg = match sqlite::check_prepost(&db, &entry) {
-                Some(previous_post) => {
+                Ok(Some(previous_post)) => {
                     format!("⤷ {} → {} {} ({})",
                         title,
                         previous_post.time_created,
@@ -121,11 +126,18 @@ fn main() {
                         previous_post.channel
                     )
                 },
-                None => {
+                Ok(None) => {
                     // add new log entry to database
-                    sqlite::add_log(&db, &entry);
+                    if let Err(err) = sqlite::add_log(&db, &entry) {
+                        eprintln!("SQL error: {}", err);
+                        process::exit(1)
+                    }
                     format!("⤷ {}", title)
-                }
+                },
+                Err(err) => {
+                    eprintln!("SQL error: {}", err);
+                    process::exit(1)
+                },
             };
 
             // send the IRC response
