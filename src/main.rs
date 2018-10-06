@@ -60,14 +60,10 @@ fn main() {
 
     // load IRC configuration
     println!("Using configuration at: {}", args.flag_conf);
-    let conf = Config::load(args.flag_conf.clone());
-    let config = match conf {
-        Ok(c) => c,
-        Err(err) => {
-            eprintln!("IRC configuration error: {}", err);
-            process::exit(1);
-        },
-    };
+    let config = Config::load(&args.flag_conf).unwrap_or_else(|err| {
+        eprintln!("IRC configuration error: {}", err);
+        process::exit(1);
+    });
 
     // create IRC reactor
     let mut reactor = IrcReactor::new().unwrap();
