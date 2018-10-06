@@ -3,6 +3,7 @@ extern crate htmlescape;
 
 use self::curl::easy::{Easy2, Handler, WriteError, List};
 use self::htmlescape::decode_html;
+use std::time::Duration;
 
 #[derive(Debug)]
 struct Collector(Vec<u8>);
@@ -23,6 +24,9 @@ pub fn resolve_url(url: &str, lang: &str) -> Option<String> {
     easy.get(true).unwrap();
     easy.url(url).unwrap();
     easy.follow_location(true).unwrap();
+    easy.max_redirections(10).unwrap();
+    easy.timeout(Duration::from_secs(5)).unwrap();
+    easy.max_recv_speed(10 * 1024 * 1024).unwrap();
     easy.useragent("url-bot-rs/0.1").unwrap();
 
     let mut headers = List::new();
