@@ -1,41 +1,30 @@
-use curl::easy::{Easy2, Handler, WriteError, List};
 use htmlescape::decode_html;
 use std::time::Duration;
 use itertools::Itertools;
 use regex::Regex;
 use failure::Error;
-
-#[derive(Debug)]
-struct Collector(Vec<u8>);
-
-impl Handler for Collector {
-    fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
-        self.0.extend_from_slice(data);
-        Ok(data.len())
-    }
-}
+use reqwest::Client;
+use reqwest::header::{USER_AGENT, ACCEPT_LANGUAGE};
+use std::io::Read;
 
 pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
-    let mut easy = Easy2::new(Collector(Vec::new()));
+    let client = Client::builder()
+        .timeout(Duration::from_secs(3)) // per read/write op
+        .build()?;
 
-    easy.get(true)?;
-    easy.url(url)?;
-    easy.follow_location(true)?;
-    easy.max_redirections(10)?;
-    easy.timeout(Duration::from_secs(5))?;
-    easy.max_recv_speed(10 * 1024 * 1024)?;
-    easy.useragent("url-bot-rs/0.1")?;
+    let resp = client.get(url)
+        .header(USER_AGENT, "url-bot-rs/0.1")
+        .header(ACCEPT_LANGUAGE, lang)
+        .send()?
+        .error_for_status()?;
 
-    let mut headers = List::new();
-    let lang = format!("Accept-Language: {}", lang);
-    headers.append(&lang)?;
-    easy.http_headers(headers)?;
+    // Download up to 100KB
+    let mut body = Vec::new();
+    resp.take(100 * 1024).read_to_end(&mut body)?;
 
-    easy.perform()?;
-
-    let contents = String::from_utf8_lossy(&easy.get_ref().0);
+    let contents = String::from_utf8_lossy(&body);
     let title = parse_content(&contents)
         .ok_or_else(|| format_err!("failed to parse title"))?;
 

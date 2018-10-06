@@ -8,7 +8,6 @@
 extern crate irc;
 extern crate rusqlite;
 extern crate docopt;
-extern crate hyper;
 #[macro_use]
 extern crate serde_derive;
 extern crate itertools;
@@ -17,9 +16,9 @@ extern crate regex;
 extern crate lazy_static;
 #[macro_use]
 extern crate failure;
-extern crate curl;
 extern crate htmlescape;
 extern crate time;
+extern crate reqwest;
 
 use docopt::Docopt;
 use irc::client::prelude::*;
@@ -98,14 +97,13 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Connec
     // look at each space seperated message token
     for token in msg.split_whitespace() {
         // the token must be a valid url
-        let url = match token.parse::<hyper::Uri>() {
+        let url = match token.parse::<reqwest::Url>() {
             Ok(url) => url,
             _ => continue,
         };
 
         // the schema must be http or https
-        let scheme = url.scheme_part().map(|s| s.as_str()).unwrap_or("");
-        if !["http", "https"].contains(&scheme) {
+        if !["http", "https"].contains(&url.scheme()) {
             continue;
         }
 
