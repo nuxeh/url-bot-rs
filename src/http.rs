@@ -3,6 +3,8 @@ extern crate htmlescape;
 
 use self::curl::easy::{Easy2, Handler, WriteError, List};
 use self::htmlescape::decode_html;
+use itertools::Itertools;
+use regex::Regex;
 
 #[derive(Debug)]
 struct Collector(Vec<u8>);
@@ -15,7 +17,6 @@ impl Handler for Collector {
 }
 
 pub fn resolve_url(url: &str, lang: &str) -> Option<String> {
-
     eprintln!("RESOLVE {}", url);
 
     let mut easy = Easy2::new(Collector(Vec::new()));
@@ -30,46 +31,34 @@ pub fn resolve_url(url: &str, lang: &str) -> Option<String> {
     headers.append(&lang).unwrap();
     easy.http_headers(headers).unwrap();
 
-    match easy.perform() {
-        Err(_) => { return None; }
-        _      => ()
-    }
+    easy.perform().ok()?;
 
-    let contents = easy.get_ref();
+    let contents = String::from_utf8_lossy(&easy.get_ref().0);
 
-    let s = String::from_utf8_lossy(&contents.0).to_string();
-
-    parse_content(&s)
+    parse_content(&contents)
 }
 
-fn parse_content(page_contents: &String) -> Option<String> {
-
-    let s1: Vec<_> = page_contents.split("<title>").collect();
-    if s1.len() < 2 { return None }
-    let s2: Vec<_> = s1[1].split("</title>").collect();
-    if s2.len() < 2 { return None }
-
-    let title_enc = s2[0];
-
-    let title_dec = match decode_html(title_enc) {
-        Ok(s) => s,
-        _     => {return None}
-    };
-
-    /* make any multi-line title string into a single line */
-    let mut title_one_line =
-        title_dec.lines()
-        .fold("".to_string(),
-        |string, line| string.to_owned() + " " + line);
-
-    /* trim leading and trailing whitespace */
-    title_one_line = title_one_line.trim().to_string();
-
-    match title_one_line.is_empty() {
-        false => {eprintln!("SUCCESS \"{}\"", title_one_line);
-                 Some(title_one_line)},
-        true  => None,
+fn parse_content(page_contents: &str) -> Option<String> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new("<title>((.|\n)*?)</title>").unwrap();
     }
+    let title_enc = RE.captures(page_contents)?.get(1)?.as_str();
+    let title_dec = decode_html(title_enc).ok()?;
+
+    // make any multi-line title string into a single line,
+    // trim leading and trailing whitespace
+    let title_one_line = title_dec
+        .trim()
+        .lines()
+        .map(|line| line.trim())
+        .join(" ");
+
+    if title_one_line.is_empty() {
+        return None;
+    }
+
+    eprintln!("SUCCESS \"{}\"", title_one_line);
+    Some(title_one_line)
 }
 
 #[cfg(test)]
