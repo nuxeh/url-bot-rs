@@ -1,8 +1,6 @@
-extern crate rusqlite;
-extern crate time;
-
-use self::rusqlite::Connection;
-use std::process;
+use rusqlite::Connection;
+use failure::Error;
+use time;
 
 #[derive(Debug)]
 pub struct LogEntry<'a> {
@@ -14,21 +12,23 @@ pub struct LogEntry<'a> {
     pub time_created: &'a str,
 }
 
-pub fn add_log(db: &Connection, e: &LogEntry) {
+pub fn add_log(db: &Connection, e: &LogEntry) -> Result<(), Error> {
     let u: Vec<_> = e.prefix
         .split("!")
         .collect();
-    match db.execute("INSERT INTO posts (title, url, user, channel, time_created)
+
+    db.execute("INSERT INTO posts (title, url, user, channel, time_created)
         VALUES (?1, ?2, ?3, ?4, ?5)",
-        &[&e.title,
-          &e.url,
-          &String::from(u[0]),
-          &e.channel,
-          &time::now().to_local().ctime().to_string()])
-    {
-        Err(e) => {eprintln!("SQL error: {}", e); process::exit(1)},
-        _      => (),
-    }
+        &[
+            &e.title,
+            &e.url,
+            &String::from(u[0]),
+            &e.channel,
+            &time::now().to_local().ctime().to_string()
+        ]
+    )?;
+
+    Ok(())
 }
 
 #[derive(Debug, Default)]
@@ -38,15 +38,14 @@ pub struct PrevPost {
     pub channel: String
 }
 
-pub fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
-{
+pub fn check_prepost(db: &Connection, e: &LogEntry) -> Result<Option<PrevPost>, Error> {
     let query = format!("SELECT user, time_created, channel
                          FROM posts
                          WHERE url LIKE \"{}\"",
             e.url.clone()
             .replace("\"", "\"\""));
 
-    let mut st = db.prepare(&query).unwrap();
+    let mut st = db.prepare(&query)?;
 
     let mut res = st.query_map(&[], |r| {
         PrevPost {
@@ -54,18 +53,18 @@ pub fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
             time_created: r.get(1),
             channel: r.get(2)
         }
-        }).unwrap();
+    })?;
 
-    match res.nth(0) {
-        Some(r) => Some(r.unwrap()),
+    Ok(match res.nth(0) {
+        Some(post) => Some(post?),
         None    => None
-    }
+    })
 }
 
-pub fn create_db(path: Option<&str>) -> Option<Connection> {
+pub fn create_db(path: Option<&str>) -> Result<Connection, Error> {
     let db = match path {
-        Some(path) => Connection::open(path).unwrap(),
-        None => Connection::open_in_memory().unwrap(),
+        Some(path) => Connection::open(path)?,
+        None => Connection::open_in_memory()?,
     };
 
     db.execute("CREATE TABLE IF NOT EXISTS posts (
@@ -75,7 +74,7 @@ pub fn create_db(path: Option<&str>) -> Option<Connection> {
         user            TEXT NOT NULL,
         channel         TEXT NOT NULL,
         time_created    TEXT NOT NULL
-        )", &[]).unwrap();
+        )", &[])?;
 
-    Some(db)
+    Ok(db)
 }
