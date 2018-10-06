@@ -1,8 +1,5 @@
-extern crate curl;
-extern crate htmlescape;
-
-use self::curl::easy::{Easy2, Handler, WriteError, List};
-use self::htmlescape::decode_html;
+use curl::easy::{Easy2, Handler, WriteError, List};
+use htmlescape::decode_html;
 use std::time::Duration;
 use itertools::Itertools;
 use regex::Regex;

@@ -17,6 +17,9 @@ extern crate regex;
 extern crate lazy_static;
 #[macro_use]
 extern crate failure;
+extern crate curl;
+extern crate htmlescape;
+extern crate time;
 
 use docopt::Docopt;
 use irc::client::prelude::*;

@@ -1,9 +1,6 @@
-extern crate rusqlite;
-extern crate time;
-
-use self::rusqlite::Connection;
-use std::process;
+use rusqlite::Connection;
 use failure::Error;
+use time;
 
 #[derive(Debug)]
 pub struct LogEntry<'a> {
