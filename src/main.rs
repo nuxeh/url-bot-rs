@@ -24,6 +24,7 @@ extern crate time;
 use docopt::Docopt;
 use irc::client::prelude::*;
 use std::process;
+use rusqlite::Connection;
 
 mod sqlite;
 mod http;
@@ -81,75 +82,77 @@ fn main() {
 
     // register handler
     reactor.register_client_with_handler(client, move |client, message| {
-        let (target, msg) = match message.command {
-            Command::PRIVMSG(ref target, ref msg) => (target, msg),
-            _ => return Ok(()),
-        };
-
-        // look at each space seperated message token
-        for token in msg.split_whitespace() {
-            // the token must be a valid url
-            let url = match token.parse::<hyper::Uri>() {
-                Ok(url) => url,
-                _ => continue,
-            };
-
-            // the schema must be http or https
-            let scheme = url.scheme_part().map(|s| s.as_str()).unwrap_or("");
-            if !["http", "https"].contains(&scheme) {
-                continue;
-            }
-
-            // try to get the title from the url
-            let title = match http::resolve_url(token, &args.flag_lang) {
-                Ok(title) => title,
-                Err(err) => {
-                    println!("ERROR {:?}", err);
-                    continue
-                },
-            };
-
-            // create a log entry struct
-            let entry = sqlite::LogEntry {
-                id: 0,
-                title: &title,
-                url: token,
-                prefix: message.prefix.as_ref().unwrap(),
-                channel: target,
-                time_created: "",
-            };
-
-            // check for pre-post
-            let msg = match sqlite::check_prepost(&db, &entry) {
-                Ok(Some(previous_post)) => {
-                    format!("⤷ {} → {} {} ({})",
-                        title,
-                        previous_post.time_created,
-                        previous_post.user,
-                        previous_post.channel
-                    )
-                },
-                Ok(None) => {
-                    // add new log entry to database
-                    if let Err(err) = sqlite::add_log(&db, &entry) {
-                        eprintln!("SQL error: {}", err);
-                        process::exit(1)
-                    }
-                    format!("⤷ {}", title)
-                },
-                Err(err) => {
-                    eprintln!("SQL error: {}", err);
-                    process::exit(1)
-                },
-            };
-
-            // send the IRC response
-            let target = message.response_target().unwrap_or(target);
-            client.send_privmsg(target, &msg).unwrap();
-        }
-
+        handle_message(client, message, &args, &db);
         Ok(())
     });
 
     reactor.run().unwrap();
+}
+
+fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Connection) {
+    let (target, msg) = match message.command {
+        Command::PRIVMSG(ref target, ref msg) => (target, msg),
+        _ => return,
+    };
+
+    // look at each space seperated message token
+    for token in msg.split_whitespace() {
+        // the token must be a valid url
+        let url = match token.parse::<hyper::Uri>() {
+            Ok(url) => url,
+            _ => continue,
+        };
+
+        // the schema must be http or https
+        let scheme = url.scheme_part().map(|s| s.as_str()).unwrap_or("");
+        if !["http", "https"].contains(&scheme) {
+            continue;
+        }
+
+        // try to get the title from the url
+        let title = match http::resolve_url(token, &args.flag_lang) {
+            Ok(title) => title,
+            Err(err) => {
+                println!("ERROR {:?}", err);
+                continue
+            },
+        };
+
+        // create a log entry struct
+        let entry = sqlite::LogEntry {
+            id: 0,
+            title: &title,
+            url: token,
+            prefix: message.prefix.as_ref().unwrap(),
+            channel: target,
+            time_created: "",
+        };
+
+        // check for pre-post
+        let msg = match sqlite::check_prepost(&db, &entry) {
+            Ok(Some(previous_post)) => {
+                format!("⤷ {} → {} {} ({})",
+                    title,
+                    previous_post.time_created,
+                    previous_post.user,
+                    previous_post.channel
+                )
+            },
+            Ok(None) => {
+                // add new log entry to database
+                if let Err(err) = sqlite::add_log(&db, &entry) {
+                    eprintln!("SQL error: {}", err);
+                }
+                format!("⤷ {}", title)
+            },
+            Err(err) => {
+                eprintln!("SQL error: {}", err);
+                continue
+            },
+        };
+
+        // send the IRC response
+        let target = message.response_target().unwrap_or(target);
+        client.send_privmsg(target, &msg).unwrap();
+    }
 }
