@@ -1,7 +1,8 @@
 use rusqlite::Connection;
-use failure::Error;
-use time;
+use failure::{Error, SyncFailure};
 use std::path::Path;
+use serde_rusqlite::{from_rows, to_params_named};
+use time;
 
 pub struct Database {
     db: Connection,
@@ -33,60 +34,43 @@ impl Database {
         Ok(Self { db })
     }
 
-    pub fn add_log(&self, entry: &LogEntry) -> Result<(), Error> {
-        let u: Vec<_> = entry.prefix
-            .split("!")
-            .collect();
+    pub fn add_log(&self, entry: &NewLogEntry) -> Result<(), Error> {
+        let time_created = time::now().to_local().ctime().to_string();
+        let params = to_params_named(entry).map_err(SyncFailure::new)?;
+        let mut params = params.to_slice();
+        params.push((":time_created", &time_created));
 
-        self.db.execute("INSERT INTO posts (title, url, user, channel, time_created)
-            VALUES (?1, ?2, ?3, ?4, ?5)",
-            &[
-                &entry.title,
-                &entry.url,
-                &String::from(u[0]),
-                &entry.channel,
-                &time::now().to_local().ctime().to_string()
-            ]
+        self.db.execute_named("
+            INSERT INTO posts ( title,  url,  user,  channel,  time_created)
+            VALUES            (:title, :url, :user, :channel, :time_created)",
+            &params
         )?;
 
         Ok(())
     }
 
-    pub fn check_prepost(&self, e: &LogEntry) -> Result<Option<PrevPost>, Error> {
-        let query = format!("SELECT user, time_created, channel
-                            FROM posts
-                            WHERE url LIKE \"{}\"",
-                e.url.clone()
-                .replace("\"", "\"\""));
+    pub fn check_prepost(&self, url: &str) -> Result<Option<PrevPost>, Error> {
+        let mut st = self.db.prepare("
+            SELECT user, time_created, channel
+            FROM posts
+            WHERE url LIKE :url
+        ")?;
+        let rows = st.query_named(&[(":url", &url)])?;
+        let mut rows = from_rows::<PrevPost>(rows);
 
-        let mut st = self.db.prepare(&query)?;
-
-        let mut res = st.query_map(&[], |r| {
-            PrevPost {
-                user: r.get(0),
-                time_created: r.get(1),
-                channel: r.get(2)
-            }
-        })?;
-
-        Ok(match res.nth(0) {
-            Some(post) => Some(post?),
-            None    => None
-        })
+        Ok(rows.next())
     }
 }
 
-#[derive(Debug)]
-pub struct LogEntry<'a> {
-    pub id: i32,
+#[derive(Debug, Serialize)]
+pub struct NewLogEntry<'a> {
     pub title: &'a str,
     pub url: &'a str,
-    pub prefix: &'a str,
+    pub user: &'a str,
     pub channel: &'a str,
-    pub time_created: &'a str,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Deserialize)]
 pub struct PrevPost {
     pub user: String,
     pub time_created: String,

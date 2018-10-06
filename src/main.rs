@@ -19,6 +19,7 @@ extern crate failure;
 extern crate htmlescape;
 extern crate time;
 extern crate reqwest;
+extern crate serde_rusqlite;
 
 use docopt::Docopt;
 use irc::client::prelude::*;
@@ -94,6 +95,8 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
         _ => return,
     };
 
+        let user = message.source_nickname().unwrap();
+
     // look at each space seperated message token
     for token in msg.split_whitespace() {
         // the token must be a valid url
@@ -117,17 +120,15 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
         };
 
         // create a log entry struct
-        let entry = sqlite::LogEntry {
-            id: 0,
+        let entry = sqlite::NewLogEntry {
             title: &title,
             url: token,
-            prefix: message.prefix.as_ref().unwrap(),
+            user: user,
             channel: target,
-            time_created: "",
         };
 
         // check for pre-post
-        let msg = match db.check_prepost(&entry) {
+        let msg = match db.check_prepost(token) {
             Ok(Some(previous_post)) => {
                 format!("⤷ {} → {} {} ({})",
                     title,
