@@ -90,7 +90,7 @@ fn main() {
             };
 
             // the schema must be http or https
-            let scheme = url.scheme().unwrap_or("");
+            let scheme = url.scheme_part().map(|s| s.as_str()).unwrap_or("");
             if !["http", "https"].contains(&scheme) {
                 continue;
             }
