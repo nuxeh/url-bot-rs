@@ -7,11 +7,11 @@ use std::process;
 #[derive(Debug)]
 pub struct LogEntry<'a> {
     pub id: i32,
-    pub title: String,
-    pub url: String,
-    pub prefix: &'a String,
-    pub channel: String,
-    pub time_created: String,
+    pub title: &'a str,
+    pub url: &'a str,
+    pub prefix: &'a str,
+    pub channel: &'a str,
+    pub time_created: &'a str,
 }
 
 pub fn add_log(db: &Connection, e: &LogEntry) {
@@ -62,9 +62,12 @@ pub fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
     }
 }
 
-pub fn create_db(path: &str) -> Option<Connection>
-{
-    let db = Connection::open(path).unwrap();
+pub fn create_db(path: Option<&str>) -> Option<Connection> {
+    let db = match path {
+        Some(path) => Connection::open(path).unwrap(),
+        None => Connection::open_in_memory().unwrap(),
+    };
+
     db.execute("CREATE TABLE IF NOT EXISTS posts (
         id              INTEGER PRIMARY KEY,
         title           TEXT NOT NULL,
@@ -73,5 +76,6 @@ pub fn create_db(path: &str) -> Option<Connection>
         channel         TEXT NOT NULL,
         time_created    TEXT NOT NULL
         )", &[]).unwrap();
+
     Some(db)
 }
