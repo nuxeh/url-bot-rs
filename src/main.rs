@@ -23,7 +23,7 @@ extern crate reqwest;
 use docopt::Docopt;
 use irc::client::prelude::*;
 use std::process;
-use rusqlite::Connection;
+use self::sqlite::Database;
 
 mod sqlite;
 mod http;
@@ -61,10 +61,10 @@ fn main() {
     // TODO: make logging optional
     let db = if let Some(ref path) = args.flag_db {
         println!("Using database at: {}", path);
-        sqlite::create_db(Some(path)).unwrap()
+        Database::open(path).unwrap()
     } else {
         println!("Using in-memory database");
-        sqlite::create_db(None).unwrap()
+        Database::open_in_memory().unwrap()
     };
 
     // load IRC configuration
@@ -88,7 +88,7 @@ fn main() {
     reactor.run().unwrap();
 }
 
-fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Connection) {
+fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Database) {
     let (target, msg) = match message.command {
         Command::PRIVMSG(ref target, ref msg) => (target, msg),
         _ => return,
@@ -127,7 +127,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Connec
         };
 
         // check for pre-post
-        let msg = match sqlite::check_prepost(&db, &entry) {
+        let msg = match db.check_prepost(&entry) {
             Ok(Some(previous_post)) => {
                 format!("⤷ {} → {} {} ({})",
                     title,
@@ -138,7 +138,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Connec
             },
             Ok(None) => {
                 // add new log entry to database
-                if let Err(err) = sqlite::add_log(&db, &entry) {
+                if let Err(err) = db.add_log(&entry) {
                     eprintln!("SQL error: {}", err);
                 }
                 format!("⤷ {}", title)
