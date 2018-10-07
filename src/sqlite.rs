@@ -1,81 +1,78 @@
-extern crate rusqlite;
-extern crate time;
+use rusqlite::Connection;
+use failure::{Error, SyncFailure};
+use std::path::Path;
+use serde_rusqlite::{from_rows, to_params_named};
+use time;
 
-use self::rusqlite::Connection;
-use std::process;
-
-#[derive(Debug)]
-pub struct LogEntry<'a> {
-    pub id: i32,
-    pub title: &'a str,
-    pub url: &'a str,
-    pub prefix: &'a str,
-    pub channel: &'a str,
-    pub time_created: &'a str,
+pub struct Database {
+    db: Connection,
 }
 
-pub fn add_log(db: &Connection, e: &LogEntry) {
-    let u: Vec<_> = e.prefix
-        .split("!")
-        .collect();
-    match db.execute("INSERT INTO posts (title, url, user, channel, time_created)
-        VALUES (?1, ?2, ?3, ?4, ?5)",
-        &[&e.title,
-          &e.url,
-          &String::from(u[0]),
-          &e.channel,
-          &time::now().to_local().ctime().to_string()])
-    {
-        Err(e) => {eprintln!("SQL error: {}", e); process::exit(1)},
-        _      => (),
+impl Database {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self, Error> {
+        let db = Connection::open(path)?;
+        Self::from_connection(db)
+    }
+
+    pub fn open_in_memory() -> Result<Self, Error> {
+        let db = Connection::open_in_memory()?;
+        Self::from_connection(db)
+    }
+
+    fn from_connection(db: Connection) -> Result<Self, Error> {
+        db.execute("CREATE TABLE IF NOT EXISTS posts (
+            id              INTEGER PRIMARY KEY,
+            title           TEXT NOT NULL,
+            url             TEXT NOT NULL,
+            user            TEXT NOT NULL,
+            channel         TEXT NOT NULL,
+            time_created    TEXT NOT NULL
+            )",
+            &[]
+        )?;
+
+        Ok(Self { db })
+    }
+
+    pub fn add_log(&self, entry: &NewLogEntry) -> Result<(), Error> {
+        let time_created = time::now().to_local().ctime().to_string();
+        let params = to_params_named(entry).map_err(SyncFailure::new)?;
+        let mut params = params.to_slice();
+        params.push((":time_created", &time_created));
+
+        self.db.execute_named("
+            INSERT INTO posts ( title,  url,  user,  channel,  time_created)
+            VALUES            (:title, :url, :user, :channel, :time_created)",
+            &params
+        )?;
+
+        Ok(())
+    }
+
+    pub fn check_prepost(&self, url: &str) -> Result<Option<PrevPost>, Error> {
+        let mut st = self.db.prepare("
+            SELECT user, time_created, channel
+            FROM posts
+            WHERE url LIKE :url
+        ")?;
+        let rows = st.query_named(&[(":url", &url)])?;
+        let mut rows = from_rows::<PrevPost>(rows);
+
+        Ok(rows.next())
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Serialize)]
+pub struct NewLogEntry<'a> {
+    pub title: &'a str,
+    pub url: &'a str,
+    pub user: &'a str,
+    pub channel: &'a str,
+}
+
+#[derive(Debug, Default, Deserialize)]
 pub struct PrevPost {
     pub user: String,
     pub time_created: String,
     pub channel: String
-}
-
-pub fn check_prepost(db: &Connection, e: &LogEntry) -> Option<PrevPost>
-{
-    let query = format!("SELECT user, time_created, channel
-                         FROM posts
-                         WHERE url LIKE \"{}\"",
-            e.url.clone()
-            .replace("\"", "\"\""));
-
-    let mut st = db.prepare(&query).unwrap();
-
-    let mut res = st.query_map(&[], |r| {
-        PrevPost {
-            user: r.get(0),
-            time_created: r.get(1),
-            channel: r.get(2)
-        }
-        }).unwrap();
-
-    match res.nth(0) {
-        Some(r) => Some(r.unwrap()),
-        None    => None
-    }
-}
-
-pub fn create_db(path: Option<&str>) -> Option<Connection> {
-    let db = match path {
-        Some(path) => Connection::open(path).unwrap(),
-        None => Connection::open_in_memory().unwrap(),
-    };
-
-    db.execute("CREATE TABLE IF NOT EXISTS posts (
-        id              INTEGER PRIMARY KEY,
-        title           TEXT NOT NULL,
-        url             TEXT NOT NULL,
-        user            TEXT NOT NULL,
-        channel         TEXT NOT NULL,
-        time_created    TEXT NOT NULL
-        )", &[]).unwrap();
-
-    Some(db)
 }

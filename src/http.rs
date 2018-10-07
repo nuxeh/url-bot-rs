@@ -1,45 +1,34 @@
-extern crate curl;
-extern crate htmlescape;
-
-use self::curl::easy::{Easy2, Handler, WriteError, List};
-use self::htmlescape::decode_html;
+use htmlescape::decode_html;
 use std::time::Duration;
 use itertools::Itertools;
 use regex::Regex;
+use failure::Error;
+use reqwest::Client;
+use reqwest::header::{USER_AGENT, ACCEPT_LANGUAGE};
+use std::io::Read;
 
-#[derive(Debug)]
-struct Collector(Vec<u8>);
-
-impl Handler for Collector {
-    fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
-        self.0.extend_from_slice(data);
-        Ok(data.len())
-    }
-}
-
-pub fn resolve_url(url: &str, lang: &str) -> Option<String> {
+pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
-    let mut easy = Easy2::new(Collector(Vec::new()));
+    let client = Client::builder()
+        .timeout(Duration::from_secs(3)) // per read/write op
+        .build()?;
 
-    easy.get(true).unwrap();
-    easy.url(url).unwrap();
-    easy.follow_location(true).unwrap();
-    easy.max_redirections(10).unwrap();
-    easy.timeout(Duration::from_secs(5)).unwrap();
-    easy.max_recv_speed(10 * 1024 * 1024).unwrap();
-    easy.useragent("url-bot-rs/0.1").unwrap();
+    let resp = client.get(url)
+        .header(USER_AGENT, "url-bot-rs/0.1")
+        .header(ACCEPT_LANGUAGE, lang)
+        .send()?
+        .error_for_status()?;
 
-    let mut headers = List::new();
-    let lang = format!("Accept-Language: {}", lang);
-    headers.append(&lang).unwrap();
-    easy.http_headers(headers).unwrap();
+    // Download up to 100KB
+    let mut body = Vec::new();
+    resp.take(100 * 1024).read_to_end(&mut body)?;
 
-    easy.perform().ok()?;
+    let contents = String::from_utf8_lossy(&body);
+    let title = parse_content(&contents)
+        .ok_or_else(|| format_err!("failed to parse title"))?;
 
-    let contents = String::from_utf8_lossy(&easy.get_ref().0);
-
-    parse_content(&contents)
+    Ok(title)
 }
 
 fn parse_content(page_contents: &str) -> Option<String> {
@@ -71,8 +60,8 @@ mod tests {
 
     #[test]
     fn resolve_urls() {
-        assert_ne!(None, resolve_url("https://youtube.com", "en"));
-        assert_ne!(None, resolve_url("https://google.co.uk", "en"));
+        resolve_url("https://youtube.com", "en").unwrap();
+        resolve_url("https://google.co.uk", "en").unwrap();
     }
 
     #[test]
