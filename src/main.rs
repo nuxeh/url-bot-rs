@@ -95,7 +95,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
         _ => return,
     };
 
-        let user = message.source_nickname().unwrap();
+    let user = message.source_nickname().unwrap();
 
     // look at each space seperated message token
     for token in msg.split_whitespace() {
