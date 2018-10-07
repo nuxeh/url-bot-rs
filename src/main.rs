@@ -86,7 +86,10 @@ fn main() {
         Ok(())
     });
 
-    reactor.run().unwrap();
+    reactor.run().unwrap_or_else(|err| {
+        eprintln!("IRC client error: {}", err);
+        process::exit(1);
+    });
 }
 
 fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Database) {
