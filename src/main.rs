@@ -161,7 +161,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
 
         // send the IRC response
         let target = message.response_target().unwrap_or(target);
-        client.send_privmsg(target, &msg).unwrap();
+        client.send_notice(target, &msg).unwrap();
     }
 }
 
