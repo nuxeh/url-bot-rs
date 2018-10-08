@@ -20,6 +20,7 @@ extern crate htmlescape;
 extern crate time;
 extern crate reqwest;
 extern crate serde_rusqlite;
+extern crate immeta;
 
 use docopt::Docopt;
 use irc::client::prelude::*;

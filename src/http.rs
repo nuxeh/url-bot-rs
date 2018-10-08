@@ -6,6 +6,7 @@ use failure::Error;
 use reqwest::Client;
 use reqwest::header::{USER_AGENT, ACCEPT_LANGUAGE};
 use std::io::Read;
+use immeta::{GenericMetadata, load_from_buf};
 
 pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
@@ -25,10 +26,31 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     resp.take(100 * 1024).read_to_end(&mut body)?;
 
     let contents = String::from_utf8_lossy(&body);
-    let title = parse_content(&contents)
-        .ok_or_else(|| format_err!("failed to parse title"))?;
+
+    let title = if let Some(t) = get_image_metadata(&body) {
+        Some(t)
+    } else if let Some(t) = parse_content(&contents) {
+        Some(t)
+    } else {
+        None
+    }.ok_or_else(|| format_err!("failed to parse title"))?;
 
     Ok(title)
+}
+
+fn get_image_metadata(body: &[u8]) -> Option<String> {
+    if let Ok(img_meta) = load_from_buf(&body) {
+        return match img_meta {
+            GenericMetadata::Jpeg(m) => Some(format!("image/jpeg {}×{}",
+                m.dimensions.width, m.dimensions.height)),
+            GenericMetadata::Gif(m) => Some(format!("image/gif {}×{}",
+                m.dimensions.width, m.dimensions.height)),
+            GenericMetadata::Png(m) => Some(format!("image/png {}×{}",
+                m.dimensions.width, m.dimensions.height)),
+            _ => None,
+        };
+    };
+    return None;
 }
 
 fn parse_content(page_contents: &str) -> Option<String> {
