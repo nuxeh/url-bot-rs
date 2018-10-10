@@ -12,7 +12,7 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
     let client = Client::builder()
-        .timeout(Duration::from_secs(3)) // per read/write op
+        .timeout(Duration::from_secs(10)) // per read/write op
         .build()?;
 
     let resp = client.get(url)
