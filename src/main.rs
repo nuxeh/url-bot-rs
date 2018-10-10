@@ -21,6 +21,8 @@ extern crate time;
 extern crate reqwest;
 extern crate serde_rusqlite;
 extern crate immeta;
+extern crate mime;
+extern crate humansize;
 
 use docopt::Docopt;
 use irc::client::prelude::*;

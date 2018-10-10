@@ -4,9 +4,13 @@ use itertools::Itertools;
 use regex::Regex;
 use failure::Error;
 use reqwest::Client;
-use reqwest::header::{USER_AGENT, ACCEPT_LANGUAGE};
+use reqwest::header::{USER_AGENT, ACCEPT_LANGUAGE, CONTENT_TYPE, CONTENT_LENGTH};
 use std::io::Read;
 use immeta::{GenericMetadata, load_from_buf};
+use mime::{Mime, IMAGE, TEXT, HTML};
+use humansize::{FileSize, file_size_opts as options};
+
+const DOWNLOAD_SIZE: u64 = 100 * 1024; // 100kB
 
 pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
@@ -21,21 +25,47 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
         .send()?
         .error_for_status()?;
 
-    // Download up to 100KB
-    let mut body = Vec::new();
-    resp.take(100 * 1024).read_to_end(&mut body)?;
+    // Get some response headers
+    let content_type = resp.headers().get(CONTENT_TYPE)
+        .and_then(|typ| typ.to_str().ok())
+        .and_then(|typ| typ.parse::<Mime>().ok());
 
+    let len = resp.headers().get(CONTENT_LENGTH)
+        .and_then(|len| len.to_str().ok())
+        .and_then(|len| len.parse().ok())
+        .unwrap_or(0);
+    let size = len.file_size(options::CONVENTIONAL).unwrap_or(String::new());
+
+    // Download body
+    let mut body = Vec::new();
+    let bytes = match content_type.clone() {
+        Some(ct) => {
+            match (ct.type_(), ct.subtype()) {
+                (IMAGE, _) => 10 * 1024 * 1024,
+                _ => DOWNLOAD_SIZE,
+            }
+        },
+        None => DOWNLOAD_SIZE,
+    };
+    resp.take(bytes).read_to_end(&mut body)?;
     let contents = String::from_utf8_lossy(&body);
 
-    let title = if let Some(t) = get_image_metadata(&body) {
-        Some(t)
-    } else if let Some(t) = parse_content(&contents) {
-        Some(t)
-    } else {
-        None
+    let title = match content_type {
+        Some(ct) => {
+            match (ct.type_(), ct.subtype()) {
+                (IMAGE, _) => get_image_metadata(&body).or(default(&ct, &size)),
+                (TEXT, HTML) => parse_title(&contents),
+                _ => parse_title(&contents).or(default(&ct, &size)),
+            }
+        },
+        None => parse_title(&contents),
     }.ok_or_else(|| format_err!("failed to parse title"))?;
 
     Ok(title)
+}
+
+fn default(c_type: &Mime, size: &str) -> Option<String> {
+    Some(format!("{} {}", c_type, size.replace(" ", "")))
 }
 
 fn get_image_metadata(body: &[u8]) -> Option<String> {
@@ -50,10 +80,10 @@ fn get_image_metadata(body: &[u8]) -> Option<String> {
             _ => None,
         };
     };
-    return None;
+    None
 }
 
-fn parse_content(page_contents: &str) -> Option<String> {
+fn parse_title(page_contents: &str) -> Option<String> {
     lazy_static! {
         static ref RE: Regex = Regex::new("<title>((.|\n)*?)</title>").unwrap();
     }
@@ -87,29 +117,29 @@ mod tests {
     }
 
     #[test]
-    fn parse_contents() {
-        assert_eq!(None, parse_content(&"".to_string()));
-        assert_eq!(None, parse_content(&"    ".to_string()));
-        assert_eq!(None, parse_content(&"<title></title>".to_string()));
-        assert_eq!(None, parse_content(&"<title>    </title>".to_string()));
+    fn parse_titles() {
+        assert_eq!(None, parse_title(&"".to_string()));
+        assert_eq!(None, parse_title(&"    ".to_string()));
+        assert_eq!(None, parse_title(&"<title></title>".to_string()));
+        assert_eq!(None, parse_title(&"<title>    </title>".to_string()));
         assert_eq!(None,
-             parse_content(&"floofynips, not a real webpage".to_string()));
+             parse_title(&"floofynips, not a real webpage".to_string()));
         assert_eq!(Some("cheese is nice".to_string()),
-            parse_content(&"<title>cheese is nice</title>".to_string()));
+            parse_title(&"<title>cheese is nice</title>".to_string()));
         assert_eq!(Some("squanch".to_string()),
-            parse_content(&"<title>     squanch</title>".to_string()));
+            parse_title(&"<title>     squanch</title>".to_string()));
         assert_eq!(Some("squanch".to_string()),
-            parse_content(&"<title>squanch     </title>".to_string()));
+            parse_title(&"<title>squanch     </title>".to_string()));
         assert_eq!(Some("squanch".to_string()),
-            parse_content(&"<title>\nsquanch</title>".to_string()));
+            parse_title(&"<title>\nsquanch</title>".to_string()));
         assert_eq!(Some("squanch".to_string()),
-            parse_content(&"<title>\n  \n  squanch</title>".to_string()));
+            parse_title(&"<title>\n  \n  squanch</title>".to_string()));
         assert_eq!(Some("we like the moon".to_string()),
-            parse_content(&"<title>\n  \n  we like the moon</title>".to_string()));
+            parse_title(&"<title>\n  \n  we like the moon</title>".to_string()));
         assert_eq!(Some("&hello123&<>''~".to_string()),
-            parse_content(&"<title>&amp;hello123&amp;&lt;&gt;''~</title>".to_string()));
+            parse_title(&"<title>&amp;hello123&amp;&lt;&gt;''~</title>".to_string()));
         assert_eq!(Some("CVE - CVE-2018-11235".to_string()),
-            parse_content(&"<title>CVE -\nCVE-2018-11235\n</title>".to_string()));
+            parse_title(&"<title>CVE -\nCVE-2018-11235\n</title>".to_string()));
     }
 }
 
