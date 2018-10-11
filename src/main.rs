@@ -86,7 +86,10 @@ fn main() {
         Ok(())
     });
 
-    reactor.run().unwrap();
+    reactor.run().unwrap_or_else(|err| {
+        eprintln!("IRC client error: {}", err);
+        process::exit(1);
+    });
 }
 
 fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Database) {
@@ -95,7 +98,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
         _ => return,
     };
 
-        let user = message.source_nickname().unwrap();
+    let user = message.source_nickname().unwrap();
 
     // look at each space seperated message token
     for token in msg.split_whitespace() {
