@@ -21,7 +21,7 @@ pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Err
         .build()?;
 
     let resp = client.get(url)
-        .header(USER_AGENT, "url-bot-rs/0.1")
+        .header(USER_AGENT, "Mozilla/5.0")
         .header(ACCEPT_LANGUAGE, lang)
         .send()?
         .error_for_status()?;
