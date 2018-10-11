@@ -29,7 +29,6 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     let content_type = resp.headers().get(CONTENT_TYPE)
         .and_then(|typ| typ.to_str().ok())
         .and_then(|typ| typ.parse::<Mime>().ok());
-
     let len = resp.headers().get(CONTENT_LENGTH)
         .and_then(|len| len.to_str().ok())
         .and_then(|len| len.parse().ok())
@@ -41,7 +40,7 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     let bytes = match content_type.clone() {
         Some(ct) => {
             match (ct.type_(), ct.subtype()) {
-                (IMAGE, _) => 10 * 1024 * 1024,
+                (IMAGE, _) => 10 * 1024 * 1024, // 10MB
                 _ => DOWNLOAD_SIZE,
             }
         },
@@ -50,12 +49,16 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     resp.take(bytes).read_to_end(&mut body)?;
     let contents = String::from_utf8_lossy(&body);
 
+    // Get title or metadata
     let title = match content_type {
         Some(ct) => {
             match (ct.type_(), ct.subtype()) {
-                (IMAGE, _) => get_image_metadata(&body).or(default(&ct, &size)),
+                (IMAGE, _) => parse_title(&contents)
+                    .or(get_image_metadata(&body))
+                    .or(default(&ct, &size)),
                 (TEXT, HTML) => parse_title(&contents),
-                _ => parse_title(&contents).or(default(&ct, &size)),
+                _ => parse_title(&contents)
+                    .or(default(&ct, &size)),
             }
         },
         None => parse_title(&contents),
