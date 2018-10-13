@@ -23,3 +23,5 @@ ghost_sequence = []
 [features]
 mask_highlights = false
 send_notice = false
+report_metadata = false
+report_mime = false

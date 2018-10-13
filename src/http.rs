@@ -9,10 +9,11 @@ use std::io::Read;
 use immeta::{GenericMetadata, load_from_buf};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
+use config::ConfOpts;
 
 const DOWNLOAD_SIZE: u64 = 100 * 1024; // 100kB
 
-pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
+pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
     let client = Client::builder()
@@ -54,11 +55,11 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
         Some(ct) => {
             match (ct.type_(), ct.subtype()) {
                 (IMAGE, _) => parse_title(&contents)
-                    .or(get_image_metadata(&body))
-                    .or(default(&ct, &size)),
+                    .or(get_image_metadata(&conf, &body))
+                    .or(get_mime(&conf, &ct, &size)),
                 (TEXT, HTML) => parse_title(&contents),
                 _ => parse_title(&contents)
-                    .or(default(&ct, &size)),
+                    .or(get_mime(&conf, &ct, &size)),
             }
         },
         None => parse_title(&contents),
@@ -67,11 +68,17 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     Ok(title)
 }
 
-fn default(c_type: &Mime, size: &str) -> Option<String> {
-    Some(format!("{} {}", c_type, size.replace(" ", "")))
+fn get_mime(conf: &ConfOpts, c_type: &Mime, size: &str) -> Option<String> {
+    match conf.report_mime {
+        Some(true) => Some(format!("{} {}", c_type, size.replace(" ", ""))),
+        _ => None
+    }
 }
 
-fn get_image_metadata(body: &[u8]) -> Option<String> {
+fn get_image_metadata(conf: &ConfOpts, body: &[u8]) -> Option<String> {
+    if !conf.report_metadata.unwrap() {
+        return None;
+    };
     if let Ok(img_meta) = load_from_buf(&body) {
         return match img_meta {
             GenericMetadata::Jpeg(m) => Some(format!("image/jpeg {}×{}",

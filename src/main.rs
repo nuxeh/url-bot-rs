@@ -130,7 +130,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, conf: &Conf
         }
 
         // try to get the title from the url
-        let title = match http::resolve_url(token, &args.flag_lang) {
+        let title = match http::resolve_url(token, &args.flag_lang, &conf) {
             Ok(title) => title,
             Err(err) => {
                 println!("ERROR {:?}", err);
