@@ -24,6 +24,11 @@ extern crate immeta;
 extern crate mime;
 extern crate humansize;
 extern crate unicode_segmentation;
+extern crate toml;
+
+mod sqlite;
+mod http;
+mod config;
 
 use docopt::Docopt;
 use irc::client::prelude::*;
@@ -31,9 +36,7 @@ use std::process;
 use std::iter;
 use self::sqlite::Database;
 use unicode_segmentation::UnicodeSegmentation;
-
-mod sqlite;
-mod http;
+use config::ConfOpts;
 
 // docopt usage string
 const USAGE: &'static str = "
@@ -44,6 +47,7 @@ Usage:
 
 Options:
     -h --help       Show this help message.
+    -v --verbose    Show extra information.
     -d --db=PATH    Use a sqlite database at PATH.
     -c --conf=PATH  Use configuration file at PATH [default: ./config.toml].
     -l --lang=LANG  Language to request in http headers [default: en]
@@ -51,6 +55,7 @@ Options:
 
 #[derive(Debug, Deserialize, Default)]
 struct Args {
+    flag_verbose: bool,
     flag_db: Option<String>,
     flag_conf: String,
     flag_lang: String,
@@ -62,6 +67,12 @@ fn main() {
     let args: Args = Docopt::new(USAGE)
                      .and_then(|d| d.deserialize())
                      .unwrap_or_else(|e| e.exit());
+
+    println!("Using configuration at: {}", args.flag_conf);
+    let opts: ConfOpts = config::load(&args.flag_conf);
+    if args.flag_verbose {
+        println!("Configuration:\n{:#?}", opts);
+    }
 
     // open the sqlite database for logging
     // TODO: get database path from configuration
@@ -75,7 +86,6 @@ fn main() {
     };
 
     // load IRC configuration
-    println!("Using configuration at: {}", args.flag_conf);
     let config = Config::load(&args.flag_conf).unwrap_or_else(|err| {
         eprintln!("IRC configuration error: {}", err);
         process::exit(1);
