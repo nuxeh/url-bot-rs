@@ -23,11 +23,14 @@ extern crate serde_rusqlite;
 extern crate immeta;
 extern crate mime;
 extern crate humansize;
+extern crate unicode_segmentation;
 
 use docopt::Docopt;
 use irc::client::prelude::*;
 use std::process;
+use std::iter;
 use self::sqlite::Database;
+use unicode_segmentation::UnicodeSegmentation;
 
 mod sqlite;
 mod http;
@@ -139,7 +142,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
                 format!("⤷ {} → {} {} ({})",
                     title,
                     previous_post.time_created,
-                    previous_post.user,
+                    create_non_highlighting_name(&previous_post.user),
                     previous_post.channel
                 )
             },
@@ -160,4 +163,15 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
         let target = message.response_target().unwrap_or(target);
         client.send_privmsg(target, &msg).unwrap();
     }
+}
+
+fn create_non_highlighting_name(name: &str) -> String {
+    let mut graphemes = name.graphemes(true);
+    let first = graphemes.next();
+
+    first
+        .into_iter()
+        .chain(iter::once("\u{200C}"))
+        .chain(graphemes)
+        .collect()
 }
