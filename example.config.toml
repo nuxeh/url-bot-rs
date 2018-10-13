@@ -21,3 +21,4 @@ should_ghost = false
 ghost_sequence = []
 
 [features]
+mask_highlights = false

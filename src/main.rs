@@ -98,7 +98,7 @@ fn main() {
 
     // register handler
     reactor.register_client_with_handler(client, move |client, message| {
-        handle_message(client, message, &args, &db);
+        handle_message(client, message, &args, &opts, &db);
         Ok(())
     });
 
@@ -108,7 +108,7 @@ fn main() {
     });
 }
 
-fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Database) {
+fn handle_message(client: &IrcClient, message: Message, args: &Args, conf: &ConfOpts, db: &Database) {
     let (target, msg) = match message.command {
         Command::PRIVMSG(ref target, ref msg) => (target, msg),
         _ => return,
@@ -149,10 +149,14 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
         // check for pre-post
         let msg = match db.check_prepost(token) {
             Ok(Some(previous_post)) => {
+                let user = match conf.mask_highlights {
+                    Some(true) => create_non_highlighting_name(&previous_post.user),
+                    _ => previous_post.user
+                };
                 format!("⤷ {} → {} {} ({})",
                     title,
                     previous_post.time_created,
-                    create_non_highlighting_name(&previous_post.user),
+                    user,
                     previous_post.channel
                 )
             },
