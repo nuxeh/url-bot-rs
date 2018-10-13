@@ -175,8 +175,11 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, conf: &Conf
 
         // send the IRC response
         let target = message.response_target().unwrap_or(target);
-        client.send_notice(target, &msg).unwrap();
-    }
+        match conf.send_notice {
+            Some(true) => client.send_notice(target, &msg).unwrap(),
+            _ => client.send_privmsg(target, &msg).unwrap()
+        }
+    };
 }
 
 fn create_non_highlighting_name(name: &str) -> String {
