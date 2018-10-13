@@ -122,8 +122,9 @@ mod tests {
 
     #[test]
     fn resolve_urls() {
-        resolve_url("https://youtube.com", "en").unwrap();
-        resolve_url("https://google.co.uk", "en").unwrap();
+        let opts: ConfOpts = ConfOpts::default();
+        resolve_url("https://youtube.com", "en", &opts).unwrap();
+        resolve_url("https://google.co.uk", "en", &opts).unwrap();
     }
 
     #[test]
