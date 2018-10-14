@@ -7,6 +7,11 @@ it in any IRC channels it's joined to, if any messages contain URLs, the bot
 fetches the page and extracts the title, posting the result on the same
 channel, adding a certain je ne sais quoi to your IRC experience.
 
+For example:
+
+    <user> http://rust-lang.org/
+    <url-bot-rs> ⤷ The Rust Programming Language
+
 ## Build
 
 ### Get rust
@@ -30,13 +35,24 @@ path will be used:
 
 * `./config.toml`
 
-A default configuration is provided as `config.toml` in the repository.
+A default configuration is provided as `example.config.toml` in the repository.
 
 This may include:
 - Address of the IRC server to connect to
 - Connection credentials
 - The nick the bot will use when joining the server
 - Channels to join on the server
+
+It is also possible to configure a number of optional features for the bot's
+operation, specified in the section `[features]`:
+
+- `mask_highlights` (bool) inserts invisible characters to defeat highlight
+  regexes
+- `send_notice` (bool) causes the bot to respond with notices rather than
+  private messages
+- `report_metadata` (bool) if enabled, causes image metadata to be reported
+- `report_mime` (bool) if enabled, causes mime types to be reported, if no
+  other title or metadata is found.
 
 A sqlite database may be provided, by specifying a path with `--db=<path>`. If
 this option is given, the bot will initialise the database if it doesn't
