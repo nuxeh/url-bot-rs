@@ -70,3 +70,7 @@ information about the previous posting is added to the returned message.
 After this, the bot may be started by running `url-bot`
 
 Usage is printed by providing `--help` on run.
+
+## IRC
+
+There is an IRC channel on [Moznet](https://wiki.mozilla.org/IRC), `#url-bot-rs`.
