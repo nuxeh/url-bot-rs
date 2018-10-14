@@ -24,6 +24,11 @@ extern crate immeta;
 extern crate mime;
 extern crate humansize;
 extern crate unicode_segmentation;
+extern crate toml;
+
+mod sqlite;
+mod http;
+mod config;
 
 use docopt::Docopt;
 use irc::client::prelude::*;
@@ -31,9 +36,7 @@ use std::process;
 use std::iter;
 use self::sqlite::Database;
 use unicode_segmentation::UnicodeSegmentation;
-
-mod sqlite;
-mod http;
+use config::ConfOpts;
 
 // docopt usage string
 const USAGE: &'static str = "
@@ -44,6 +47,7 @@ Usage:
 
 Options:
     -h --help       Show this help message.
+    -v --verbose    Show extra information.
     -d --db=PATH    Use a sqlite database at PATH.
     -c --conf=PATH  Use configuration file at PATH [default: ./config.toml].
     -l --lang=LANG  Language to request in http headers [default: en]
@@ -51,6 +55,7 @@ Options:
 
 #[derive(Debug, Deserialize, Default)]
 struct Args {
+    flag_verbose: bool,
     flag_db: Option<String>,
     flag_conf: String,
     flag_lang: String,
@@ -62,6 +67,12 @@ fn main() {
     let args: Args = Docopt::new(USAGE)
                      .and_then(|d| d.deserialize())
                      .unwrap_or_else(|e| e.exit());
+
+    println!("Using configuration at: {}", args.flag_conf);
+    let opts: ConfOpts = config::load(&args.flag_conf);
+    if args.flag_verbose {
+        println!("Configuration:\n{:#?}", opts);
+    }
 
     // open the sqlite database for logging
     // TODO: get database path from configuration
@@ -75,7 +86,6 @@ fn main() {
     };
 
     // load IRC configuration
-    println!("Using configuration at: {}", args.flag_conf);
     let config = Config::load(&args.flag_conf).unwrap_or_else(|err| {
         eprintln!("IRC configuration error: {}", err);
         process::exit(1);
@@ -88,7 +98,7 @@ fn main() {
 
     // register handler
     reactor.register_client_with_handler(client, move |client, message| {
-        handle_message(client, message, &args, &db);
+        handle_message(client, message, &args, &opts, &db);
         Ok(())
     });
 
@@ -98,7 +108,7 @@ fn main() {
     });
 }
 
-fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Database) {
+fn handle_message(client: &IrcClient, message: Message, args: &Args, conf: &ConfOpts, db: &Database) {
     let (target, msg) = match message.command {
         Command::PRIVMSG(ref target, ref msg) => (target, msg),
         _ => return,
@@ -120,7 +130,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
         }
 
         // try to get the title from the url
-        let title = match http::resolve_url(token, &args.flag_lang) {
+        let title = match http::resolve_url(token, &args.flag_lang, &conf) {
             Ok(title) => title,
             Err(err) => {
                 println!("ERROR {:?}", err);
@@ -139,10 +149,14 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
         // check for pre-post
         let msg = match db.check_prepost(token) {
             Ok(Some(previous_post)) => {
+                let user = match conf.mask_highlights {
+                    Some(true) => create_non_highlighting_name(&previous_post.user),
+                    _ => previous_post.user
+                };
                 format!("⤷ {} → {} {} ({})",
                     title,
                     previous_post.time_created,
-                    create_non_highlighting_name(&previous_post.user),
+                    user,
                     previous_post.channel
                 )
             },
@@ -161,8 +175,11 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, db: &Databa
 
         // send the IRC response
         let target = message.response_target().unwrap_or(target);
-        client.send_privmsg(target, &msg).unwrap();
-    }
+        match conf.send_notice {
+            Some(true) => client.send_notice(target, &msg).unwrap(),
+            _ => client.send_privmsg(target, &msg).unwrap()
+        }
+    };
 }
 
 fn create_non_highlighting_name(name: &str) -> String {

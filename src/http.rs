@@ -9,10 +9,11 @@ use std::io::Read;
 use immeta::{GenericMetadata, load_from_buf};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
+use config::ConfOpts;
 
 const DOWNLOAD_SIZE: u64 = 100 * 1024; // 100kB
 
-pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
+pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
     let client = Client::builder()
@@ -29,7 +30,6 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     let content_type = resp.headers().get(CONTENT_TYPE)
         .and_then(|typ| typ.to_str().ok())
         .and_then(|typ| typ.parse::<Mime>().ok());
-
     let len = resp.headers().get(CONTENT_LENGTH)
         .and_then(|len| len.to_str().ok())
         .and_then(|len| len.parse().ok())
@@ -41,7 +41,7 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     let bytes = match content_type.clone() {
         Some(ct) => {
             match (ct.type_(), ct.subtype()) {
-                (IMAGE, _) => 10 * 1024 * 1024,
+                (IMAGE, _) => 10 * 1024 * 1024, // 10MB
                 _ => DOWNLOAD_SIZE,
             }
         },
@@ -50,12 +50,16 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     resp.take(bytes).read_to_end(&mut body)?;
     let contents = String::from_utf8_lossy(&body);
 
+    // Get title or metadata
     let title = match content_type {
         Some(ct) => {
             match (ct.type_(), ct.subtype()) {
-                (IMAGE, _) => get_image_metadata(&body).or(default(&ct, &size)),
+                (IMAGE, _) => parse_title(&contents)
+                    .or(get_image_metadata(&conf, &body))
+                    .or(get_mime(&conf, &ct, &size)),
                 (TEXT, HTML) => parse_title(&contents),
-                _ => parse_title(&contents).or(default(&ct, &size)),
+                _ => parse_title(&contents)
+                    .or(get_mime(&conf, &ct, &size)),
             }
         },
         None => parse_title(&contents),
@@ -64,11 +68,17 @@ pub fn resolve_url(url: &str, lang: &str) -> Result<String, Error> {
     Ok(title)
 }
 
-fn default(c_type: &Mime, size: &str) -> Option<String> {
-    Some(format!("{} {}", c_type, size.replace(" ", "")))
+fn get_mime(conf: &ConfOpts, c_type: &Mime, size: &str) -> Option<String> {
+    match conf.report_mime {
+        Some(true) => Some(format!("{} {}", c_type, size.replace(" ", ""))),
+        _ => None
+    }
 }
 
-fn get_image_metadata(body: &[u8]) -> Option<String> {
+fn get_image_metadata(conf: &ConfOpts, body: &[u8]) -> Option<String> {
+    if !conf.report_metadata.unwrap() {
+        return None;
+    };
     if let Ok(img_meta) = load_from_buf(&body) {
         return match img_meta {
             GenericMetadata::Jpeg(m) => Some(format!("image/jpeg {}×{}",
@@ -85,7 +95,7 @@ fn get_image_metadata(body: &[u8]) -> Option<String> {
 
 fn parse_title(page_contents: &str) -> Option<String> {
     lazy_static! {
-        static ref RE: Regex = Regex::new("<title>((.|\n)*?)</title>").unwrap();
+        static ref RE: Regex = Regex::new("<title.*>((.|\n)*?)</title>").unwrap();
     }
     let title_enc = RE.captures(page_contents)?.get(1)?.as_str();
     let title_dec = decode_html(title_enc).ok()?;
@@ -112,8 +122,9 @@ mod tests {
 
     #[test]
     fn resolve_urls() {
-        resolve_url("https://youtube.com", "en").unwrap();
-        resolve_url("https://google.co.uk", "en").unwrap();
+        let opts: ConfOpts = ConfOpts::default();
+        resolve_url("https://youtube.com", "en", &opts).unwrap();
+        resolve_url("https://google.co.uk", "en", &opts).unwrap();
     }
 
     #[test]

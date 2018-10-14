@@ -19,3 +19,9 @@ burst_window_length = 8
 max_messages_in_burst = 15
 should_ghost = false
 ghost_sequence = []
+
+[features]
+mask_highlights = false
+send_notice = false
+report_metadata = false
+report_mime = false
