@@ -14,6 +14,7 @@ pub struct ConfOpts {
     pub report_mime: Option<bool>,
     pub mask_highlights: Option<bool>,
     pub send_notice: Option<bool>,
+    pub url_limit: Option<u8>,
 }
 
 pub fn load(conf_file: &str) -> ConfOpts {

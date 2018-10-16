@@ -115,9 +115,15 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, conf: &Conf
     };
 
     let user = message.source_nickname().unwrap();
+    let mut num_processed = 0;
 
-    // look at each space seperated message token
+    // look at each space-separated message token
     for token in msg.split_whitespace() {
+        // limit the number of processed URLs
+        if num_processed == conf.url_limit.unwrap_or(10) {
+            break;
+        }
+
         // the token must be a valid url
         let url = match token.parse::<reqwest::Url>() {
             Ok(url) => url,
@@ -179,6 +185,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, conf: &Conf
             Some(true) => client.send_notice(target, &msg).unwrap(),
             _ => client.send_privmsg(target, &msg).unwrap()
         }
+        num_processed += 1;
     };
 }
 
