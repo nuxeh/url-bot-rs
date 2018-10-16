@@ -53,6 +53,7 @@ operation, specified in the section `[features]`:
 - `report_metadata` (bool) if enabled, causes image metadata to be reported
 - `report_mime` (bool) if enabled, causes mime types to be reported, if no
   other title or metadata is found.
+- `url_limit` (u8) max number of URLs to process for each message (default: 10)
 
 A sqlite database may be provided, by specifying a path with `--db=<path>`. If
 this option is given, the bot will initialise the database if it doesn't
