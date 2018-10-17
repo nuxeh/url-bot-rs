@@ -77,16 +77,16 @@ fn get_mime(conf: &ConfOpts, c_type: &Mime, size: &str) -> Option<String> {
 
 fn get_image_metadata(conf: &ConfOpts, body: &[u8]) -> Option<String> {
     if !conf.report_metadata.unwrap() {
-        return None;
-    };
-    if let Ok((width, height)) = jpeg::JPEGDecoder::new(*&body).dimensions() {
-        return Some(format!("image/jpeg {}×{}", width, height));
-    } else if let Ok((width, height)) = png::PNGDecoder::new(*&body).dimensions() {
-        return Some(format!("image/png {}×{}", width, height));
-    } else if let Ok((width, height)) = gif::Decoder::new(*&body).dimensions() {
-        return Some(format!("image/gif {}×{}", width, height));
+        None
+    } else if let Ok((w, h)) = jpeg::JPEGDecoder::new(body).dimensions() {
+        Some(format!("image/jpeg {}×{}", w, h))
+    } else if let Ok((w, h)) = png::PNGDecoder::new(body).dimensions() {
+        Some(format!("image/png {}×{}", w, h))
+    } else if let Ok((w, h)) = gif::Decoder::new(body).dimensions() {
+        Some(format!("image/gif {}×{}", w, h))
+    } else {
+        None
     }
-    None
 }
 
 fn parse_title(page_contents: &str) -> Option<String> {
