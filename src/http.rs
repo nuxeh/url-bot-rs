@@ -6,7 +6,7 @@ use failure::Error;
 use reqwest::Client;
 use reqwest::header::{USER_AGENT, ACCEPT_LANGUAGE, CONTENT_TYPE, CONTENT_LENGTH};
 use std::io::Read;
-use immeta::{GenericMetadata, load_from_buf};
+use image::{gif, jpeg, png, ImageDecoder};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
 use config::ConfOpts;
@@ -77,20 +77,16 @@ fn get_mime(conf: &ConfOpts, c_type: &Mime, size: &str) -> Option<String> {
 
 fn get_image_metadata(conf: &ConfOpts, body: &[u8]) -> Option<String> {
     if !conf.report_metadata.unwrap() {
-        return None;
-    };
-    if let Ok(img_meta) = load_from_buf(&body) {
-        return match img_meta {
-            GenericMetadata::Jpeg(m) => Some(format!("image/jpeg {}×{}",
-                m.dimensions.width, m.dimensions.height)),
-            GenericMetadata::Gif(m) => Some(format!("image/gif {}×{}",
-                m.dimensions.width, m.dimensions.height)),
-            GenericMetadata::Png(m) => Some(format!("image/png {}×{}",
-                m.dimensions.width, m.dimensions.height)),
-            _ => None,
-        };
-    };
-    None
+        None
+    } else if let Ok((w, h)) = jpeg::JPEGDecoder::new(body).dimensions() {
+        Some(format!("image/jpeg {}×{}", w, h))
+    } else if let Ok((w, h)) = png::PNGDecoder::new(body).dimensions() {
+        Some(format!("image/png {}×{}", w, h))
+    } else if let Ok((w, h)) = gif::Decoder::new(body).dimensions() {
+        Some(format!("image/gif {}×{}", w, h))
+    } else {
+        None
+    }
 }
 
 fn parse_title(page_contents: &str) -> Option<String> {
@@ -152,5 +148,30 @@ mod tests {
         assert_eq!(Some("CVE - CVE-2018-11235".to_string()),
             parse_title(&"<title>CVE -\nCVE-2018-11235\n</title>".to_string()));
     }
-}
 
+    #[test]
+    fn parse_images() {
+        let mut opts: ConfOpts = ConfOpts::default();
+        opts.report_metadata = Some(true);
+        match resolve_url("https://rynx.org/sebk/_/DSC_5503.jpg", "en", &opts) {
+            Ok(metadata) => assert_eq!(metadata, "image/jpeg 1000×663"),
+            Err(_) => assert!(false),
+        }
+        match resolve_url(
+            "https://assets-cdn.github.com/images/modules/logos_page/GitHub-Mark.png",
+            "en",
+            &opts,
+        ) {
+            Ok(metadata) => assert_eq!(metadata, "image/png 560×560"),
+            Err(_) => assert!(false),
+        }
+        match resolve_url(
+            "https://upload.wikimedia.org/wikipedia/commons/2/2b/Seven_segment_display-animated.gif",
+            "en",
+            &opts,
+        ) {
+            Ok(metadata) => assert_eq!(metadata, "image/gif 600×752"),
+            Err(_) => assert!(false),
+        }
+    }
+}
