@@ -25,3 +25,4 @@ mask_highlights = false
 send_notice = false
 report_metadata = false
 report_mime = false
+url_limit = 4
