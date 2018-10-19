@@ -93,7 +93,12 @@ fn main() {
 
     // create IRC reactor
     let mut reactor = IrcReactor::new().unwrap();
-    let client = reactor.prepare_client_and_connect(&config).unwrap();
+    let client = reactor
+        .prepare_client_and_connect(&config)
+        .unwrap_or_else(|err| {
+        eprintln!("IRC prepare error: {}", err);
+        process::exit(1);
+    });
     client.identify().unwrap();
 
     // register handler
