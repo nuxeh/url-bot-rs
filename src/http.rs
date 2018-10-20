@@ -65,6 +65,7 @@ pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Err
         None => parse_title(&contents),
     }.ok_or_else(|| format_err!("failed to parse title"))?;
 
+    eprintln!("SUCCESS \"{}\"", title);
     Ok(title)
 }
 
@@ -108,7 +109,6 @@ fn parse_title(page_contents: &str) -> Option<String> {
         return None;
     }
 
-    eprintln!("SUCCESS \"{}\"", title_one_line);
     Some(title_one_line)
 }
 
