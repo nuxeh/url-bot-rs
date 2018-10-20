@@ -125,28 +125,46 @@ mod tests {
 
     #[test]
     fn parse_titles() {
-        assert_eq!(None, parse_title(&"".to_string()));
-        assert_eq!(None, parse_title(&"    ".to_string()));
-        assert_eq!(None, parse_title(&"<title></title>".to_string()));
-        assert_eq!(None, parse_title(&"<title>    </title>".to_string()));
-        assert_eq!(None,
-             parse_title(&"floofynips, not a real webpage".to_string()));
-        assert_eq!(Some("cheese is nice".to_string()),
-            parse_title(&"<title>cheese is nice</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()),
-            parse_title(&"<title>     squanch</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()),
-            parse_title(&"<title>squanch     </title>".to_string()));
-        assert_eq!(Some("squanch".to_string()),
-            parse_title(&"<title>\nsquanch</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()),
-            parse_title(&"<title>\n  \n  squanch</title>".to_string()));
-        assert_eq!(Some("we like the moon".to_string()),
-            parse_title(&"<title>\n  \n  we like the moon</title>".to_string()));
-        assert_eq!(Some("&hello123&<>''~".to_string()),
-            parse_title(&"<title>&amp;hello123&amp;&lt;&gt;''~</title>".to_string()));
-        assert_eq!(Some("CVE - CVE-2018-11235".to_string()),
-            parse_title(&"<title>CVE -\nCVE-2018-11235\n</title>".to_string()));
+        assert_eq!(None, parse_title(""));
+        assert_eq!(None, parse_title("    "));
+        assert_eq!(None, parse_title("<title></title>"));
+        assert_eq!(None, parse_title("<title>    </title>"));
+        assert_eq!(
+            None,
+            parse_title("floofynips, not a real webpage")
+        );
+        assert_eq!(
+            Some(String::from("cheese is nice")),
+            parse_title("<title>cheese is nice</title>")
+        );
+        assert_eq!(
+            Some(String::from("squanch")),
+            parse_title("<title>     squanch</title>")
+        );
+        assert_eq!(
+            Some(String::from("squanch")),
+            parse_title("<title>squanch     </title>")
+        );
+        assert_eq!(
+            Some(String::from("squanch")),
+            parse_title("<title>\nsquanch</title>")
+        );
+        assert_eq!(
+            Some(String::from("squanch")),
+            parse_title("<title>\n  \n  squanch</title>")
+        );
+        assert_eq!(
+            Some(String::from("we like the moon")),
+            parse_title("<title>\n  \n  we like the moon</title>")
+        );
+        assert_eq!(
+            Some(String::from("&hello123&<>''~")),
+            parse_title("<title>&amp;hello123&amp;&lt;&gt;''~</title>")
+        );
+        assert_eq!(
+            Some(String::from("CVE - CVE-2018-11235")),
+            parse_title("<title>CVE -\nCVE-2018-11235\n</title>")
+        );
     }
 
     #[test]
