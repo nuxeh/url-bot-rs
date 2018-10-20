@@ -234,4 +234,12 @@ mod tests {
         assert_eq!("", utf8_truncate("\u{0306}", 1));
         assert_eq!("hello ", utf8_truncate("hello \u{1F603} world!", 9));
     }
+
+    #[test]
+    fn test_create_non_highlighting_name() {
+        assert_eq!("\u{200C}", create_non_highlighting_name(""));
+        assert_eq!("f\u{200C}oo", create_non_highlighting_name("foo"));
+        assert_eq!("b\u{200C}ar", create_non_highlighting_name("bar"));
+        assert_eq!("b\u{200C}az", create_non_highlighting_name("baz"));
+    }
 }
