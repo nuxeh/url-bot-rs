@@ -165,6 +165,14 @@ mod tests {
             Some(String::from("CVE - CVE-2018-11235")),
             parse_title("<title>CVE -\nCVE-2018-11235\n</title>")
         );
+        assert_eq!(
+            Some(String::from("added properties")),
+            parse_title("<title id=\"pageTitle\">added properties</title>")
+        );
+        assert_eq!(
+            Some(String::from("\u{2665}")),
+            parse_title("<title>\u{2665}</title>")
+        );
     }
 
     #[test]
