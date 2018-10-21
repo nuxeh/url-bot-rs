@@ -158,7 +158,7 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, conf: &Conf
         };
 
         // check for pre-post
-        let msg = match db.check_prepost(token) {
+        let mut msg = match db.check_prepost(token) {
             Ok(Some(previous_post)) => {
                 let user = match conf.mask_highlights {
                     Some(true) => create_non_highlighting_name(&previous_post.user),
@@ -184,6 +184,9 @@ fn handle_message(client: &IrcClient, message: Message, args: &Args, conf: &Conf
             },
         };
 
+        // Limit response length, see RFC1459
+        msg = utf8_truncate(&msg, 510);
+
         // send the IRC response
         let target = message.response_target().unwrap_or(target);
         match conf.send_notice {
@@ -203,4 +206,40 @@ fn create_non_highlighting_name(name: &str) -> String {
         .chain(iter::once("\u{200C}"))
         .chain(graphemes)
         .collect()
+}
+
+// Truncate to a maximum number of bytes, taking UTF-8 into account
+fn utf8_truncate(s: &str, n: usize) -> String {
+    s.char_indices()
+        .take_while(|(len, c)| len + c.len_utf8() <= n)
+        .map(|(_, c)| c)
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_utf8_truncate() {
+        assert_eq!("", utf8_truncate("", 10));
+        assert_eq!("", utf8_truncate("", 1));
+        assert_eq!(" ", utf8_truncate("  ", 1));
+        assert_eq!("\u{2665}", utf8_truncate("\u{2665}", 4));
+        assert_eq!("\u{2665}", utf8_truncate("\u{2665}", 3));
+        assert_eq!("", utf8_truncate("\u{2665}", 2));
+        assert_eq!("\u{0306}\u{0306}", utf8_truncate("\u{0306}\u{0306}", 4));
+        assert_eq!("\u{0306}", utf8_truncate("\u{0306}\u{0306}", 2));
+        assert_eq!("\u{0306}", utf8_truncate("\u{0306}", 2));
+        assert_eq!("", utf8_truncate("\u{0306}", 1));
+        assert_eq!("hello ", utf8_truncate("hello \u{1F603} world!", 9));
+    }
+
+    #[test]
+    fn test_create_non_highlighting_name() {
+        assert_eq!("\u{200C}", create_non_highlighting_name(""));
+        assert_eq!("f\u{200C}oo", create_non_highlighting_name("foo"));
+        assert_eq!("b\u{200C}ar", create_non_highlighting_name("bar"));
+        assert_eq!("b\u{200C}az", create_non_highlighting_name("baz"));
+    }
 }

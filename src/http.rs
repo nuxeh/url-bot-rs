@@ -65,6 +65,7 @@ pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Err
         None => parse_title(&contents),
     }.ok_or_else(|| format_err!("failed to parse title"))?;
 
+    eprintln!("SUCCESS \"{}\"", title);
     Ok(title)
 }
 
@@ -91,7 +92,7 @@ fn get_image_metadata(conf: &ConfOpts, body: &[u8]) -> Option<String> {
 
 fn parse_title(page_contents: &str) -> Option<String> {
     lazy_static! {
-        static ref RE: Regex = Regex::new("<title.*>((.|\n)*?)</title>").unwrap();
+        static ref RE: Regex = Regex::new("<title.*?>((.|\n)*?)</title>").unwrap();
     }
     let title_enc = RE.captures(page_contents)?.get(1)?.as_str();
     let title_dec = decode_html(title_enc).ok()?;
@@ -108,7 +109,6 @@ fn parse_title(page_contents: &str) -> Option<String> {
         return None;
     }
 
-    eprintln!("SUCCESS \"{}\"", title_one_line);
     Some(title_one_line)
 }
 
@@ -125,28 +125,54 @@ mod tests {
 
     #[test]
     fn parse_titles() {
-        assert_eq!(None, parse_title(&"".to_string()));
-        assert_eq!(None, parse_title(&"    ".to_string()));
-        assert_eq!(None, parse_title(&"<title></title>".to_string()));
-        assert_eq!(None, parse_title(&"<title>    </title>".to_string()));
-        assert_eq!(None,
-             parse_title(&"floofynips, not a real webpage".to_string()));
-        assert_eq!(Some("cheese is nice".to_string()),
-            parse_title(&"<title>cheese is nice</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()),
-            parse_title(&"<title>     squanch</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()),
-            parse_title(&"<title>squanch     </title>".to_string()));
-        assert_eq!(Some("squanch".to_string()),
-            parse_title(&"<title>\nsquanch</title>".to_string()));
-        assert_eq!(Some("squanch".to_string()),
-            parse_title(&"<title>\n  \n  squanch</title>".to_string()));
-        assert_eq!(Some("we like the moon".to_string()),
-            parse_title(&"<title>\n  \n  we like the moon</title>".to_string()));
-        assert_eq!(Some("&hello123&<>''~".to_string()),
-            parse_title(&"<title>&amp;hello123&amp;&lt;&gt;''~</title>".to_string()));
-        assert_eq!(Some("CVE - CVE-2018-11235".to_string()),
-            parse_title(&"<title>CVE -\nCVE-2018-11235\n</title>".to_string()));
+        assert_eq!(None, parse_title(""));
+        assert_eq!(None, parse_title("    "));
+        assert_eq!(None, parse_title("<title></title>"));
+        assert_eq!(None, parse_title("<title>    </title>"));
+        assert_eq!(
+            None,
+            parse_title("floofynips, not a real webpage")
+        );
+        assert_eq!(
+            Some(String::from("cheese is nice")),
+            parse_title("<title>cheese is nice</title>")
+        );
+        assert_eq!(
+            Some(String::from("squanch")),
+            parse_title("<title>     squanch</title>")
+        );
+        assert_eq!(
+            Some(String::from("squanch")),
+            parse_title("<title>squanch     </title>")
+        );
+        assert_eq!(
+            Some(String::from("squanch")),
+            parse_title("<title>\nsquanch</title>")
+        );
+        assert_eq!(
+            Some(String::from("squanch")),
+            parse_title("<title>\n  \n  squanch</title>")
+        );
+        assert_eq!(
+            Some(String::from("we like the moon")),
+            parse_title("<title>\n  \n  we like the moon</title>")
+        );
+        assert_eq!(
+            Some(String::from("&hello123&<>''~")),
+            parse_title("<title>&amp;hello123&amp;&lt;&gt;''~</title>")
+        );
+        assert_eq!(
+            Some(String::from("CVE - CVE-2018-11235")),
+            parse_title("<title>CVE -\nCVE-2018-11235\n</title>")
+        );
+        assert_eq!(
+            Some(String::from("added properties")),
+            parse_title("<title id=\"pageTitle\">added properties</title>")
+        );
+        assert_eq!(
+            Some(String::from("\u{2665}")),
+            parse_title("<title>\u{2665}</title>")
+        );
     }
 
     #[test]
