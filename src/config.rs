@@ -5,7 +5,7 @@ use irc::client::data::Config as IrcConfig;
 use failure::Error;
 use std::fmt;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct Conf {
     #[serde(skip)]
     pub file_path: PathBuf,
@@ -15,7 +15,7 @@ pub struct Conf {
     pub features: Features,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Features {
     pub report_metadata: bool,
     pub report_mime: bool,

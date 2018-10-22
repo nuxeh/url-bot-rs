@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn parse_images() {
         let mut opts: Conf = Conf::default();
-        opts.report_metadata = Some(true);
+        opts.features.report_metadata = true;
         match resolve_url("https://rynx.org/sebk/_/DSC_5503.jpg", "en", &opts) {
             Ok(metadata) => assert_eq!(metadata, "image/jpeg 1000×663"),
             Err(_) => assert!(false),
