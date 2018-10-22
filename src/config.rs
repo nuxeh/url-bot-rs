@@ -3,6 +3,7 @@ use toml;
 use std::path::{Path, PathBuf};
 use irc::client::data::Config as IrcConfig;
 use failure::Error;
+use std::fmt;
 
 #[derive(Debug, Deserialize)]
 pub struct Conf {
@@ -14,7 +15,7 @@ pub struct Conf {
     pub features: Features,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Features {
     pub report_metadata: bool,
     pub report_mime: bool,
@@ -24,7 +25,7 @@ pub struct Features {
     pub url_limit: UrlLimit,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UrlLimit(pub u8);
 impl Default for UrlLimit {
     fn default() -> Self {
@@ -39,5 +40,11 @@ impl Conf {
         let mut conf: Conf = toml::de::from_str(&conf)?;
         conf.file_path = path.as_ref().to_path_buf();
         Ok(conf)
+    }
+}
+
+impl fmt::Display for Features {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", toml::ser::to_string(self).unwrap())
     }
 }

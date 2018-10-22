@@ -75,9 +75,7 @@ fn main() {
         eprintln!("Error loading configuration: {}", e);
         process::exit(1);
     });
-    if args.flag_verbose {
-        println!("Configuration:\n{:#?}", conf);
-    }
+    if args.flag_verbose { println!("\n{}", conf.features); }
 
     // open the sqlite database for logging
     // TODO: get database path from configuration
