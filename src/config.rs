@@ -1,36 +1,43 @@
-use std::process;
-use std::fs::File;
-use std::io::Read;
-use toml::from_str;
+use std::fs;
+use toml;
+use std::path::{Path, PathBuf};
+use irc::client::data::Config as IrcConfig;
+use failure::Error;
 
 #[derive(Debug, Deserialize)]
-struct Conf {
-    features: Option<ConfOpts>,
+pub struct Conf {
+    #[serde(skip)]
+    pub file_path: PathBuf,
+
+    #[serde(rename = "connection")]
+    pub client: IrcConfig,
+    pub features: Features,
 }
 
-#[derive(Debug, Deserialize, Default)]
-pub struct ConfOpts {
-    pub report_metadata: Option<bool>,
-    pub report_mime: Option<bool>,
-    pub mask_highlights: Option<bool>,
-    pub send_notice: Option<bool>,
-    pub url_limit: Option<u8>,
+#[derive(Debug, Deserialize)]
+pub struct Features {
+    pub report_metadata: bool,
+    pub report_mime: bool,
+    pub mask_highlights: bool,
+    pub send_notice: bool,
+    #[serde(default)]
+    pub url_limit: UrlLimit,
 }
 
-pub fn load(conf_file: &str) -> ConfOpts {
-    let mut conf_string = String::new();
+#[derive(Deserialize, Debug)]
+pub struct UrlLimit(pub u8);
+impl Default for UrlLimit {
+    fn default() -> Self {
+        UrlLimit(10)
+    }
+}
 
-    File::open(conf_file).and_then(|mut f| {
-        f.read_to_string(&mut conf_string)
-    }).unwrap_or_else(|err| {
-        eprintln!("Error loading configuration: {}", err);
-        process::exit(1);
-    });
-
-    let conf: Conf = from_str(&conf_string).unwrap_or_else(|err| {
-        eprintln!("Error parsing configuration: {}", err);
-        process::exit(1);
-    });
-
-    conf.features.unwrap_or(ConfOpts::default())
+impl Conf {
+    pub fn load(path: impl AsRef<Path>) -> Result<Self, Error> {
+        // Load entries via serde
+        let conf = fs::read_to_string(path.as_ref())?;
+        let mut conf: Conf = toml::de::from_str(&conf)?;
+        conf.file_path = path.as_ref().to_path_buf();
+        Ok(conf)
+    }
 }

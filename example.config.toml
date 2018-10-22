@@ -1,3 +1,4 @@
+[connection]
 owners = []
 nickname = "user"
 nick_password = "password"

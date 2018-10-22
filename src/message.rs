@@ -6,11 +6,11 @@ use reqwest::Url;
 use http::resolve_url;
 use sqlite::{Database, NewLogEntry};
 use super::Args;
-use config::ConfOpts;
+use config::{Conf, UrlLimit};
 
 pub fn handle_message(
     client: &IrcClient, message: Message,
-    args: &Args, conf: &ConfOpts,
+    args: &Args, conf: &Conf,
     db: &Database
 ) {
     let (target, msg) = match message.command {
@@ -24,7 +24,8 @@ pub fn handle_message(
     // look at each space-separated message token
     for token in msg.split_whitespace() {
         // limit the number of processed URLs
-        if num_processed == conf.url_limit.unwrap_or(10) {
+        let UrlLimit(limit) = conf.features.url_limit;
+        if num_processed == limit {
             break;
         }
 
@@ -59,8 +60,8 @@ pub fn handle_message(
         // check for pre-post
         let mut msg = match db.check_prepost(token) {
             Ok(Some(previous_post)) => {
-                let user = match conf.mask_highlights {
-                    Some(true) => create_non_highlighting_name(&previous_post.user),
+                let user = match conf.features.mask_highlights {
+                    true => create_non_highlighting_name(&previous_post.user),
                     _ => previous_post.user
                 };
                 format!("⤷ {} → {} {} ({})",
@@ -88,8 +89,8 @@ pub fn handle_message(
 
         // send the IRC response
         let target = message.response_target().unwrap_or(target);
-        match conf.send_notice {
-            Some(true) => client.send_notice(target, &msg).unwrap(),
+        match conf.features.send_notice {
+            true => client.send_notice(target, &msg).unwrap(),
             _ => client.send_privmsg(target, &msg).unwrap()
         }
         num_processed += 1;

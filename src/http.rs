@@ -9,11 +9,11 @@ use std::io::Read;
 use image::{gif, jpeg, png, ImageDecoder};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
-use config::ConfOpts;
+use config::Conf;
 
 const DOWNLOAD_SIZE: u64 = 100 * 1024; // 100kB
 
-pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Error> {
+pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
     let client = Client::builder()
@@ -69,15 +69,15 @@ pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Err
     Ok(title)
 }
 
-fn get_mime(conf: &ConfOpts, c_type: &Mime, size: &str) -> Option<String> {
-    match conf.report_mime {
-        Some(true) => Some(format!("{} {}", c_type, size.replace(" ", ""))),
+fn get_mime(conf: &Conf, c_type: &Mime, size: &str) -> Option<String> {
+    match conf.features.report_mime {
+        true => Some(format!("{} {}", c_type, size.replace(" ", ""))),
         _ => None
     }
 }
 
-fn get_image_metadata(conf: &ConfOpts, body: &[u8]) -> Option<String> {
-    if !conf.report_metadata.unwrap() {
+fn get_image_metadata(conf: &Conf, body: &[u8]) -> Option<String> {
+    if !conf.features.report_metadata {
         None
     } else if let Ok((w, h)) = jpeg::JPEGDecoder::new(body).dimensions() {
         Some(format!("image/jpeg {}×{}", w, h))
@@ -118,7 +118,7 @@ mod tests {
 
     #[test]
     fn resolve_urls() {
-        let opts: ConfOpts = ConfOpts::default();
+        let opts: Conf = Conf::default();
         resolve_url("https://youtube.com", "en", &opts).unwrap();
         resolve_url("https://google.co.uk", "en", &opts).unwrap();
     }
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn parse_images() {
-        let mut opts: ConfOpts = ConfOpts::default();
+        let mut opts: Conf = Conf::default();
         opts.report_metadata = Some(true);
         match resolve_url("https://rynx.org/sebk/_/DSC_5503.jpg", "en", &opts) {
             Ok(metadata) => assert_eq!(metadata, "image/jpeg 1000×663"),

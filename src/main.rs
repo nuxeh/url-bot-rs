@@ -36,7 +36,7 @@ use irc::client::prelude::*;
 use std::process;
 use self::sqlite::Database;
 
-use config::ConfOpts;
+use config::Conf;
 use message::handle_message;
 
 // docopt usage string
@@ -70,9 +70,13 @@ fn main() {
                      .unwrap_or_else(|e| e.exit());
 
     println!("Using configuration at: {}", args.flag_conf);
-    let opts: ConfOpts = config::load(&args.flag_conf);
+
+    let conf: Conf = Conf::load(&args.flag_conf).unwrap_or_else(|e| {
+        eprintln!("Error loading configuration: {}", e);
+        process::exit(1);
+    });
     if args.flag_verbose {
-        println!("Configuration:\n{:#?}", opts);
+        println!("Configuration:\n{:#?}", conf);
     }
 
     // open the sqlite database for logging
@@ -86,16 +90,10 @@ fn main() {
         Database::open_in_memory().unwrap()
     };
 
-    // load IRC configuration
-    let config = Config::load(&args.flag_conf).unwrap_or_else(|err| {
-        eprintln!("IRC configuration error: {}", err);
-        process::exit(1);
-    });
-
     // create IRC reactor
     let mut reactor = IrcReactor::new().unwrap();
     let client = reactor
-        .prepare_client_and_connect(&config)
+        .prepare_client_and_connect(&conf.client)
         .unwrap_or_else(|err| {
         eprintln!("IRC prepare error: {}", err);
         process::exit(1);
@@ -104,7 +102,7 @@ fn main() {
 
     // register handler
     reactor.register_client_with_handler(client, move |client, message| {
-        handle_message(client, message, &args, &opts, &db);
+        handle_message(client, message, &args, &conf, &db);
         Ok(())
     });
 
