@@ -115,6 +115,8 @@ fn parse_title(page_contents: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::File;
+    use std::path::Path;
 
     #[test]
     fn resolve_urls() {
@@ -172,6 +174,38 @@ mod tests {
         assert_eq!(
             Some(String::from("\u{2665}")),
             parse_title("<title>\u{2665}</title>")
+        );
+    }
+
+    #[test]
+    fn get_metadata_from_images() {
+        for test in vec!(
+            ("./test/img/test.png", "image/png 800×400"),
+            ("./test/img/test.jpg", "image/jpeg 400×200"),
+            ("./test/img/test.gif", "image/gif 1920×1080")
+        ) {
+            get_local_image_metadata(test.0, test.1);
+        }
+    }
+
+    fn get_local_image_metadata(file: impl AsRef<Path>, result: &str) {
+        let len = 100 * 1024;
+        let mut body = Vec::new();
+
+        let f = File::open(file).unwrap();
+        f.take(len).read_to_end(&mut body).unwrap();
+
+        let mut conf: Conf = Conf::default();
+        conf.features.report_metadata = true;
+        assert_eq!(
+            Some(String::from(result)),
+            get_image_metadata(&conf, &body)
+        );
+
+        conf.features.report_metadata = false;
+        assert_eq!(
+            None,
+            get_image_metadata(&conf, &body)
         );
     }
 
