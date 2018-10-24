@@ -11,7 +11,7 @@ use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
 use config::Conf;
 
-const DOWNLOAD_SIZE: u64 = 100 * 1024; // 100kB
+const DL_BYTES: u64 = 100 * 1024; // 100kB
 
 pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
@@ -26,7 +26,7 @@ pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> 
         .send()?
         .error_for_status()?;
 
-    // Get some response headers
+    // get response headers
     let content_type = resp.headers().get(CONTENT_TYPE)
         .and_then(|typ| typ.to_str().ok())
         .and_then(|typ| typ.parse::<Mime>().ok());
@@ -36,33 +36,33 @@ pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> 
         .unwrap_or(0);
     let size = len.file_size(options::CONVENTIONAL).unwrap_or(String::new());
 
+    // calculate download size for the response's MIME type
+    let bytes = content_type.clone()
+        .and_then(|ct| {
+            match (ct.type_(), ct.subtype()) {
+                (IMAGE, _) => Some(10 * 1024 * 1024), // 10MB
+                _ => None
+            }})
+        .unwrap_or(DL_BYTES);
+
     // Download body
     let mut body = Vec::new();
-    let bytes = match content_type.clone() {
-        Some(ct) => {
-            match (ct.type_(), ct.subtype()) {
-                (IMAGE, _) => 10 * 1024 * 1024, // 10MB
-                _ => DOWNLOAD_SIZE,
-            }
-        },
-        None => DOWNLOAD_SIZE,
-    };
     resp.take(bytes).read_to_end(&mut body)?;
     let contents = String::from_utf8_lossy(&body);
 
     // Get title or metadata
     let title = match content_type {
+        None => parse_title(&contents),
         Some(ct) => {
             match (ct.type_(), ct.subtype()) {
+                (TEXT, HTML) => parse_title(&contents),
                 (IMAGE, _) => parse_title(&contents)
                     .or(get_image_metadata(&conf, &body))
                     .or(get_mime(&conf, &ct, &size)),
-                (TEXT, HTML) => parse_title(&contents),
                 _ => parse_title(&contents)
                     .or(get_mime(&conf, &ct, &size)),
             }
         },
-        None => parse_title(&contents),
     }.ok_or_else(|| format_err!("failed to parse title"))?;
 
     eprintln!("SUCCESS \"{}\"", title);
