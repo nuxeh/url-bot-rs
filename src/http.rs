@@ -9,11 +9,11 @@ use std::io::Read;
 use image::{gif, jpeg, png, ImageDecoder};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
-use config::ConfOpts;
+use config::Conf;
 
-const DOWNLOAD_SIZE: u64 = 100 * 1024; // 100kB
+const DL_BYTES: u64 = 100 * 1024; // 100kB
 
-pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Error> {
+pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
     let client = Client::builder()
@@ -26,7 +26,7 @@ pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Err
         .send()?
         .error_for_status()?;
 
-    // Get some response headers
+    // get response headers
     let content_type = resp.headers().get(CONTENT_TYPE)
         .and_then(|typ| typ.to_str().ok())
         .and_then(|typ| typ.parse::<Mime>().ok());
@@ -36,48 +36,48 @@ pub fn resolve_url(url: &str, lang: &str, conf: &ConfOpts) -> Result<String, Err
         .unwrap_or(0);
     let size = len.file_size(options::CONVENTIONAL).unwrap_or(String::new());
 
+    // calculate download size for the response's MIME type
+    let bytes = content_type.clone()
+        .and_then(|ct| {
+            match (ct.type_(), ct.subtype()) {
+                (IMAGE, _) => Some(10 * 1024 * 1024), // 10MB
+                _ => None
+            }})
+        .unwrap_or(DL_BYTES);
+
     // Download body
     let mut body = Vec::new();
-    let bytes = match content_type.clone() {
-        Some(ct) => {
-            match (ct.type_(), ct.subtype()) {
-                (IMAGE, _) => 10 * 1024 * 1024, // 10MB
-                _ => DOWNLOAD_SIZE,
-            }
-        },
-        None => DOWNLOAD_SIZE,
-    };
     resp.take(bytes).read_to_end(&mut body)?;
     let contents = String::from_utf8_lossy(&body);
 
     // Get title or metadata
     let title = match content_type {
+        None => parse_title(&contents),
         Some(ct) => {
             match (ct.type_(), ct.subtype()) {
+                (TEXT, HTML) => parse_title(&contents),
                 (IMAGE, _) => parse_title(&contents)
                     .or(get_image_metadata(&conf, &body))
                     .or(get_mime(&conf, &ct, &size)),
-                (TEXT, HTML) => parse_title(&contents),
                 _ => parse_title(&contents)
                     .or(get_mime(&conf, &ct, &size)),
             }
         },
-        None => parse_title(&contents),
     }.ok_or_else(|| format_err!("failed to parse title"))?;
 
     eprintln!("SUCCESS \"{}\"", title);
     Ok(title)
 }
 
-fn get_mime(conf: &ConfOpts, c_type: &Mime, size: &str) -> Option<String> {
-    match conf.report_mime {
-        Some(true) => Some(format!("{} {}", c_type, size.replace(" ", ""))),
+fn get_mime(conf: &Conf, c_type: &Mime, size: &str) -> Option<String> {
+    match conf.features.report_mime {
+        true => Some(format!("{} {}", c_type, size.replace(" ", ""))),
         _ => None
     }
 }
 
-fn get_image_metadata(conf: &ConfOpts, body: &[u8]) -> Option<String> {
-    if !conf.report_metadata.unwrap() {
+fn get_image_metadata(conf: &Conf, body: &[u8]) -> Option<String> {
+    if !conf.features.report_metadata {
         None
     } else if let Ok((w, h)) = jpeg::JPEGDecoder::new(body).dimensions() {
         Some(format!("image/jpeg {}×{}", w, h))
@@ -115,10 +115,12 @@ fn parse_title(page_contents: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::File;
+    use std::path::Path;
 
     #[test]
     fn resolve_urls() {
-        let opts: ConfOpts = ConfOpts::default();
+        let opts: Conf = Conf::default();
         resolve_url("https://youtube.com", "en", &opts).unwrap();
         resolve_url("https://google.co.uk", "en", &opts).unwrap();
     }
@@ -176,9 +178,41 @@ mod tests {
     }
 
     #[test]
+    fn get_metadata_from_images() {
+        for test in vec!(
+            ("./test/img/test.png", "image/png 800×400"),
+            ("./test/img/test.jpg", "image/jpeg 400×200"),
+            ("./test/img/test.gif", "image/gif 1920×1080")
+        ) {
+            get_local_image_metadata(test.0, test.1);
+        }
+    }
+
+    fn get_local_image_metadata(file: impl AsRef<Path>, result: &str) {
+        let len = 100 * 1024;
+        let mut body = Vec::new();
+
+        let f = File::open(file).unwrap();
+        f.take(len).read_to_end(&mut body).unwrap();
+
+        let mut conf: Conf = Conf::default();
+        conf.features.report_metadata = true;
+        assert_eq!(
+            Some(String::from(result)),
+            get_image_metadata(&conf, &body)
+        );
+
+        conf.features.report_metadata = false;
+        assert_eq!(
+            None,
+            get_image_metadata(&conf, &body)
+        );
+    }
+
+    #[test]
     fn parse_images() {
-        let mut opts: ConfOpts = ConfOpts::default();
-        opts.report_metadata = Some(true);
+        let mut opts: Conf = Conf::default();
+        opts.features.report_metadata = true;
         match resolve_url("https://rynx.org/sebk/_/DSC_5503.jpg", "en", &opts) {
             Ok(metadata) => assert_eq!(metadata, "image/jpeg 1000×663"),
             Err(_) => assert!(false),
