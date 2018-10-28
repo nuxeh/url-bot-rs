@@ -137,6 +137,14 @@ mod tests {
             parse_title("floofynips, not a real webpage")
         );
         assert_eq!(
+            Some(String::from("title caps")),
+            parse_title("<TITLE>title caps</TITLE>")
+        );
+        assert_eq!(
+            Some(String::from("title mixed caps")),
+            parse_title("<TiTLe>title mixed caps</tItLE>")
+        );
+        assert_eq!(
             Some(String::from("cheese is nice")),
             parse_title("<title>cheese is nice</title>")
         );
