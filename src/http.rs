@@ -92,7 +92,7 @@ fn get_image_metadata(conf: &Conf, body: &[u8]) -> Option<String> {
 
 fn parse_title(page_contents: &str) -> Option<String> {
     lazy_static! {
-        static ref RE: Regex = Regex::new("<title.*?>((.|\n)*?)</title>").unwrap();
+        static ref RE: Regex = Regex::new("<(?i:title).*?>((.|\n)*?)</(?i:title)>").unwrap();
     }
     let title_enc = RE.captures(page_contents)?.get(1)?.as_str();
     let title_dec = decode_html(title_enc).ok()?;
@@ -131,6 +131,7 @@ mod tests {
         assert_eq!(None, parse_title("    "));
         assert_eq!(None, parse_title("<title></title>"));
         assert_eq!(None, parse_title("<title>    </title>"));
+        assert_eq!(None, parse_title("<TITLE>    </TITLE>"));
         assert_eq!(
             None,
             parse_title("floofynips, not a real webpage")
