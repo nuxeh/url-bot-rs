@@ -26,4 +26,13 @@ mask_highlights = false
 send_notice = false
 report_metadata = false
 report_mime = false
+history = false
+
+[parameters]
 url_limit = 4
+accept_lang = "en"
+user_agent = "Mozilla/5.0"
+
+[database]
+path = ""
+type = "sqlite"

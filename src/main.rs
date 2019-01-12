@@ -25,6 +25,7 @@ extern crate mime;
 extern crate humansize;
 extern crate unicode_segmentation;
 extern crate toml;
+extern crate directories;
 
 mod sqlite;
 mod http;
@@ -34,10 +35,11 @@ mod message;
 use docopt::Docopt;
 use irc::client::prelude::*;
 use std::process;
-use self::sqlite::Database;
+use std::path::PathBuf;
 
-use config::Conf;
-use message::handle_message;
+use self::sqlite::Database;
+use self::config::Rtd;
+use self::message::handle_message;
 
 // docopt usage string
 const USAGE: &'static str = "
@@ -50,16 +52,14 @@ Options:
     -h --help       Show this help message.
     -v --verbose    Show extra information.
     -d --db=PATH    Use a sqlite database at PATH.
-    -c --conf=PATH  Use configuration file at PATH [default: ./config.toml].
-    -l --lang=LANG  Language to request in http headers [default: en]
+    -c --conf=PATH  Use configuration file at PATH.
 ";
 
 #[derive(Debug, Deserialize, Default)]
 pub struct Args {
     flag_verbose: bool,
-    flag_db: Option<String>,
-    flag_conf: String,
-    flag_lang: String,
+    flag_db: Option<PathBuf>,
+    flag_conf: Option<PathBuf>,
 }
 
 // Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") }
@@ -69,29 +69,34 @@ fn main() {
                      .and_then(|d| d.deserialize())
                      .unwrap_or_else(|e| e.exit());
 
-    println!("Using configuration at: {}", args.flag_conf);
-
-    let conf: Conf = Conf::load(&args.flag_conf).unwrap_or_else(|e| {
-        eprintln!("Error loading configuration: {}", e);
+    let rtd: Rtd = Rtd::from_args(args).unwrap_or_else(|err| {
+        eprintln!("Error loading configuration: {}", err);
         process::exit(1);
     });
-    if args.flag_verbose { println!("\n{}", conf.features); }
+
+    println!("Using configuration: {}", rtd.paths.conf.display());
+    if rtd.args.flag_verbose {
+        println!("\n[features]\n{}", rtd.conf.features);
+        println!("[parameters]:\n{}", rtd.conf.params);
+        println!("[database]:\n{}", rtd.conf.database);
+    }
 
     // open the sqlite database for logging
-    // TODO: get database path from configuration
-    // TODO: make logging optional
-    let db = if let Some(ref path) = args.flag_db {
-        println!("Using database at: {}", path);
-        Database::open(path).unwrap()
+    let db = if let Some(ref path) = rtd.paths.db {
+        println!("Using database: {}", path.display());
+        Database::open(path).unwrap_or_else(|err| {
+            eprintln!("Database error: {}", err);
+            process::exit(1);
+        })
     } else {
-        println!("Using in-memory database");
+        if rtd.history { println!("Using in-memory database"); }
         Database::open_in_memory().unwrap()
     };
 
     // create IRC reactor
     let mut reactor = IrcReactor::new().unwrap();
     let client = reactor
-        .prepare_client_and_connect(&conf.client)
+        .prepare_client_and_connect(&rtd.conf.client)
         .unwrap_or_else(|err| {
         eprintln!("IRC prepare error: {}", err);
         process::exit(1);
@@ -100,7 +105,7 @@ fn main() {
 
     // register handler
     reactor.register_client_with_handler(client, move |client, message| {
-        handle_message(client, message, &args, &conf, &db);
+        handle_message(client, message, &rtd, &db);
         Ok(())
     });
 
