@@ -51,6 +51,7 @@ Usage:
 Options:
     -h --help       Show this help message.
     -v --verbose    Show extra information.
+    -D --debug      Print debugging information.
     -d --db=PATH    Use a sqlite database at PATH.
     -c --conf=PATH  Use configuration file at PATH.
 ";
@@ -58,6 +59,7 @@ Options:
 #[derive(Debug, Deserialize, Default)]
 pub struct Args {
     flag_verbose: bool,
+    flag_debug: bool,
     flag_db: Option<PathBuf>,
     flag_conf: Option<PathBuf>,
 }

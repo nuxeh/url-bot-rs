@@ -36,6 +36,14 @@ pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
         .unwrap_or(0);
     let size = len.file_size(options::CONVENTIONAL).unwrap_or(String::new());
 
+    // print HTTP status and response headers for debugging
+    if rtd.args.flag_debug {
+        eprintln!("{}", resp.status());
+        for (k, v) in resp.headers() {
+            eprintln!("{}: {}", k, v.to_str().unwrap());
+        }
+    }
+
     // calculate download size based on the response's MIME type
     let bytes = content_type.clone()
         .and_then(|ct| {

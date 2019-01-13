@@ -116,6 +116,8 @@ TODO
 
 - Usage is printed by providing `--help` on run.
 - To print some additional runtime information, add `-v` or `--verbose`.
+- To print all received IRC messages, along with HTTP response data to the
+  console, add `-D` or `--debug`.
 
 ## IRC
 

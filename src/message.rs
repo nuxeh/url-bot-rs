@@ -10,6 +10,10 @@ use super::config::Rtd;
 pub fn handle_message(
     client: &IrcClient, message: Message, rtd: &Rtd, db: &Database
 ) {
+    if rtd.args.flag_debug {
+        eprintln!("{:?}", message.command)
+    }
+
     let (target, msg) = match message.command {
         Command::PRIVMSG(ref target, ref msg) => (target, msg),
         _ => return,
@@ -95,6 +99,7 @@ pub fn handle_message(
             true => client.send_notice(target, &msg).unwrap(),
             _ => client.send_privmsg(target, &msg).unwrap()
         }
+
         num_processed += 1;
     };
 }
