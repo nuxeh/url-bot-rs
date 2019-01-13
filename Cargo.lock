@@ -1546,7 +1546,7 @@ dependencies = [
 
 [[package]]
 name = "url-bot"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "docopt 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
