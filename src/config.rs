@@ -3,6 +3,8 @@
  *
  */
 use std::fs;
+use std::fs::File;
+use std::io::Write;
 use toml;
 use std::path::{Path, PathBuf};
 use irc::client::data::Config as IrcConfig;
@@ -12,7 +14,8 @@ use directories::{ProjectDirs};
 use super::Args;
 
 // serde structures defining the configuration file structure
-#[derive(Default, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(default)]
 pub struct Conf {
     pub features: Features,
     #[serde(rename = "parameters")]
@@ -32,28 +35,39 @@ pub struct Features {
     pub history: bool,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct Database {
     pub path: String,
     #[serde(rename = "type")]
-    #[serde(default = "d_db_type")]
     pub db_type: String,
 }
-fn d_db_type() -> String { "sqlite".to_string() }
+impl Default for Database {
+    fn default() -> Self {
+        Self {
+            path: "".to_string(),
+            db_type: "in-memory".to_string(),
+        }
+    }
+}
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(default)]
 pub struct Parameters {
-    #[serde(default = "d_url_limit")]
     pub url_limit: u8,
-    #[serde(default = "d_user_agent")]
     pub user_agent: String,
-    #[serde(default = "d_accept_lang")]
     pub accept_lang: String,
 }
-fn d_url_limit() -> u8 { 10 }
-fn d_user_agent() -> String { "Mozilla/5.0".to_string() }
-fn d_accept_lang() -> String { "en".to_string() }
+
+impl Default for Parameters {
+    fn default() -> Self {
+        Self {
+            url_limit: 10,
+            user_agent: "Mozilla/5.0".to_string(),
+            accept_lang: "en".to_string()
+        }
+    }
+}
 
 impl Conf {
     // load configuration TOML from a file
@@ -61,6 +75,45 @@ impl Conf {
         let conf = fs::read_to_string(path.as_ref())?;
         let conf: Conf = toml::de::from_str(&conf)?;
         Ok(conf)
+    }
+
+    // write configuration to a file
+    pub fn write(self, path: impl AsRef<Path>) -> Result<(), Error> {
+        let mut file = File::create(path)?;
+        file.write_all(toml::ser::to_string(&self)?.as_bytes())?;
+        Ok(())
+    }
+}
+
+impl Default for Conf {
+    fn default() -> Self {
+        Self {
+            features: Features::default(),
+            params: Parameters::default(),
+            database: Database::default(),
+            client: IrcConfig {
+                nickname: Some("url-bot-rs".to_string()),
+                alt_nicks: Some(vec!["url-bot-rs_".to_string()]),
+                nick_password: Some("".to_string()),
+                username: Some("url-bot-rs".to_string()),
+                realname: Some("url-bot-rs".to_string()),
+                server: Some("chat.freenode.net".to_string()),
+                port: Some(6697),
+                password: Some("".to_string()),
+                use_ssl: Some(true),
+                encoding: Some("UTF-8".to_string()),
+                channels: Some(vec![]),
+                user_info: Some("Feed me URLs.".to_string()),
+                version: Some("0.1".to_string()),
+                source: Some("https://github.com/nuxeh/url-bot-rs".to_string()),
+                ping_time: Some(180),
+                ping_timeout: Some(10),
+                burst_window_length: Some(8),
+                max_messages_in_burst: Some(15),
+                should_ghost: Some(false),
+                ..IrcConfig::default()
+            }
+        }
     }
 }
 
@@ -102,6 +155,21 @@ impl Rtd {
             _ => dirs.config_dir().join("config.toml")
         };
 
+        // check if config directory exists, create it if it doesn't
+        create_dir_if_missing(rtd.paths.conf.parent().unwrap())?;
+
+        // create a default config if it doesn't exist
+        if !rtd.paths.conf.exists() {
+            eprintln!(
+                "Configuration `{}` doesn't exist, creating default",
+                rtd.paths.conf.to_str().unwrap()
+            );
+            eprintln!(
+                "You should modify this file to include a useful IRC configuration"
+            );
+            Conf::default().write(&rtd.paths.conf)?;
+        }
+
         // load config file
         rtd.conf = Conf::load(&rtd.paths.conf)?;
 
@@ -109,6 +177,11 @@ impl Rtd {
         let (hist_enabled, db_path) = Self::get_db_info(&rtd, &dirs);
         rtd.history = hist_enabled;
         rtd.paths.db = db_path;
+
+        // check database path exists, create it if it doesn't
+        if let Some(dp) = rtd.paths.db.clone() {
+            create_dir_if_missing(dp.parent().unwrap())?;
+        }
 
         Ok(rtd)
     }
@@ -146,6 +219,16 @@ macro_rules! impl_display {
     }
 }
 impl_display!(Features, Parameters, Database);
+
+fn create_dir_if_missing(dir: &Path) -> Result<bool, Error> {
+    let pdir = dir.to_str().unwrap();
+    let exists = dir.exists();
+    if !exists {
+        eprintln!("Directory `{}` doesn't exist, creating it", pdir);
+        fs::create_dir_all(dir)?;
+    }
+    Ok(exists)
+}
 
 #[cfg(test)]
 mod tests {

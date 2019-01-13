@@ -75,7 +75,9 @@ The `[database]` section contains options for the database, as follows:
 - `path` (String) is the path to a database file (for `sqlite`)
 - `type` (String) is the type of database to use, e.g. `sqlite`
 
-A default configuration is provided as `example.config.toml` in the repository.
+If no configuration file exists at the expected location, a default-valued
+configuration file will be created. An example configuration is provided as
+`example.config.toml` in this repository.
 
 ## Database
 
