@@ -27,7 +27,6 @@ use_ssl = true
 encoding = "UTF-8"
 channels = []
 user_info = "Feed me URLs."
-version = "0.1"
 source = "https://github.com/nuxeh/url-bot-rs"
 ping_time = 180
 ping_timeout = 10

@@ -32,6 +32,10 @@ mod http;
 mod config;
 mod message;
 
+pub mod buildinfo {
+   include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
+
 use docopt::Docopt;
 use irc::client::prelude::*;
 use std::process;

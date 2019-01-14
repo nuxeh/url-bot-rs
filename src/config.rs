@@ -12,6 +12,7 @@ use failure::Error;
 use std::fmt;
 use directories::{ProjectDirs};
 use super::Args;
+use super::buildinfo;
 
 // serde structures defining the configuration file structure
 #[derive(Serialize, Deserialize)]
@@ -104,7 +105,6 @@ impl Default for Conf {
                 encoding: Some("UTF-8".to_string()),
                 channels: Some(vec![]),
                 user_info: Some("Feed me URLs.".to_string()),
-                version: Some("0.1".to_string()),
                 source: Some("https://github.com/nuxeh/url-bot-rs".to_string()),
                 ping_time: Some(180),
                 ping_timeout: Some(10),
@@ -182,6 +182,9 @@ impl Rtd {
         if let Some(dp) = rtd.paths.db.clone() {
             create_dir_if_missing(dp.parent().unwrap())?;
         }
+
+        // set url-bot-rs version number in the irc client configuration
+        rtd.conf.client.version = Some(String::from(buildinfo::PKG_VERSION));
 
         Ok(rtd)
     }

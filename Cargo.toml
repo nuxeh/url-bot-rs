@@ -1,7 +1,11 @@
 [package]
-name = "url-bot"
+name = "url-bot-rs"
 version = "0.2.0"
 authors = ["Edward Cragg <drq.11235@gmail.com>"]
+build = "build.rs"
+
+[build-dependencies]
+built = "0.3.0"
 
 [dependencies]
 irc = "0.13.6"
