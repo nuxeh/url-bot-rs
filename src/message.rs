@@ -3,16 +3,17 @@ use std::iter;
 use unicode_segmentation::UnicodeSegmentation;
 use reqwest::Url;
 
-use http::resolve_url;
-use sqlite::{Database, NewLogEntry};
-use super::Args;
-use config::{Conf, UrlLimit};
+use super::http::resolve_url;
+use super::sqlite::{Database, NewLogEntry};
+use super::config::Rtd;
 
 pub fn handle_message(
-    client: &IrcClient, message: Message,
-    args: &Args, conf: &Conf,
-    db: &Database
+    client: &IrcClient, message: Message, rtd: &Rtd, db: &Database
 ) {
+    if rtd.args.flag_debug {
+        eprintln!("{:?}", message.command)
+    }
+
     let (target, msg) = match message.command {
         Command::PRIVMSG(ref target, ref msg) => (target, msg),
         _ => return,
@@ -24,8 +25,7 @@ pub fn handle_message(
     // look at each space-separated message token
     for token in msg.split_whitespace() {
         // limit the number of processed URLs
-        let UrlLimit(limit) = conf.features.url_limit;
-        if num_processed == limit {
+        if num_processed == rtd.conf.params.url_limit {
             break;
         }
 
@@ -41,7 +41,7 @@ pub fn handle_message(
         }
 
         // try to get the title from the url
-        let title = match resolve_url(token, &args.flag_lang, &conf) {
+        let title = match resolve_url(token, rtd) {
             Ok(title) => title,
             Err(err) => {
                 println!("ERROR {:?}", err);
@@ -58,9 +58,13 @@ pub fn handle_message(
         };
 
         // check for pre-post
-        let mut msg = match db.check_prepost(token) {
+        let mut msg = match if rtd.history {
+            db.check_prepost(token)
+        } else {
+            Ok(None)
+        } {
             Ok(Some(previous_post)) => {
-                let user = match conf.features.mask_highlights {
+                let user = match rtd.conf.features.mask_highlights {
                     true => create_non_highlighting_name(&previous_post.user),
                     _ => previous_post.user
                 };
@@ -73,8 +77,10 @@ pub fn handle_message(
             },
             Ok(None) => {
                 // add new log entry to database
-                if let Err(err) = db.add_log(&entry) {
-                    eprintln!("SQL error: {}", err);
+                if rtd.history {
+                    if let Err(err) = db.add_log(&entry) {
+                        eprintln!("SQL error: {}", err);
+                    }
                 }
                 format!("⤷ {}", title)
             },
@@ -84,15 +90,16 @@ pub fn handle_message(
             },
         };
 
-        // Limit response length, see RFC1459
+        // limit response length, see RFC1459
         msg = utf8_truncate(&msg, 510);
 
         // send the IRC response
         let target = message.response_target().unwrap_or(target);
-        match conf.features.send_notice {
+        match rtd.conf.features.send_notice {
             true => client.send_notice(target, &msg).unwrap(),
             _ => client.send_privmsg(target, &msg).unwrap()
         }
+
         num_processed += 1;
     };
 }
@@ -108,7 +115,7 @@ fn create_non_highlighting_name(name: &str) -> String {
         .collect()
 }
 
-// Truncate to a maximum number of bytes, taking UTF-8 into account
+// truncate to a maximum number of bytes, taking UTF-8 into account
 fn utf8_truncate(s: &str, n: usize) -> String {
     s.char_indices()
         .take_while(|(len, c)| len + c.len_utf8() <= n)

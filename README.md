@@ -27,24 +27,32 @@ For example:
 
     cargo test
 
-## Configuration
+## Configuration file
 
-A configuration file is required to specify IRC server settings for the bot,
-this can be specified with `--conf=<path>`. If not provided, a default search
-path will be used:
+A configuration file is required to specify IRC server details and other
+general settings for the bot, a path to this config can be specified manually
+with the `--conf=<path>` command line option. If not provided, url bot will
+look in a default path for your platform, e.g. on Linux it will use the XDG
+specification:
 
-* `./config.toml`
+    ~/.config/url-bot-rs/config.toml
 
-A default configuration is provided as `example.config.toml` in the repository.
+or, if `$XDG_CONFIG_PATH` is set:
 
-This may include:
-- Address of the IRC server to connect to
+    $XDG_CONFIG_HOME/url-bot-rs/config.toml
+
+### Configuration file options
+
+The configuration includes settings pertaining to the IRC server the bot will
+connect to, including among other things:
+
+- Address of the IRC server
 - Connection credentials
-- The nick the bot will use when joining the server
-- Channels to join on the server
+- The nick the bot will use when joining
+- Channels to join
 
 It is also possible to configure a number of optional features for the bot's
-operation, specified in the section `[features]`:
+operation, specified in the `[features]` section:
 
 - `mask_highlights` (bool) inserts invisible characters to defeat highlight
   regexes
@@ -53,12 +61,39 @@ operation, specified in the section `[features]`:
 - `report_metadata` (bool) if enabled, causes image metadata to be reported
 - `report_mime` (bool) if enabled, causes mime types to be reported, if no
   other title or metadata is found.
-- `url_limit` (u8) max number of URLs to process for each message (default: 10)
+- `history` (bool) enable previous post information using a database
 
-A sqlite database may be provided, by specifying a path with `--db=<path>`. If
-this option is given, the bot will initialise the database if it doesn't
-already exist, and log all URLs posted to it. If the same URL is posted again,
-information about the previous posting is added to the returned message.
+The `[parameters]` section includes a number of tunable parameters:
+
+- `url_limit` (u8) max number of URLs to process for each message (default: 10)
+- `user_agent` (String) the user agent to use for http content requests
+- `accept_lang` (String) language requested in http content requests
+  (default: "en")
+
+The `[database]` section contains options for the database, as follows:
+
+- `path` (String) is the path to a database file (for `sqlite`)
+- `type` (String) is the type of database to use, e.g. `sqlite`
+
+If no configuration file exists at the expected location, a default-valued
+configuration file will be created. An example configuration is provided as
+`example.config.toml` in this repository.
+
+## Database
+
+A database may be specified, which is used to cache posted links, so that if
+the same URL is posted again, the original poster and the time posted is added
+to the returned message. This feature can be enabled or disabled within the
+`[features]` section of the configuration file.
+
+History is also enabled if a path is specified with `--db=<path>` or in the
+configuration, the given path will be used to store a SQLite database,
+otherwise a default path will be used according to the XDG specification. If no
+file exists at the specified path, it will be created.
+
+If history is enabled, no database type is specified in the `[database]`
+section of the configuration, and no database path has been specified, an
+in-memory database will be used.
 
 ## Run
 
@@ -68,9 +103,23 @@ information about the previous posting is added to the returned message.
 
     cargo install
 
+### Debian/Ubuntu (linux)
+
+    cargo install cargo-deb
+    cargo deb --install
+
 After this, the bot may be started by running `url-bot`
 
-Usage is printed by providing `--help` on run.
+## Auto-start
+
+TODO
+
+## Additional command line options
+
+- Usage is printed by providing `--help` on run.
+- To print some additional runtime information, add `-v` or `--verbose`.
+- To print all received IRC messages, along with HTTP response data to the
+  console, add `-D` or `--debug`.
 
 ## IRC
 

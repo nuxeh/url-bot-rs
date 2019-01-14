@@ -1,7 +1,11 @@
 [package]
-name = "url-bot"
-version = "0.1.0"
+name = "url-bot-rs"
+version = "0.2.0"
 authors = ["Edward Cragg <drq.11235@gmail.com>"]
+build = "build.rs"
+
+[build-dependencies]
+built = "0.3.0"
 
 [dependencies]
 irc = "0.13.6"
@@ -23,3 +27,4 @@ humansize = "1.1.0"
 unicode-segmentation = "1.2.1"
 toml = "0.4.8"
 image = "0.20.0"
+directories = "1.0.2"

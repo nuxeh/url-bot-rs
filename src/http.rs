@@ -9,11 +9,11 @@ use std::io::Read;
 use image::{gif, jpeg, png, ImageDecoder};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
-use config::Conf;
+use super::config::Rtd;
 
 const DL_BYTES: u64 = 100 * 1024; // 100kB
 
-pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> {
+pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
     let client = Client::builder()
@@ -21,8 +21,8 @@ pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> 
         .build()?;
 
     let resp = client.get(url)
-        .header(USER_AGENT, "url-bot-rs/0.1")
-        .header(ACCEPT_LANGUAGE, lang)
+        .header(USER_AGENT, rtd.conf.params.user_agent.as_str())
+        .header(ACCEPT_LANGUAGE, rtd.conf.params.accept_lang.as_str())
         .send()?
         .error_for_status()?;
 
@@ -36,7 +36,15 @@ pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> 
         .unwrap_or(0);
     let size = len.file_size(options::CONVENTIONAL).unwrap_or(String::new());
 
-    // calculate download size for the response's MIME type
+    // print HTTP status and response headers for debugging
+    if rtd.args.flag_debug {
+        eprintln!("{}", resp.status());
+        for (k, v) in resp.headers() {
+            eprintln!("{}: {}", k, v.to_str().unwrap());
+        }
+    }
+
+    // calculate download size based on the response's MIME type
     let bytes = content_type.clone()
         .and_then(|ct| {
             match (ct.type_(), ct.subtype()) {
@@ -45,22 +53,22 @@ pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> 
             }})
         .unwrap_or(DL_BYTES);
 
-    // Download body
+    // download body
     let mut body = Vec::new();
     resp.take(bytes).read_to_end(&mut body)?;
     let contents = String::from_utf8_lossy(&body);
 
-    // Get title or metadata
+    // get title or metadata
     let title = match content_type {
         None => parse_title(&contents),
-        Some(ct) => {
-            match (ct.type_(), ct.subtype()) {
+        Some(mime) => {
+            match (mime.type_(), mime.subtype()) {
                 (TEXT, HTML) => parse_title(&contents),
                 (IMAGE, _) => parse_title(&contents)
-                    .or(get_image_metadata(&conf, &body))
-                    .or(get_mime(&conf, &ct, &size)),
+                    .or(get_image_metadata(&rtd, &body))
+                    .or(get_mime(&rtd, &mime, &size)),
                 _ => parse_title(&contents)
-                    .or(get_mime(&conf, &ct, &size)),
+                    .or(get_mime(&rtd, &mime, &size)),
             }
         },
     }.ok_or_else(|| format_err!("failed to parse title"))?;
@@ -69,15 +77,15 @@ pub fn resolve_url(url: &str, lang: &str, conf: &Conf) -> Result<String, Error> 
     Ok(title)
 }
 
-fn get_mime(conf: &Conf, c_type: &Mime, size: &str) -> Option<String> {
-    match conf.features.report_mime {
-        true => Some(format!("{} {}", c_type, size.replace(" ", ""))),
+fn get_mime(rtd: &Rtd, mime: &Mime, size: &str) -> Option<String> {
+    match rtd.conf.features.report_mime {
+        true => Some(format!("{} {}", mime, size.replace(" ", ""))),
         _ => None
     }
 }
 
-fn get_image_metadata(conf: &Conf, body: &[u8]) -> Option<String> {
-    if !conf.features.report_metadata {
+fn get_image_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
+    if !rtd.conf.features.report_metadata {
         None
     } else if let Ok((w, h)) = jpeg::JPEGDecoder::new(body).dimensions() {
         Some(format!("image/jpeg {}×{}", w, h))
@@ -120,9 +128,9 @@ mod tests {
 
     #[test]
     fn resolve_urls() {
-        let opts: Conf = Conf::default();
-        resolve_url("https://youtube.com", "en", &opts).unwrap();
-        resolve_url("https://google.co.uk", "en", &opts).unwrap();
+        let rtd: Rtd = Rtd::default();
+        resolve_url("https://youtube.com",  &rtd).unwrap();
+        resolve_url("https://google.co.uk", &rtd).unwrap();
     }
 
     #[test]
@@ -135,6 +143,14 @@ mod tests {
         assert_eq!(
             None,
             parse_title("floofynips, not a real webpage")
+        );
+        assert_eq!(
+            Some(String::from("title caps")),
+            parse_title("<TITLE>title caps</TITLE>")
+        );
+        assert_eq!(
+            Some(String::from("title mixed caps")),
+            parse_title("<TiTLe>title mixed caps</tItLE>")
         );
         assert_eq!(
             Some(String::from("cheese is nice")),
@@ -179,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn get_metadata_from_images() {
+    fn get_metadata_from_local_images() {
         for test in vec!(
             ("./test/img/test.png", "image/png 800×400"),
             ("./test/img/test.jpg", "image/jpeg 400×200"),
@@ -190,46 +206,43 @@ mod tests {
     }
 
     fn get_local_image_metadata(file: impl AsRef<Path>, result: &str) {
-        let len = 100 * 1024;
+        let mut rtd: Rtd = Rtd::default();
+
         let mut body = Vec::new();
-
         let f = File::open(file).unwrap();
-        f.take(len).read_to_end(&mut body).unwrap();
+        f.take(100 * 1024).read_to_end(&mut body).unwrap();
 
-        let mut conf: Conf = Conf::default();
-        conf.features.report_metadata = true;
+        rtd.conf.features.report_metadata = true;
         assert_eq!(
             Some(String::from(result)),
-            get_image_metadata(&conf, &body)
+            get_image_metadata(&rtd, &body)
         );
 
-        conf.features.report_metadata = false;
+        rtd.conf.features.report_metadata = false;
         assert_eq!(
             None,
-            get_image_metadata(&conf, &body)
+            get_image_metadata(&rtd, &body)
         );
     }
 
     #[test]
     fn parse_images() {
-        let mut opts: Conf = Conf::default();
-        opts.features.report_metadata = true;
-        match resolve_url("https://rynx.org/sebk/_/DSC_5503.jpg", "en", &opts) {
+        let mut rtd: Rtd = Rtd::default();
+        rtd.conf.features.report_metadata = true;
+        match resolve_url("https://rynx.org/sebk/_/DSC_5503.jpg", &rtd) {
             Ok(metadata) => assert_eq!(metadata, "image/jpeg 1000×663"),
             Err(_) => assert!(false),
         }
         match resolve_url(
             "https://assets-cdn.github.com/images/modules/logos_page/GitHub-Mark.png",
-            "en",
-            &opts,
+            &rtd,
         ) {
             Ok(metadata) => assert_eq!(metadata, "image/png 560×560"),
             Err(_) => assert!(false),
         }
         match resolve_url(
             "https://upload.wikimedia.org/wikipedia/commons/2/2b/Seven_segment_display-animated.gif",
-            "en",
-            &opts,
+            &rtd,
         ) {
             Ok(metadata) => assert_eq!(metadata, "image/gif 600×752"),
             Err(_) => assert!(false),
