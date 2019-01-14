@@ -1,16 +1,31 @@
+[features]
+report_metadata = false
+report_mime = false
+mask_highlights = false
+send_notice = false
+history = false
+
+[parameters]
+url_limit = 10
+user_agent = "Mozilla/5.0"
+accept_lang = "en"
+
+[database]
+path = ""
+type = "in-memory"
+
 [connection]
-owners = []
-nickname = "user"
-nick_password = "password"
-alt_nicks = ["user_", "user__"]
-username = "user"
-realname = "Test User"
+nickname = "url-bot-rs"
+nick_password = ""
+alt_nicks = ["url-bot-rs_"]
+username = "url-bot-rs"
+realname = "url-bot-rs"
 server = "chat.freenode.net"
 port = 6697
 password = ""
 use_ssl = true
 encoding = "UTF-8"
-channels = ["#music"]
+channels = []
 user_info = "Feed me URLs."
 version = "0.1"
 source = "https://github.com/nuxeh/url-bot-rs"
@@ -19,20 +34,3 @@ ping_timeout = 10
 burst_window_length = 8
 max_messages_in_burst = 15
 should_ghost = false
-ghost_sequence = []
-
-[features]
-mask_highlights = false
-send_notice = false
-report_metadata = false
-report_mime = false
-history = false
-
-[parameters]
-url_limit = 4
-accept_lang = "en"
-user_agent = "Mozilla/5.0"
-
-[database]
-path = ""
-type = "sqlite"

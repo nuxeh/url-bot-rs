@@ -241,4 +241,11 @@ mod tests {
         args.flag_conf = Some(PathBuf::from("example.config.toml"));
         Rtd::from_args(args).unwrap();
     }
+
+    #[test]
+    fn example_conf_data_matches_generated_default_values() {
+        let example = fs::read_to_string("example.config.toml").unwrap();
+        let default = toml::ser::to_string(&Conf::default()).unwrap();
+        assert!(default == example);
+    }
 }
