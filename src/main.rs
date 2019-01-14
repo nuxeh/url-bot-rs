@@ -79,8 +79,8 @@ fn main() {
     println!("Using configuration: {}", rtd.paths.conf.display());
     if rtd.args.flag_verbose {
         println!("\n[features]\n{}", rtd.conf.features);
-        println!("[parameters]:\n{}", rtd.conf.params);
-        println!("[database]:\n{}", rtd.conf.database);
+        println!("[parameters]\n{}", rtd.conf.params);
+        println!("[database]\n{}", rtd.conf.database);
     }
 
     // open the sqlite database for logging
