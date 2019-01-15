@@ -225,7 +225,7 @@ impl_display!(Features, Parameters, Database);
 
 fn create_dir_if_missing(dir: &Path) -> Result<bool, Error> {
     let pdir = dir.to_str().unwrap();
-    let exists = dir.exists();
+    let exists = pdir.is_empty() || dir.exists();
     if !exists {
         eprintln!("Directory `{}` doesn't exist, creating it", pdir);
         fs::create_dir_all(dir)?;
