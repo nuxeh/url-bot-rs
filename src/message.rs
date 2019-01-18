@@ -2,18 +2,28 @@ use irc::client::prelude::*;
 use std::iter;
 use unicode_segmentation::UnicodeSegmentation;
 use reqwest::Url;
+use regex::Regex;
 
 use super::http::resolve_url;
 use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;
 
+// regex for unsafe characters, from RFC 1738
+const UNSAFE_CHARS: &str = r"[{}|\\^~\[\]`]";
+
 pub fn handle_message(
     client: &IrcClient, message: Message, rtd: &Rtd, db: &Database
 ) {
+    lazy_static! {
+        static ref UNSAFE: Regex = Regex::new(UNSAFE_CHARS).unwrap();
+    }
+
+    // debug printing
     if rtd.args.flag_debug {
         eprintln!("{:?}", message.command)
     }
 
+    // match on message type
     let (target, msg) = match message.command {
         Command::PRIVMSG(ref target, ref msg) => (target, msg),
         _ => return,
@@ -34,6 +44,11 @@ pub fn handle_message(
             Ok(url) => url,
             _ => continue,
         };
+
+        // the token must not contain unsafe characters
+        if UNSAFE.is_match(token) {
+            continue;
+        }
 
         // the schema must be http or https
         if !["http", "https"].contains(&url.scheme()) {
@@ -148,5 +163,21 @@ mod tests {
         assert_eq!("f\u{200C}oo", create_non_highlighting_name("foo"));
         assert_eq!("b\u{200C}ar", create_non_highlighting_name("bar"));
         assert_eq!("b\u{200C}az", create_non_highlighting_name("baz"));
+    }
+
+    #[test]
+    fn test_unsafe_chars_regex() {
+        lazy_static! {
+            static ref UNSAFE: Regex = Regex::new(UNSAFE_CHARS).unwrap();
+        }
+        assert!(UNSAFE.is_match("http://z.zzz/{"));
+        assert!(UNSAFE.is_match("http://z.zzz/}"));
+        assert!(UNSAFE.is_match("http://z.zzz/|"));
+        assert!(UNSAFE.is_match("http://z.zzz/\\"));
+        assert!(UNSAFE.is_match("http://z.zzz/^"));
+        assert!(UNSAFE.is_match("http://z.zzz/~"));
+        assert!(UNSAFE.is_match("http://z.zzz/["));
+        assert!(UNSAFE.is_match("http://z.zzz/]"));
+        assert!(!UNSAFE.is_match("http://z.zzz/"));
     }
 }
