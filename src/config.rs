@@ -10,7 +10,8 @@ use std::path::{Path, PathBuf};
 use irc::client::data::Config as IrcConfig;
 use failure::Error;
 use std::fmt;
-use directories::{ProjectDirs};
+use directories::{ProjectDirs, BaseDirs};
+
 use super::Args;
 use super::buildinfo;
 
@@ -150,7 +151,7 @@ impl Rtd {
         let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
         rtd.paths.conf = match rtd.args.flag_conf {
             // configuration file path specified as command line parameter
-            Some(ref cp) => cp.clone(),
+            Some(ref cp) => expand_tilde(cp),
             // default path
             _ => dirs.config_dir().join("config.toml")
         };
@@ -176,7 +177,7 @@ impl Rtd {
         // set database path and history flag
         let (hist_enabled, db_path) = Self::get_db_info(&rtd, &dirs);
         rtd.history = hist_enabled;
-        rtd.paths.db = db_path;
+        rtd.paths.db = db_path.and_then(|p| Some(expand_tilde(&p)));
 
         // check database path exists, create it if it doesn't
         if let Some(dp) = rtd.paths.db.clone() {
@@ -233,6 +234,13 @@ fn create_dir_if_missing(dir: &Path) -> Result<bool, Error> {
     Ok(exists)
 }
 
+fn expand_tilde(path: &Path) -> PathBuf {
+    match (BaseDirs::new(), path.strip_prefix("~")) {
+        (Some(bd), Ok(stripped)) => bd.home_dir().join(stripped),
+        _ => path.to_owned(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -250,5 +258,30 @@ mod tests {
         let example = fs::read_to_string("example.config.toml").unwrap();
         let default = toml::ser::to_string(&Conf::default()).unwrap();
         assert!(default == example);
+    }
+
+    #[test]
+    fn test_expand_tilde() {
+        let homedir: PathBuf = BaseDirs::new()
+            .unwrap()
+            .home_dir()
+            .to_owned();
+
+        assert_eq!(
+            expand_tilde(&PathBuf::from("/")),
+            PathBuf::from("/")
+        );
+        assert_eq!(
+            expand_tilde(&PathBuf::from("/abc/~def/ghi/")),
+            PathBuf::from("/abc/~def/ghi/")
+        );
+        assert_eq!(
+            expand_tilde(&PathBuf::from("~/")),
+            PathBuf::from(format!("{}/", homedir.to_str().unwrap()))
+        );
+        assert_eq!(
+            expand_tilde(&PathBuf::from("~/abc/def/ghi/")),
+            PathBuf::from(format!("{}/abc/def/ghi/", homedir.to_str().unwrap()))
+        );
     }
 }
