@@ -1,0 +1,12 @@
+[Unit]
+Description=url-bot-rs
+After=network.target
+Requires=network.target
+
+[Service]
+ExecStart=/usr/bin/url-bot-rs
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

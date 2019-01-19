@@ -1,7 +1,11 @@
 [package]
 name = "url-bot-rs"
 version = "0.2.0"
+description = "Minimal IRC URL bot in Rust"
+repository = "https://github.com/nuxeh/url-bot-rs"
 authors = ["Edward Cragg <drq.11235@gmail.com>"]
+license = "ISC"
+readme = "README.md"
 build = "build.rs"
 
 [build-dependencies]
@@ -28,3 +32,13 @@ unicode-segmentation = "1.2.1"
 toml = "0.4.8"
 image = "0.20.0"
 directories = "1.0.2"
+
+[package.metadata.deb]
+extended-description = """\
+Standalone IRC bot; for resolving URLs posted, retrieving, and posting page
+titles to a configurable IRC server and channels"""
+assets = [
+    ["example.config.toml", "usr/share/doc/url-bot-rs/", "644"],
+    ["systemd/url-bot-rs.service", "lib/systemd/system/", "644"],
+    ["target/release/url-bot-rs", "usr/bin/", "755"]
+]

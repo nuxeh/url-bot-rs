@@ -20,6 +20,7 @@ For example:
 
 ### Build
 
+    git clone https://github.com/nuxeh/url-bot-rs
     cd url-bot-rs
     cargo build
 
@@ -95,24 +96,33 @@ If history is enabled, no database type is specified in the `[database]`
 section of the configuration, and no database path has been specified, an
 in-memory database will be used.
 
-## Run
+## Install from source
 
-    cargo run
+### Cargo
 
-## Install
-
-    cargo install
+    cargo install --git https://github.com/nuxeh/url-bot-rs
 
 ### Debian/Ubuntu (linux)
 
+    git clone https://github.com/nuxeh/url-bot-rs
+    cd url-bot-rs
     cargo install cargo-deb
     cargo deb --install
 
-After this, the bot may be started by running `url-bot`
+After this, the bot may be started manually by running `url-bot-rs`.
 
-## Auto-start
+## Running as a service
 
-TODO
+### Debian package install
+
+If you install using the Debian package, this also installs a systemd unit for
+running as a service, e.g.:
+
+    systemctl enable url-bot-rs.service
+    systemctl start url-bot-rs.service
+    systemctl status url-bot-rs.service
+
+...etc.
 
 ## Additional command line options
 
