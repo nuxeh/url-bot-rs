@@ -54,6 +54,7 @@ Usage:
 
 Options:
     -h --help       Show this help message.
+    --version       Print version.
     -v --verbose    Show extra information.
     -D --debug      Print debugging information.
     -d --db=PATH    Use a sqlite database at PATH.
@@ -68,11 +69,19 @@ pub struct Args {
     flag_conf: Option<PathBuf>,
 }
 
-// Message { tags: None, prefix: Some("edcragg!edcragg@ip"), command: PRIVMSG("#music", "test") }
+fn version() -> String {
+    format!("v{}{} (build: {})",
+        buildinfo::PKG_VERSION,
+        buildinfo::GIT_VERSION
+            .map_or_else(|| "".to_owned(),
+                |v| format!(" (git {})", v)),
+        buildinfo::PROFILE,
+    )
+}
 
 fn main() {
     let args: Args = Docopt::new(USAGE)
-                     .and_then(|d| d.deserialize())
+                     .and_then(|d| d.version(Some(version())).deserialize())
                      .unwrap_or_else(|e| e.exit());
 
     let rtd: Rtd = Rtd::from_args(args).unwrap_or_else(|err| {
