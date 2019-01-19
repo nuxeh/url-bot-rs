@@ -8,15 +8,9 @@ use super::http::resolve_url;
 use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;
 
-// regex for unsafe characters, from RFC 1738
-const UNSAFE_CHARS: &str = r"[{}|\\^~\[\]`]";
-
 pub fn handle_message(
     client: &IrcClient, message: Message, rtd: &Rtd, db: &Database
 ) {
-    lazy_static! {
-        static ref UNSAFE: Regex = Regex::new(UNSAFE_CHARS).unwrap();
-    }
 
     // debug printing
     if rtd.args.flag_debug {
@@ -46,7 +40,7 @@ pub fn handle_message(
         };
 
         // the token must not contain unsafe characters
-        if UNSAFE.is_match(token) {
+        if contains_unsafe_chars(token) {
             continue;
         }
 
@@ -119,6 +113,16 @@ pub fn handle_message(
     };
 }
 
+// regex for unsafe characters, as defined in RFC 1738
+const UNSAFE_CHARS: &str = r"[{}|\\^~\[\]`]";
+
+fn contains_unsafe_chars(token: &str) -> bool {
+    lazy_static! {
+        static ref UNSAFE: Regex = Regex::new(UNSAFE_CHARS).unwrap();
+    }
+    UNSAFE.is_match(token)
+}
+
 fn create_non_highlighting_name(name: &str) -> String {
     let mut graphemes = name.graphemes(true);
     let first = graphemes.next();
@@ -166,18 +170,15 @@ mod tests {
     }
 
     #[test]
-    fn test_unsafe_chars_regex() {
-        lazy_static! {
-            static ref UNSAFE: Regex = Regex::new(UNSAFE_CHARS).unwrap();
-        }
-        assert!(UNSAFE.is_match("http://z.zzz/{"));
-        assert!(UNSAFE.is_match("http://z.zzz/}"));
-        assert!(UNSAFE.is_match("http://z.zzz/|"));
-        assert!(UNSAFE.is_match("http://z.zzz/\\"));
-        assert!(UNSAFE.is_match("http://z.zzz/^"));
-        assert!(UNSAFE.is_match("http://z.zzz/~"));
-        assert!(UNSAFE.is_match("http://z.zzz/["));
-        assert!(UNSAFE.is_match("http://z.zzz/]"));
-        assert!(!UNSAFE.is_match("http://z.zzz/"));
+    fn test_contains_unsafe_chars() {
+        assert_eq!(contains_unsafe_chars("http://z.zzz/"), false);
+        assert_eq!(contains_unsafe_chars("http://z.zzz/{"), true);
+        assert_eq!(contains_unsafe_chars("http://z.zzz/}"), true);
+        assert_eq!(contains_unsafe_chars("http://z.zzz/|"), true);
+        assert_eq!(contains_unsafe_chars("http://z.zzz/^"), true);
+        assert_eq!(contains_unsafe_chars("http://z.zzz/~"), true);
+        assert_eq!(contains_unsafe_chars("http://z.zzz/["), true);
+        assert_eq!(contains_unsafe_chars("http://z.zzz/]"), true);
+        assert_eq!(contains_unsafe_chars("http://z.zzz/\\"), true);
     }
 }
