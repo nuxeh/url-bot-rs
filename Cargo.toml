@@ -10,6 +10,7 @@ build = "build.rs"
 
 [build-dependencies]
 built = "0.3.0"
+man = "0.2.0"
 
 [dependencies]
 irc = "0.13.6"
@@ -39,6 +40,7 @@ Standalone IRC bot; for resolving URLs posted, retrieving, and posting page
 titles to a configurable IRC server and channels"""
 assets = [
     ["example.config.toml", "usr/share/doc/url-bot-rs/", "644"],
+    ["url-bot-rs.1", "usr/local/share/man/man1/", "644"],
     ["systemd/url-bot-rs.service", "lib/systemd/system/", "644"],
     ["target/release/url-bot-rs", "usr/bin/", "755"]
 ]
