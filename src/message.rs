@@ -11,8 +11,7 @@ use super::config::Rtd;
 pub fn handle_message(
     client: &IrcClient, message: Message, rtd: &Rtd, db: &Database
 ) {
-
-    // debug printing
+    // print the message if debug flag is set
     if rtd.args.flag_debug {
         eprintln!("{:?}", message.command)
     }
@@ -114,11 +113,11 @@ pub fn handle_message(
 }
 
 // regex for unsafe characters, as defined in RFC 1738
-const UNSAFE_CHARS: &str = r"[{}|\\^~\[\]`]";
+const RE_UNSAFE_CHARS: &str = r"[{}|\\^~\[\]`]";
 
 fn contains_unsafe_chars(token: &str) -> bool {
     lazy_static! {
-        static ref UNSAFE: Regex = Regex::new(UNSAFE_CHARS).unwrap();
+        static ref UNSAFE: Regex = Regex::new(RE_UNSAFE_CHARS).unwrap();
     }
     UNSAFE.is_match(token)
 }
@@ -171,14 +170,9 @@ mod tests {
 
     #[test]
     fn test_contains_unsafe_chars() {
+        for c in &['{', '}', '|', '\\', '^', '~', '[', ']', '`'] {
+            assert_eq!(contains_unsafe_chars(&format!("http://z/{}", c)), true);
+        }
         assert_eq!(contains_unsafe_chars("http://z.zzz/"), false);
-        assert_eq!(contains_unsafe_chars("http://z.zzz/{"), true);
-        assert_eq!(contains_unsafe_chars("http://z.zzz/}"), true);
-        assert_eq!(contains_unsafe_chars("http://z.zzz/|"), true);
-        assert_eq!(contains_unsafe_chars("http://z.zzz/^"), true);
-        assert_eq!(contains_unsafe_chars("http://z.zzz/~"), true);
-        assert_eq!(contains_unsafe_chars("http://z.zzz/["), true);
-        assert_eq!(contains_unsafe_chars("http://z.zzz/]"), true);
-        assert_eq!(contains_unsafe_chars("http://z.zzz/\\"), true);
     }
 }
