@@ -69,21 +69,28 @@ pub struct Args {
     flag_conf: Option<PathBuf>,
 }
 
-fn version() -> String {
-    format!("v{}{} (build: {})",
-        buildinfo::PKG_VERSION,
-        buildinfo::GIT_VERSION
-            .map_or_else(|| "".to_owned(),
+fn version() -> &'static str {
+    lazy_static!(
+        static ref VERSION: String = format!(
+            "v{}{} (build: {})",
+            buildinfo::PKG_VERSION,
+            buildinfo::GIT_VERSION.map_or_else(
+                || String::from(""),
                 |v| format!(" (git {})", v)),
-        buildinfo::PROFILE,
-    )
+            buildinfo::PROFILE
+        );
+    );
+    &VERSION
 }
 
 fn main() {
+    // parse command line arguments with docopt
     let args: Args = Docopt::new(USAGE)
-                     .and_then(|d| d.version(Some(version())).deserialize())
-                     .unwrap_or_else(|e| e.exit());
+        .and_then(|d| d.version(Some(version().to_owned()))
+        .deserialize())
+        .unwrap_or_else(|e| e.exit());
 
+    // get a run-time configuration data structure
     let rtd: Rtd = Rtd::from_args(args).unwrap_or_else(|err| {
         eprintln!("Error loading configuration: {}", err);
         process::exit(1);
