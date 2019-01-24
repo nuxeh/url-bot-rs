@@ -38,6 +38,7 @@ directories = "1.0.2"
 extended-description = """\
 Standalone IRC bot; for resolving URLs posted, retrieving, and posting page
 titles to a configurable IRC server and channels"""
+maintainer-scripts = "debian"
 assets = [
     ["example.config.toml", "usr/share/doc/url-bot-rs/", "644"],
     ["url-bot-rs.1", "usr/local/share/man/man1/", "644"],

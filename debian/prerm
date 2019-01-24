@@ -1,0 +1,1 @@
+systemctl disable --now url-bot-rs.service

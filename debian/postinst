@@ -1,0 +1,2 @@
+useradd -m --system url-bot-rs --shell /usr/sbin/nologin
+systemctl enable url-bot-rs.service
