@@ -113,16 +113,52 @@ After this, the bot may be started manually by running `url-bot-rs`.
 
 ## Running as a service
 
+The bot can be run automatically as a service by `systemd`. This is set up
+automatically in the case of a Debian package install, or alternatively can be
+set up manually.
+
 ### Debian package install
 
-If you install using the Debian package, this also installs a systemd unit for
-running as a service, e.g.:
+If you install using the Debian package, a `url-bot-rs` user is created
+automatically. Additionally, the systemd unit is installed, and the service is
+enabled, but not started automatically, after installation. To start it, run:
 
-    systemctl enable url-bot-rs.service
     systemctl start url-bot-rs.service
-    systemctl status url-bot-rs.service
 
-...etc.
+The configuration should be customised as described in "Customising
+configuration" below.
+
+When uninstalling the Debian package, the `url-bot-rs` user nor its home
+directory files are deleted, according to Debian packaging guidelines. This
+keeps UIDs more deterministic, and allows re-installation or upgrade without
+losing the bot's configuration.
+
+### Manual systemd install
+
+To set up systemd manually, the unit file must be copied, and the `url-bot-rs`
+user must be created on the system. From inside the project repository:
+
+    sudo install -m 644 systemd/url-bot-rs.service /lib/systemd/system/
+    sudo useradd -m --system url-bot-rs --shell /usr/sbin/nologin
+    systemctl enable --now url-bot-rs.service
+
+The configuration should be customised as described in "Customising
+configuration" below.
+
+### Customising configuration
+
+Once started once, a default configuration is created in
+`/home/url-bot-rs/.config/url-bot-rs/config.toml`, which should be edited, and
+the bot restarted:
+
+    systemctl restart url-bot-rs.service
+
+### Checking status
+
+To check status or get logs:
+
+    systemctl status url-bot-rs.service
+    journalctl -u url-bot-rs.service
 
 ## Additional command line options
 
