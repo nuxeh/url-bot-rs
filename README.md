@@ -123,7 +123,7 @@ If you install using the Debian package, a `url-bot-rs` user is created
 automatically. Additionally, the systemd unit is installed, and the service is
 enabled, but not started automatically, after installation. To start it, run:
 
-    systemctl start url-bot-rs.service
+    sudo systemctl start url-bot-rs.service
 
 The configuration should be customised as described in "Customising
 configuration" below.
@@ -138,9 +138,9 @@ losing the bot's configuration.
 To set up systemd manually, the unit file must be copied, and the `url-bot-rs`
 user must be created on the system. From inside the project repository:
 
-    sudo install -m 644 systemd/url-bot-rs.service /lib/systemd/system/
+    sudo install -m 644 systemd/url-bot-rs.service /etc/systemd/system/
     sudo useradd -m --system url-bot-rs --shell /usr/sbin/nologin
-    systemctl enable --now url-bot-rs.service
+    sudo systemctl enable --now url-bot-rs.service
 
 The configuration should be customised as described in "Customising
 configuration" below.
@@ -151,14 +151,14 @@ Once started once, a default configuration is created in
 `/home/url-bot-rs/.config/url-bot-rs/config.toml`, which should be edited, and
 the bot restarted:
 
-    systemctl restart url-bot-rs.service
+    sudo systemctl restart url-bot-rs.service
 
 ### Checking status
 
 To check status or get logs:
 
     systemctl status url-bot-rs.service
-    journalctl -u url-bot-rs.service
+    sudo journalctl -u url-bot-rs.service
 
 ## Additional command line options
 
