@@ -46,7 +46,7 @@ use self::config::Rtd;
 use self::message::handle_message;
 
 // docopt usage string
-const USAGE: &'static str = "
+const USAGE: &str = "
 URL munching IRC bot.
 
 Usage:
