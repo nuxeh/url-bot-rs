@@ -9,7 +9,7 @@ use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;
 
 pub fn handle_message(
-    client: &IrcClient, message: Message, rtd: &Rtd, db: &Database
+    client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database
 ) {
     // print the message if debug flag is set
     if rtd.args.flag_debug {
