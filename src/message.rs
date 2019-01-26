@@ -72,9 +72,10 @@ pub fn handle_message(
             Ok(None)
         } {
             Ok(Some(previous_post)) => {
-                let user = match rtd.conf.features.mask_highlights {
-                    true => create_non_highlighting_name(&previous_post.user),
-                    _ => previous_post.user
+                let user = if rtd.conf.features.mask_highlights {
+                    create_non_highlighting_name(&previous_post.user)
+                } else {
+                    previous_post.user
                 };
                 format!("⤷ {} → {} {} ({})",
                     title,
@@ -103,9 +104,10 @@ pub fn handle_message(
 
         // send the IRC response
         let target = message.response_target().unwrap_or(target);
-        match rtd.conf.features.send_notice {
-            true => client.send_notice(target, &msg).unwrap(),
-            _ => client.send_privmsg(target, &msg).unwrap()
+        if rtd.conf.features.send_notice {
+            client.send_notice(target, &msg).unwrap()
+        } else {
+            client.send_privmsg(target, &msg).unwrap()
         }
 
         num_processed += 1;

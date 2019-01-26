@@ -78,9 +78,10 @@ pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
 }
 
 fn get_mime(rtd: &Rtd, mime: &Mime, size: &str) -> Option<String> {
-    match rtd.conf.features.report_mime {
-        true => Some(format!("{} {}", mime, size.replace(" ", ""))),
-        _ => None
+    if rtd.conf.features.report_mime {
+        Some(format!("{} {}", mime, size.replace(" ", "")))
+    } else {
+        None
     }
 }
 
