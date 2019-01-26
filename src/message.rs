@@ -61,7 +61,7 @@ pub fn handle_message(
         let entry = NewLogEntry {
             title: &title,
             url: token,
-            user: user,
+            user,
             channel: target,
         };
 
