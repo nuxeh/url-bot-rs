@@ -34,7 +34,7 @@ pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
         .and_then(|len| len.to_str().ok())
         .and_then(|len| len.parse().ok())
         .unwrap_or(0);
-    let size = len.file_size(options::CONVENTIONAL).unwrap_or(String::new());
+    let size = len.file_size(options::CONVENTIONAL).unwrap_or_default();
 
     // print HTTP status and response headers for debugging
     if rtd.args.flag_debug {
@@ -65,10 +65,10 @@ pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
             match (mime.type_(), mime.subtype()) {
                 (TEXT, HTML) => parse_title(&contents),
                 (IMAGE, _) => parse_title(&contents)
-                    .or(get_image_metadata(&rtd, &body))
-                    .or(get_mime(&rtd, &mime, &size)),
+                    .or_else(|| get_image_metadata(&rtd, &body))
+                    .or_else(|| get_mime(&rtd, &mime, &size)),
                 _ => parse_title(&contents)
-                    .or(get_mime(&rtd, &mime, &size)),
+                    .or_else(|| get_mime(&rtd, &mime, &size)),
             }
         },
     }.ok_or_else(|| format_err!("failed to parse title"))?;
