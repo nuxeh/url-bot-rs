@@ -196,7 +196,7 @@ impl Rtd {
         if let Some(ref path) = rtd.args.flag_db {
             // enable history when db path given as CLI argument
             (true, Some(PathBuf::from(path)))
-        } else if rtd.conf.features.history == false {
+        } else if !rtd.conf.features.history {
             // no path specified on CLI, and history disabled in configuration
             (false, None)
         } else if !rtd.conf.database.path.is_empty() {
