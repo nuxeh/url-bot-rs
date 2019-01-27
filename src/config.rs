@@ -257,6 +257,16 @@ mod tests {
     fn example_conf_data_matches_generated_default_values() {
         let example = fs::read_to_string("example.config.toml").unwrap();
         let default = toml::ser::to_string(&Conf::default()).unwrap();
+
+        // print diff (on failure)
+        println!("Configuration diff (- example, + default):");
+        for diff in diff::lines(&example, &default) {
+            match diff {
+                diff::Result::Left(l) => println!("-{}", l),
+                diff::Result::Both(l, _) => println!(" {}", l),
+                diff::Result::Right(r) => println!("+{}", r)
+            }
+        }
         assert!(default == example);
     }
 
