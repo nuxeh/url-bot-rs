@@ -15,7 +15,7 @@ For example:
 
 ## Build
 
-### Get rust
+### Get Rust
 
 [https://www.rust-lang.org/en-US/install.html](https://www.rust-lang.org/en-US/install.html)
 
