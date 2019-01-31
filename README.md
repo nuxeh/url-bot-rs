@@ -19,6 +19,10 @@ For example:
 
 [https://www.rust-lang.org/en-US/install.html](https://www.rust-lang.org/en-US/install.html)
 
+e.g. on a Unix-like OS:
+
+    curl https://sh.rustup.rs -sSf | sh
+
 ### Build
 
     git clone https://github.com/nuxeh/url-bot-rs
