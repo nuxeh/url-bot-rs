@@ -123,9 +123,14 @@ fn parse_title(page_contents: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    extern crate tiny_http;
+
     use super::*;
     use std::fs::File;
     use std::path::Path;
+    use std::thread;
+    use self::tiny_http::{Response, Header};
+    use std::sync::mpsc;
 
     #[test]
     fn resolve_urls() {
@@ -248,5 +253,56 @@ mod tests {
             Ok(metadata) => assert_eq!(metadata, "image/gif 600×752"),
             Err(_) => assert!(false),
         }
+    }
+
+    // Spin up a local http server, extract and verify request headers in the
+    // request we make.
+    //
+    // Use tiny_http for this instead of hyper, to avoid using the same library
+    // for both the request and the server, which could potentially mask bugs
+    // in `hyper`.
+    #[test]
+    fn verify_request_headers() {
+        let expected_headers = [
+            Header::from_bytes("user-agent", "Mozilla/5.0").unwrap(),
+            Header::from_bytes("accept", "*/*").unwrap(),
+            Header::from_bytes("accept-language", "en").unwrap(),
+            Header::from_bytes("accept-encoding", "gzip").unwrap(),
+            Header::from_bytes("host", "0.0.0.0:28282").unwrap(),
+        ];
+
+        let (tx, rx) = mpsc::channel();
+        let server_thread = thread::spawn(move || {
+            let server = tiny_http::Server::http("0.0.0.0:28282").unwrap();
+            loop {
+                let rq = server.recv().unwrap();
+                if rq.url() == "/test" {
+                    // send headers through mpsc channel
+                    tx.send(rq.headers().to_owned()).unwrap();
+                    // respond with some content
+                    let path = Path::new("./test/html/basic.html");
+                    let resp = Response::from_file(File::open(path).unwrap());
+                    rq.respond(resp).unwrap();
+                    break;
+                }
+            }
+        });
+
+        thread::sleep(time::Duration::from_millis(100));
+        resolve_url("http://0.0.0.0:28282/test", &Rtd::default()).unwrap();
+        let request_headers = rx.recv().unwrap();
+
+        println!("Headers in request:\n{:?}", request_headers);
+        println!("Headers expected:\n{:?}", expected_headers);
+
+        let headers_match = expected_headers
+            .iter()
+            .zip(request_headers.iter())
+            .all(|(a, b)| {
+                a.field == b.field && a.value == b.value
+            });
+
+        assert!(headers_match);
+        server_thread.join().unwrap();
     }
 }
