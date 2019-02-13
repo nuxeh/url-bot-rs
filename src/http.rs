@@ -243,17 +243,37 @@ mod tests {
     }
 
     #[test]
-    fn resolve_locally_served_images() {
+    fn resolve_locally_served_files() {
         let mut rtd: Rtd = Rtd::default();
+
+        // metadata and mime disabled
+        rtd.conf.features.report_metadata = false;
+        rtd.conf.features.report_mime = false;
+
+        for t in vec!(
+            "./test/img/test.gif",
+            "./test/other/test.txt",
+            "./test/other/test.pdf",
+        ) {
+            assert!(serve_resolve(PathBuf::from(t), &rtd).is_err());
+        }
+
+        // metadata and mime enabled
         rtd.conf.features.report_metadata = true;
         rtd.conf.features.report_mime = true;
 
         for t in vec!(
-            ("./test/img/test.png", String::from("image/png 800×400")),
-            ("./test/img/test.jpg", String::from("image/jpeg 400×200")),
-            ("./test/img/test.gif", String::from("image/gif 1920×1080")),
+            ("./test/img/test.png", "image/png 800×400"),
+            ("./test/img/test.jpg", "image/jpeg 400×200"),
+            ("./test/img/test.gif", "image/gif 1920×1080"),
+            ("./test/html/basic.html", "basic"),
+            ("./test/other/test.txt", "text/plain; charset=utf8 16B"),
+            ("./test/other/test.pdf", "application/pdf 1.31KB"),
         ) {
-            assert_eq!(serve_resolve(PathBuf::from(t.0), &rtd).unwrap(), t.1)
+            assert_eq!(
+                serve_resolve(PathBuf::from(t.0), &rtd).unwrap(),
+                String::from(t.1)
+            )
         }
     }
 
@@ -268,7 +288,7 @@ mod tests {
             "jpeg" => "image/jpeg",
             "png" => "image/png",
             "pdf" => "application/pdf",
-            "htm" => "text/html; charset=utf8",
+            "svg" => "image/svg+xml",
             "html" => "text/html; charset=utf8",
             "txt" => "text/plain; charset=utf8",
             _ => "text/plain; charset=utf8"
