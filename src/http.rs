@@ -269,8 +269,8 @@ mod tests {
         let expected_headers = [
             Header::from_bytes("user-agent", "Mozilla/5.0").unwrap(),
             Header::from_bytes("accept", "*/*").unwrap(),
+            Header::from_bytes("accept-encoding", "identity").unwrap(),
             Header::from_bytes("accept-language", "en").unwrap(),
-            Header::from_bytes("accept-encoding", "gzip").unwrap(),
             Header::from_bytes("host", "0.0.0.0:28282").unwrap(),
         ];
 
