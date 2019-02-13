@@ -125,9 +125,7 @@ set up manually.
 
 If you install using the Debian package, a `url-bot-rs` user is created
 automatically. Additionally, the systemd unit is installed, and the service is
-enabled, but not started automatically, after installation. To start it, run:
-
-    sudo systemctl start url-bot-rs.service
+enabled and started automatically, after installation.
 
 The configuration should be customised as described in "Customising
 configuration" below.
