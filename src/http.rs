@@ -4,7 +4,8 @@ use itertools::Itertools;
 use regex::Regex;
 use failure::Error;
 use reqwest::Client;
-use reqwest::header::{USER_AGENT, ACCEPT_LANGUAGE, CONTENT_TYPE, CONTENT_LENGTH};
+use reqwest::header::{USER_AGENT, ACCEPT_ENCODING, ACCEPT_LANGUAGE,
+                      CONTENT_TYPE, CONTENT_LENGTH};
 use std::io::Read;
 use image::{gif, jpeg, png, ImageDecoder};
 use mime::{Mime, IMAGE, TEXT, HTML};
@@ -23,6 +24,7 @@ pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
 
     let resp = client.get(url)
         .header(USER_AGENT, rtd.conf.params.user_agent.as_str())
+        .header(ACCEPT_ENCODING, "identity")
         .header(ACCEPT_LANGUAGE, rtd.conf.params.accept_lang.as_str())
         .send()?
         .error_for_status()?;
