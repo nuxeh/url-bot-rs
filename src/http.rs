@@ -138,8 +138,8 @@ mod tests {
 
     use super::*;
     use std::fs::File;
-    use std::path::Path;
-    use std::thread;
+    use std::path::{Path, PathBuf};
+    use std::{thread, time};
     use self::tiny_http::{Response, Header};
     use std::sync::mpsc;
 
@@ -243,27 +243,62 @@ mod tests {
     }
 
     #[test]
-    fn parse_images() {
+    fn resolve_locally_served_images() {
         let mut rtd: Rtd = Rtd::default();
         rtd.conf.features.report_metadata = true;
-        match resolve_url("https://rynx.org/sebk/_/DSC_5503.jpg", &rtd) {
-            Ok(metadata) => assert_eq!(metadata, "image/jpeg 1000×663"),
-            Err(_) => assert!(false),
-        }
-        match resolve_url(
-            "https://assets-cdn.github.com/images/modules/logos_page/GitHub-Mark.png",
-            &rtd,
+        rtd.conf.features.report_mime = true;
+
+        for t in vec!(
+            ("./test/img/test.png", String::from("image/png 800×400")),
+            ("./test/img/test.jpg", String::from("image/jpeg 400×200")),
+            ("./test/img/test.gif", String::from("image/gif 1920×1080")),
         ) {
-            Ok(metadata) => assert_eq!(metadata, "image/png 560×560"),
-            Err(_) => assert!(false),
+            assert_eq!(serve_resolve(PathBuf::from(t.0), &rtd).unwrap(), t.1)
         }
-        match resolve_url(
-            "https://upload.wikimedia.org/wikipedia/commons/2/2b/Seven_segment_display-animated.gif",
-            &rtd,
-        ) {
-            Ok(metadata) => assert_eq!(metadata, "image/gif 600×752"),
-            Err(_) => assert!(false),
+    }
+
+    fn get_ctype(path: &Path) -> &'static str {
+        let extension = match path.extension() {
+            None => return "text/plain",
+            Some(e) => e
+        };
+        match extension.to_str().unwrap() {
+            "gif" => "image/gif",
+            "jpg" => "image/jpeg",
+            "jpeg" => "image/jpeg",
+            "png" => "image/png",
+            "pdf" => "application/pdf",
+            "htm" => "text/html; charset=utf8",
+            "html" => "text/html; charset=utf8",
+            "txt" => "text/plain; charset=utf8",
+            _ => "text/plain; charset=utf8"
         }
+    }
+
+    // Spin up a local http server, and resolve the url served
+    fn serve_resolve(path: PathBuf, rtd: &Rtd) -> Result<String, Error> {
+        let server_thread = thread::spawn(move || {
+            let server = tiny_http::Server::http("0.0.0.0:28482").unwrap();
+            loop {
+                let rq = server.recv().unwrap();
+                if rq.url() == "/test" {
+                    let resp = Response::from_file(File::open(&path).unwrap())
+                        .with_header(
+                            tiny_http::Header {
+                                field: "Content-Type".parse().unwrap(),
+                                value: get_ctype(&path).parse().unwrap(),
+                            }
+                        );
+                    rq.respond(resp).unwrap();
+                    break;
+                }
+            }
+        });
+
+        thread::sleep(time::Duration::from_millis(100));
+        let res = resolve_url("http://0.0.0.0:28482/test", &rtd);
+        server_thread.join().unwrap();
+        res
     }
 
     // Spin up a local http server, extract and verify request headers in the
