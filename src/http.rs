@@ -17,6 +17,7 @@ pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
     let client = Client::builder()
+        .gzip(false)
         .timeout(Duration::from_secs(10)) // per read/write op
         .build()?;
 
