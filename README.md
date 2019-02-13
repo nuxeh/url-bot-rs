@@ -72,7 +72,6 @@ operation, specified in the `[features]` section:
 The `[parameters]` section includes a number of tunable parameters:
 
 - `url_limit` (u8) max number of URLs to process for each message (default: 10)
-- `user_agent` (String) the user agent to use for http content requests
 - `accept_lang` (String) language requested in http content requests
   (default: "en")
 
