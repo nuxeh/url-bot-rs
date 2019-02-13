@@ -7,7 +7,6 @@ history = false
 
 [parameters]
 url_limit = 10
-user_agent = "Mozilla/5.0"
 accept_lang = "en"
 
 [database]

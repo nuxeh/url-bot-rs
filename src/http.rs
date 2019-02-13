@@ -11,19 +11,27 @@ use image::{gif, jpeg, png, ImageDecoder};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
 use super::config::Rtd;
+use super::buildinfo;
 
 const DL_BYTES: u64 = 100 * 1024; // 100kB
 
 pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
     eprintln!("RESOLVE {}", url);
 
+    // build request
     let client = Client::builder()
         .gzip(false)
         .timeout(Duration::from_secs(10)) // per read/write op
         .build()?;
 
+    // generate user agent string
+    let user_agent = format!(
+        "Mozilla/5.0 url-bot-rs/{}", buildinfo::PKG_VERSION
+    );
+
+    // make request
     let resp = client.get(url)
-        .header(USER_AGENT, rtd.conf.params.user_agent.as_str())
+        .header(USER_AGENT, user_agent)
         .header(ACCEPT_ENCODING, "identity")
         .header(ACCEPT_LANGUAGE, rtd.conf.params.accept_lang.as_str())
         .send()?
@@ -267,7 +275,9 @@ mod tests {
     #[test]
     fn verify_request_headers() {
         let expected_headers = [
-            Header::from_bytes("user-agent", "Mozilla/5.0").unwrap(),
+            Header::from_bytes("user-agent",
+                format!("Mozilla/5.0 url-bot-rs/{}", buildinfo::PKG_VERSION)
+            ).unwrap(),
             Header::from_bytes("accept", "*/*").unwrap(),
             Header::from_bytes("accept-encoding", "identity").unwrap(),
             Header::from_bytes("accept-language", "en").unwrap(),
