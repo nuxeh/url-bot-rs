@@ -115,7 +115,7 @@ pub fn handle_message(
 }
 
 // regex for unsafe characters, as defined in RFC 1738
-const RE_UNSAFE_CHARS: &str = r"[{}|\\^~\[\]`]";
+const RE_UNSAFE_CHARS: &str = r#"[{}|\\^~\[\]`<>"]"#;
 
 fn contains_unsafe_chars(token: &str) -> bool {
     lazy_static! {
@@ -172,7 +172,8 @@ mod tests {
 
     #[test]
     fn test_contains_unsafe_chars() {
-        for c in &['{', '}', '|', '\\', '^', '~', '[', ']', '`'] {
+        for c in &['{', '}', '|', '\\', '^', '~', '[', ']', '`', '<', '>', '"']
+        {
             assert_eq!(contains_unsafe_chars(&format!("http://z/{}", c)), true);
         }
         assert_eq!(contains_unsafe_chars("http://z.zzz/"), false);
