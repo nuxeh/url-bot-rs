@@ -176,7 +176,7 @@ mod tests {
     fn test_contains_unsafe_chars() {
         for c in &['{', '}', '|', '\\', '^', '~', '[', ']', '`', '<', '>', '"']
         {
-            assert_eq!(contains_unsafe_chars(&format!("http://z/{}", c)), true);
+            assert!(contains_unsafe_chars(&format!("http://z/{}", c)));
         }
         assert_eq!(contains_unsafe_chars("http://z.zzz/"), false);
     }
