@@ -1,5 +1,6 @@
 # v0.2.0
 
+- Cookie support
 - Re-add custom user-agent, make user agent non-configurable
 - Request "identity" for accept-encoding
 - Update dependencies

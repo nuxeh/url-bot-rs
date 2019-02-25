@@ -19,6 +19,7 @@ extern crate failure;
 extern crate htmlescape;
 extern crate time;
 extern crate reqwest;
+extern crate cookie;
 extern crate image;
 extern crate serde_rusqlite;
 extern crate mime;
@@ -26,6 +27,8 @@ extern crate humansize;
 extern crate unicode_segmentation;
 extern crate toml;
 extern crate directories;
+#[macro_use]
+extern crate log;
 
 mod sqlite;
 mod http;

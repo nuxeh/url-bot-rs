@@ -3,57 +3,185 @@ use std::time::Duration;
 use itertools::Itertools;
 use regex::Regex;
 use failure::Error;
-use reqwest::Client;
-use reqwest::header::{USER_AGENT, ACCEPT_ENCODING, ACCEPT_LANGUAGE,
-                      CONTENT_TYPE, CONTENT_LENGTH};
+use reqwest::{Client, header, RedirectPolicy, Response};
+use cookie::Cookie;
 use std::io::Read;
 use image::{gif, jpeg, png, ImageDecoder};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
+
 use super::config::Rtd;
 use super::buildinfo;
 
 const DL_BYTES: u64 = 100 * 1024; // 100kB
 
-pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
-    eprintln!("RESOLVE {}", url);
-
-    // build request
-    let client = Client::builder()
-        .gzip(false)
-        .timeout(Duration::from_secs(10)) // per read/write op
-        .build()?;
-
-    // generate user agent string
-    let user_agent = format!(
+lazy_static! {
+    static ref USER_AGENT: String = format!(
         "Mozilla/5.0 url-bot-rs/{}", buildinfo::PKG_VERSION
     );
+}
 
-    // make request
-    let resp = client.get(url)
-        .header(USER_AGENT, user_agent)
-        .header(ACCEPT_ENCODING, "identity")
-        .header(ACCEPT_LANGUAGE, rtd.conf.params.accept_lang.as_str())
-        .send()?
-        .error_for_status()?;
+pub struct RequestParams {
+    pub user_agent: String,
+    pub timeout_s: u64,
+    pub redirect_limit: u8,
+    pub accept_lang: String
+}
 
-    // get response headers
-    let content_type = resp.headers().get(CONTENT_TYPE)
-        .and_then(|typ| typ.to_str().ok())
-        .and_then(|typ| typ.parse::<Mime>().ok());
-    let len = resp.headers().get(CONTENT_LENGTH)
-        .and_then(|len| len.to_str().ok())
-        .and_then(|len| len.parse().ok())
-        .unwrap_or(0);
-    let size = len.file_size(options::CONVENTIONAL).unwrap_or_default();
-
-    // print HTTP status and response headers for debugging
-    if rtd.args.flag_debug {
-        eprintln!("{}", resp.status());
-        for (k, v) in resp.headers() {
-            eprintln!("{}: {}", k, v.to_str().unwrap());
+impl Default for RequestParams {
+    fn default() -> RequestParams {
+        RequestParams {
+            user_agent: USER_AGENT.to_string(),
+            timeout_s: 10,
+            redirect_limit: 10,
+            accept_lang: "en".to_string(),
         }
     }
+}
+
+#[derive(Default)]
+pub struct Session {
+    pub url: String,
+    pub cookies: Vec<String>,
+    pub request_count: u8,
+    pub params: RequestParams,
+}
+
+impl Session {
+    pub fn new() -> Session {
+        Session::default()
+    }
+
+    pub fn accept_lang(&mut self, accept_lang: &str) -> &mut Session {
+        self.params.accept_lang = accept_lang.to_string();
+        self
+    }
+
+    /// Make a request attempting to conform to RFC 6265
+    /// https://tools.ietf.org/html/rfc6265
+    pub fn request(&mut self, url: &str) -> Result<Response, Error> {
+        // follow only one redirection
+        let redirect = RedirectPolicy::custom(|attempt| {
+            if attempt.previous().len() == 1 {
+                attempt.stop()
+            } else {
+                attempt.follow()
+            }
+        });
+
+        let client = Client::builder()
+            .gzip(false)
+            .redirect(redirect)
+            .timeout(Duration::from_secs(self.params.timeout_s))
+            .build()?;
+
+        self.url = url.to_string();
+
+        loop {
+            // generate cookie header
+            let cookie_string: String = self.cookies
+                .iter()
+                .map(|s| s.parse::<Cookie>().ok())
+                .flatten()
+                .map(|c| format!("{}={}", c.name(), c.value()))
+                .intersperse("; ".to_string())
+                .collect();
+
+            // set request headers and make request
+            let resp = client.get(&self.url)
+                .header(header::COOKIE, cookie_string)
+                .header(header::USER_AGENT, self.params.user_agent.as_str())
+                .header(header::ACCEPT_LANGUAGE, self.params.accept_lang.as_str())
+                .header(header::ACCEPT_ENCODING, "identity")
+                .send()?;
+
+            debug!("[{}] <{}> → [{:?} {}]",
+                self.request_count, self.url, resp.version(), resp.status());
+
+            if resp.status().is_redirection() {
+                // get new cookies from response headers
+                let mut new_cookies: Vec<String> = resp.headers()
+                    .get_all(header::SET_COOKIE)
+                    .iter()
+                    .map(|c| c.to_str().ok().and_then(|s| s.parse().ok()))
+                    .flatten()
+                    .filter(|c| !self.cookies.contains(c))
+                    .take(32) // max 32 new cookies per request
+                    .collect();
+
+                // debug print cookie information
+                if !new_cookies.is_empty() {
+                    trace!("Received cookies:");
+                    new_cookies
+                        .iter()
+                        .map(|s| s.parse::<Cookie>().ok())
+                        .flatten()
+                        .for_each(|c| trace!("{} = {}", c.name(), c.value()));
+                    debug!("added {} cookies", new_cookies.len());
+                };
+
+                // add cookies to session
+                self.cookies.append(&mut new_cookies);
+
+                // get redirection location
+                let redirected_url = resp.headers().get(header::LOCATION)
+                    .and_then(|u| u.to_str().ok())
+                    .and_then(|u| u.parse::<String>().ok());
+
+                match redirected_url {
+                    Some(url) => self.url = url,
+                    None => bail!("Can't get redirection URL"),
+                };
+
+                // limit the number of redirections
+                self.request_count += 1;
+                if self.request_count > self.params.redirect_limit {
+                    bail!("Too many redirects, max {}",
+                        self.params.redirect_limit);
+                }
+            }
+
+            else if resp.status().is_success() {
+                debug!("total redirections: {}, total cookies: {}",
+                    self.request_count,
+                    self.cookies.len());
+                return Ok(resp);
+            }
+
+            else {
+                let r = resp.error_for_status()?;
+                bail!("Unhandled request status: {}", r.status());
+            }
+        }
+    }
+}
+
+pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
+    info!("RESOLVE {}", url);
+
+    let mut resp = Session::new()
+        .accept_lang(&rtd.conf.params.accept_lang)
+        .request(url)?;
+
+    get_title(&mut resp, rtd, false)
+        .and_then(|t| { info!("SUCCESS \"{}\"", t); Ok(t) })
+}
+
+pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, Error> {
+    // get content type
+    let content_type = resp.headers().get(header::CONTENT_TYPE)
+        .and_then(|typ| typ.to_str().ok())
+        .and_then(|typ| typ.parse::<Mime>().ok());
+
+    // get content length and human-readable size
+    let len = resp.content_length().unwrap_or(0);
+    let size = len.file_size(options::CONVENTIONAL).unwrap_or_default();
+
+    // debug printing
+    trace!("Response headers:");
+    resp.headers().iter().for_each(|(k, v)| {
+        trace!("[{}] {}", k, v.to_str().unwrap());
+    });
 
     // calculate download size based on the response's MIME type
     let bytes = content_type.clone()
@@ -68,6 +196,9 @@ pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
     let mut body = Vec::new();
     resp.take(bytes).read_to_end(&mut body)?;
     let contents = String::from_utf8_lossy(&body);
+
+    // print downloaded body
+    if dump { println!("{}", contents); }
 
     // get title or metadata
     let title = match content_type {
@@ -84,7 +215,6 @@ pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
         },
     }.ok_or_else(|| format_err!("failed to parse title"))?;
 
-    eprintln!("SUCCESS \"{}\"", title);
     Ok(title)
 }
 
@@ -334,8 +464,9 @@ mod tests {
                 format!("Mozilla/5.0 url-bot-rs/{}", buildinfo::PKG_VERSION)
             ).unwrap(),
             Header::from_bytes("accept", "*/*").unwrap(),
-            Header::from_bytes("accept-encoding", "identity").unwrap(),
+            Header::from_bytes("cookie", "").unwrap(),
             Header::from_bytes("accept-language", "en").unwrap(),
+            Header::from_bytes("accept-encoding", "identity").unwrap(),
             Header::from_bytes("host", "0.0.0.0:28282").unwrap(),
         ];
 
