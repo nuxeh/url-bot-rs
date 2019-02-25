@@ -358,6 +358,10 @@ mod tests {
             Some(String::from("\u{2665}")),
             parse_title("<title>\u{2665}</title>")
         );
+        assert_eq!(
+            Some(String::from("this title contains &")),
+            parse_title("<title>this title contains &</title>")
+        );
     }
 
     #[test]
