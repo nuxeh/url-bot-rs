@@ -162,12 +162,13 @@ To check status or get logs:
     systemctl status url-bot-rs.service
     sudo journalctl -u url-bot-rs.service
 
-## Additional command line options
+## `url-bot-rs` additional command line options
 
 - Usage is printed by providing `--help` on run.
-- To print some additional runtime information, add `-v` or `--verbose`.
-- To print all received IRC messages, along with HTTP response data to the
-  console, add `-D` or `--debug`.
+- To print additional runtime information, add `-v` or `--verbose`. The level
+  of verbosity can be increased by adding extra `v`s; at higher levels of
+  verbosity IRC messages received, HTTP reponse headers, and information
+  regarding resolution of URLs, such as cookies set, can be printed.
 
 ## IRC
 

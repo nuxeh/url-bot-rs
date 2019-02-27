@@ -4,6 +4,7 @@
  * URL parsing IRC bot
  *
  */
+extern crate url_bot_rs;
 
 extern crate irc;
 extern crate rusqlite;
@@ -12,9 +13,7 @@ extern crate docopt;
 extern crate serde_derive;
 extern crate itertools;
 extern crate regex;
-#[macro_use]
 extern crate lazy_static;
-#[macro_use]
 extern crate failure;
 extern crate htmlescape;
 extern crate time;
@@ -29,78 +28,87 @@ extern crate toml;
 extern crate directories;
 #[macro_use]
 extern crate log;
+extern crate atty;
+extern crate stderrlog;
 
-mod sqlite;
-mod http;
-mod config;
-mod message;
-
-pub mod buildinfo {
-   include!(concat!(env!("OUT_DIR"), "/built.rs"));
-}
+use url_bot_rs::VERSION;
+use url_bot_rs::sqlite::Database;
+use url_bot_rs::config::Rtd;
+use url_bot_rs::message::handle_message;
 
 use docopt::Docopt;
 use irc::client::prelude::*;
 use std::process;
 use std::path::PathBuf;
-
-use self::sqlite::Database;
-use self::config::Rtd;
-use self::message::handle_message;
+use stderrlog::{Timestamp, ColorChoice};
+use atty::{is, Stream};
 
 // docopt usage string
 const USAGE: &str = "
 URL munching IRC bot.
 
 Usage:
-    url-bot-rs [options] [--db=PATH]
+    url-bot-rs [options] [-v...] [--db=PATH]
 
 Options:
     -h --help       Show this help message.
     --version       Print version.
     -v --verbose    Show extra information.
-    -D --debug      Print debugging information.
     -d --db=PATH    Use a sqlite database at PATH.
     -c --conf=PATH  Use configuration file at PATH.
+    -t --timestamp  Force timestamps.
 ";
 
 #[derive(Debug, Deserialize, Default)]
 pub struct Args {
-    flag_verbose: bool,
-    flag_debug: bool,
+    flag_verbose: usize,
     flag_db: Option<PathBuf>,
     flag_conf: Option<PathBuf>,
+    flag_timestamp: bool,
 }
 
-fn version() -> &'static str {
-    lazy_static!(
-        static ref VERSION: String = format!(
-            "v{}{} (build: {})",
-            buildinfo::PKG_VERSION,
-            buildinfo::GIT_VERSION.map_or_else(
-                || String::from(""),
-                |v| format!(" (git {})", v)),
-            buildinfo::PROFILE
-        );
-    );
-    &VERSION
-}
+const MIN_VERBOSITY: usize = 2;
 
 fn main() {
     // parse command line arguments with docopt
     let args: Args = Docopt::new(USAGE)
-        .and_then(|d| d.version(Some(version().to_owned()))
-        .deserialize())
+        .and_then(|d| d.version(Some(VERSION.to_string())).deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    // get a run-time configuration data structure
-    let rtd: Rtd = Rtd::from_args(args).unwrap_or_else(|err| {
-        eprintln!("Error loading configuration: {}", err);
-        process::exit(1);
-    });
+    // don't output colours or include timestamps on stderr if piped
+    let (coloured_output, mut timestamp) = if is(Stream::Stderr) {
+        (ColorChoice::Auto, Timestamp::Second)
+    } else{
+        (ColorChoice::Never, Timestamp::Off)
+    };
 
-    println!("Using configuration: {}", rtd.paths.conf.display());
-    if rtd.args.flag_verbose {
+    if args.flag_timestamp { timestamp = Timestamp::Second };
+
+    // start logger
+    stderrlog::new()
+        .module(module_path!())
+        .modules(vec![
+            "url_bot_rs::config",
+            "url_bot_rs::http",
+        ])
+        .verbosity(args.flag_verbose + MIN_VERBOSITY)
+        .timestamp(timestamp)
+        .color(coloured_output)
+        .init()
+        .unwrap();
+
+    // get a run-time configuration data structure
+    let rtd: Rtd = Rtd::new()
+        .conf(&args.flag_conf)
+        .db(args.flag_db)
+        .load()
+        .unwrap_or_else(|err| {
+            error!("Error loading configuration: {}", err);
+            process::exit(1);
+        });
+
+    info!("Using configuration: {}", rtd.paths.conf.display());
+    if args.flag_verbose > 0 {
         println!("\n[features]\n{}", rtd.conf.features);
         println!("[parameters]\n{}", rtd.conf.params);
         println!("[database]\n{}", rtd.conf.database);
@@ -108,13 +116,13 @@ fn main() {
 
     // open the sqlite database for logging
     let db = if let Some(ref path) = rtd.paths.db {
-        println!("Using database: {}", path.display());
+        info!("Using database: {}", path.display());
         Database::open(path).unwrap_or_else(|err| {
-            eprintln!("Database error: {}", err);
+            error!("Database error: {}", err);
             process::exit(1);
         })
     } else {
-        if rtd.history { println!("Using in-memory database"); }
+        if rtd.history { info!("Using in-memory database"); }
         Database::open_in_memory().unwrap()
     };
 
@@ -123,7 +131,7 @@ fn main() {
     let client = reactor
         .prepare_client_and_connect(&rtd.conf.client)
         .unwrap_or_else(|err| {
-        eprintln!("IRC prepare error: {}", err);
+        error!("IRC prepare error: {}", err);
         process::exit(1);
     });
     client.identify().unwrap();
@@ -135,7 +143,7 @@ fn main() {
     });
 
     reactor.run().unwrap_or_else(|err| {
-        eprintln!("IRC client error: {}", err);
+        error!("IRC client error: {}", err);
         process::exit(1);
     });
 }

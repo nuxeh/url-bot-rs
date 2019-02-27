@@ -12,22 +12,10 @@ use failure::Error;
 use std::fmt;
 use directories::{ProjectDirs, BaseDirs};
 
-use super::Args;
 use super::buildinfo;
 
 // serde structures defining the configuration file structure
-#[derive(Serialize, Deserialize)]
-#[serde(default)]
-pub struct Conf {
-    pub features: Features,
-    #[serde(rename = "parameters")]
-    pub params: Parameters,
-    pub database: Database,
-    #[serde(rename = "connection")]
-    pub client: IrcConfig,
-}
-
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct Features {
     pub report_metadata: bool,
@@ -37,7 +25,7 @@ pub struct Features {
     pub history: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct Database {
     pub path: String,
@@ -53,7 +41,7 @@ impl Default for Database {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct Parameters {
     pub url_limit: u8,
@@ -67,6 +55,17 @@ impl Default for Parameters {
             accept_lang: "en".to_string()
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
+pub struct Conf {
+    pub features: Features,
+    #[serde(rename = "parameters")]
+    pub params: Parameters,
+    pub database: Database,
+    #[serde(rename = "connection")]
+    pub client: IrcConfig,
 }
 
 impl Conf {
@@ -120,97 +119,96 @@ impl Default for Conf {
 // where it's needed, including command line arguments, configuration file
 // settings, any parameters defined based on both of these sources, and
 // any other data used at runtime
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Rtd {
-    // paths
+    /// paths
     pub paths: Paths,
-    // configuration file data
+    /// configuration file data
     pub conf: Conf,
-    // command-line arguments
-    pub args: Args,
-    // settings derived from both CLI args and configuration file
     pub history: bool,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Paths {
     pub conf: PathBuf,
     pub db: Option<PathBuf>,
 }
 
 impl Rtd {
-    pub fn from_args(args: Args) -> Result<Self, Error> {
-        let mut rtd = Rtd::default();
+    pub fn new() -> Self {
+        Rtd::default()
+    }
 
-        // move command line arguments
-        rtd.args = args;
+    pub fn db(&mut self, path: Option<PathBuf>) -> &mut Self {
+        self.paths.db = path;
+        self
+    }
 
-        // get a config file path
+    pub fn conf(&mut self, path: &Option<PathBuf>) -> &mut Self {
         let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
-        rtd.paths.conf = match rtd.args.flag_conf {
-            // configuration file path specified as command line parameter
+
+        self.paths.conf = match path {
             Some(ref cp) => expand_tilde(cp),
-            // default path
-            _ => dirs.config_dir().join("config.toml")
+            None => dirs.config_dir().join("config.toml")
         };
 
-        // check if config directory exists, create it if it doesn't
-        create_dir_if_missing(rtd.paths.conf.parent().unwrap())?;
+        self
+    }
 
-        // create a default config if it doesn't exist
-        if !rtd.paths.conf.exists() {
-            eprintln!(
-                "Configuration `{}` doesn't exist, creating default",
-                rtd.paths.conf.to_str().unwrap()
-            );
-            eprintln!(
-                "You should modify this file to include a useful IRC configuration"
-            );
-            Conf::default().write(&rtd.paths.conf)?;
+    pub fn load(&mut self) -> Result<Self, Error> {
+        create_dir_if_missing(self.paths.conf.parent().unwrap())?;
+
+        // create a default-valued config if it doesn't exist
+        if !self.paths.conf.exists() {
+            info!("Configuration `{}` doesn't exist, creating default",
+                self.paths.conf.to_str().unwrap());
+            warn!("You should modify this file to include a useful IRC \
+                configuration");
+            Conf::default().write(&self.paths.conf)?;
         }
 
         // load config file
-        rtd.conf = Conf::load(&rtd.paths.conf)?;
+        self.conf = Conf::load(&self.paths.conf)?;
 
-        // set database path and history flag
-        let (hist_enabled, db_path) = Self::get_db_info(&rtd, &dirs);
-        rtd.history = hist_enabled;
-        rtd.paths.db = db_path.and_then(|p| Some(expand_tilde(&p)));
+        // get db path, and history
+        self.set_db_info();
 
-        // check database path exists, create it if it doesn't
-        if let Some(dp) = rtd.paths.db.clone() {
+        if let Some(dp) = self.paths.db.clone() {
             create_dir_if_missing(dp.parent().unwrap())?;
         }
 
         // set url-bot-rs version number in the irc client configuration
-        rtd.conf.client.version = Some(String::from(buildinfo::PKG_VERSION));
+        self.conf.client.version = Some(String::from(buildinfo::PKG_VERSION));
 
-        Ok(rtd)
+        Ok(self.clone())
     }
 
-    fn get_db_info(
-        rtd: &Rtd, dirs: &ProjectDirs
-    ) -> (bool, Option<PathBuf>) {
-        if let Some(ref path) = rtd.args.flag_db {
+    fn set_db_info(&mut self) {
+        let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
+
+        let (hist_enabled, db_path) = if let Some(ref path) = self.paths.db {
             // enable history when db path given as CLI argument
             (true, Some(PathBuf::from(path)))
-        } else if !rtd.conf.features.history {
+        } else if !self.conf.features.history {
             // no path specified on CLI, and history disabled in configuration
             (false, None)
-        } else if !rtd.conf.database.path.is_empty() {
+        } else if !self.conf.database.path.is_empty() {
             // (non-empty) db path specified in configuration
-            (true, Some(PathBuf::from(&rtd.conf.database.path)))
-        } else if rtd.conf.database.db_type == "sqlite" {
+            (true, Some(PathBuf::from(&self.conf.database.path)))
+        } else if self.conf.database.db_type == "sqlite" {
             // database type is sqlite, but no path given, use default
             (true, Some(dirs.data_local_dir().join("history.db")))
         } else {
             // use in-memory database
             (true, None)
-        }
+        };
+
+        self.history = hist_enabled;
+        self.paths.db = db_path.and_then(|p| Some(expand_tilde(&p)));
     }
 }
 
-// implementation of Display trait for multiple structs above
+/// implementation of Display trait for multiple structs in this module
 macro_rules! impl_display {
     ($($t:ty),+) => {
         $(impl fmt::Display for $t {
@@ -226,7 +224,7 @@ fn create_dir_if_missing(dir: &Path) -> Result<bool, Error> {
     let pdir = dir.to_str().unwrap();
     let exists = pdir.is_empty() || dir.exists();
     if !exists {
-        eprintln!("Directory `{}` doesn't exist, creating it", pdir);
+        info!("Directory `{}` doesn't exist, creating it", pdir);
         fs::create_dir_all(dir)?;
     }
     Ok(exists)
@@ -244,14 +242,16 @@ mod tests {
     use super::*;
 
     #[test]
+    /// test that the example configuration file parses without error
     fn load_example_conf() {
-        // test that the example configuration file parses without error
-        let mut args = Args::default();
-        args.flag_conf = Some(PathBuf::from("example.config.toml"));
-        Rtd::from_args(args).unwrap();
+        Rtd::new()
+            .conf(&Some(PathBuf::from("example.config.toml")))
+            .load()
+            .unwrap();
     }
 
     #[test]
+    /// test that the example configuration matches default values
     fn example_conf_data_matches_generated_default_values() {
         let example = fs::read_to_string("example.config.toml").unwrap();
         let default = toml::ser::to_string(&Conf::default()).unwrap();
@@ -265,7 +265,8 @@ mod tests {
                 diff::Result::Right(r) => println!("+{}", r)
             }
         }
-        assert!(default == example);
+
+        assert_eq!(default, example);
     }
 
     #[test]
@@ -275,21 +276,13 @@ mod tests {
             .home_dir()
             .to_owned();
 
-        assert_eq!(
-            expand_tilde(&PathBuf::from("/")),
-            PathBuf::from("/")
-        );
-        assert_eq!(
-            expand_tilde(&PathBuf::from("/abc/~def/ghi/")),
-            PathBuf::from("/abc/~def/ghi/")
-        );
-        assert_eq!(
-            expand_tilde(&PathBuf::from("~/")),
-            PathBuf::from(format!("{}/", homedir.to_str().unwrap()))
-        );
-        assert_eq!(
-            expand_tilde(&PathBuf::from("~/abc/def/ghi/")),
-            PathBuf::from(format!("{}/abc/def/ghi/", homedir.to_str().unwrap()))
-        );
+        assert_eq!(expand_tilde(&PathBuf::from("/")),
+            PathBuf::from("/"));
+        assert_eq!(expand_tilde(&PathBuf::from("/abc/~def/ghi/")),
+            PathBuf::from("/abc/~def/ghi/"));
+        assert_eq!(expand_tilde(&PathBuf::from("~/")),
+            PathBuf::from(format!("{}/", homedir.to_str().unwrap())));
+        assert_eq!(expand_tilde(&PathBuf::from("~/ac/df/gi/")),
+            PathBuf::from(format!("{}/ac/df/gi/", homedir.to_str().unwrap())));
     }
 }
