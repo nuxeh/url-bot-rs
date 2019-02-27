@@ -3,6 +3,7 @@ use failure::{Error, SyncFailure};
 use std::path::Path;
 use serde_rusqlite::{from_rows, to_params_named};
 use time;
+use std::collections::HashMap;
 
 pub struct Database {
     db: Connection,
@@ -27,6 +28,13 @@ impl Database {
             user            TEXT NOT NULL,
             channel         TEXT NOT NULL,
             time_created    TEXT NOT NULL
+            )",
+            &[]
+        )?;
+        db.execute("CREATE TABLE IF NOT EXISTS errors (
+            id              INTEGER PRIMARY KEY,
+            url             TEXT NOT NULL,
+            error_info      TEXT NOT NULL
             )",
             &[]
         )?;
@@ -60,6 +68,20 @@ impl Database {
 
         Ok(rows.next())
     }
+
+    pub fn log_error(&self, error: &UrlError) -> Result<(), Error> {
+        let params = to_params_named(error).map_err(SyncFailure::new)?;
+        let params = params.to_slice();
+
+        self.db.execute_named("
+            INSERT INTO errors (url, error_info)
+            SELECT :url, :error_info
+            WHERE NOT EXISTS(SELECT 1 FROM errors WHERE url = :url)",
+            &params
+        )?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -75,4 +97,18 @@ pub struct PrevPost {
     pub user: String,
     pub time_created: String,
     pub channel: String
+}
+
+#[derive(Default, Serialize)]
+pub struct ErrorInfo<'a> {
+    pub error: String,
+    pub status: u16,
+    pub reason: &'a str,
+    pub headers: HashMap<&'a str, &'a str>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UrlError<'a> {
+    pub url: &'a str,
+    pub error_info: &'a str,
 }

@@ -9,9 +9,11 @@ use std::io::Read;
 use image::{gif, jpeg, png, ImageDecoder};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
+use toml;
 
 use super::config::Rtd;
 use super::buildinfo;
+use super::sqlite::{Database, UrlError, ErrorInfo};
 
 const DL_BYTES: u64 = 100 * 1024; // 100kB
 
@@ -156,15 +158,42 @@ impl Session {
     }
 }
 
-pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
-    info!("RESOLVE {}", url);
+fn log_error(rtd: &Rtd, db: &Database, url: &str, err: &Error, resp: &Response) {
+    if !rtd.conf.features.history { return; };
 
+    let mut e = ErrorInfo::default();
+    e.error = format!("{:?}", err);
+    e.status = resp.status().as_u16();
+    e.reason = resp.status().canonical_reason().unwrap_or("UNKNOWN");
+    for (k, v) in resp.headers().iter() {
+        e.headers.insert(k.as_str(), v.to_str().unwrap_or("ERROR"));
+    };
+
+    let err = UrlError {
+        url,
+        error_info: &toml::ser::to_string(&e).unwrap(),
+    };
+
+    db.log_error(&err).unwrap_or_else(|e| {
+        error!("database error: {}", e);
+        return;
+    });
+
+    info!("added error record to database")
+}
+
+pub fn resolve_url(url: &str, rtd: &Rtd, db: &Database) -> Result<String, Error> {
     let mut resp = Session::new()
         .accept_lang(&rtd.conf.params.accept_lang)
         .request(url)?;
 
-    get_title(&mut resp, rtd, false)
-        .and_then(|t| { info!("SUCCESS \"{}\"", t); Ok(t) })
+    match get_title(&mut resp, rtd, false) {
+        Ok(title) => Ok(title),
+        Err(err) => {
+            log_error(&rtd, &db, url, &err, &resp);
+            Err(err)
+        },
+    }
 }
 
 pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, Error> {
@@ -276,8 +305,9 @@ mod tests {
     #[test]
     fn resolve_urls() {
         let rtd: Rtd = Rtd::default();
-        resolve_url("https://youtube.com",  &rtd).unwrap();
-        resolve_url("https://google.co.uk", &rtd).unwrap();
+        let db = Database::open_in_memory().unwrap();
+        resolve_url("https://youtube.com",  &rtd, &db).unwrap();
+        resolve_url("https://google.co.uk", &rtd, &db).unwrap();
     }
 
     #[test]
@@ -446,7 +476,8 @@ mod tests {
         });
 
         thread::sleep(time::Duration::from_millis(100));
-        let res = resolve_url("http://0.0.0.0:28482/test", &rtd);
+        let db = Database::open_in_memory().unwrap();
+        let res = resolve_url("http://0.0.0.0:28482/test", &rtd, &db);
         server_thread.join().unwrap();
         res
     }
@@ -488,7 +519,8 @@ mod tests {
         });
 
         thread::sleep(time::Duration::from_millis(100));
-        resolve_url("http://0.0.0.0:28282/test", &Rtd::default()).unwrap();
+        let db = Database::open_in_memory().unwrap();
+        resolve_url("http://0.0.0.0:28282/test", &Rtd::default(), &db).unwrap();
         let request_headers = rx.recv().unwrap();
 
         println!("Headers in request:\n{:?}", request_headers);

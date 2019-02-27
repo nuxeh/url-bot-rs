@@ -45,9 +45,14 @@ pub fn handle_message(
             continue;
         }
 
+        info!("RESOLVE <{}>", token);
+
         // try to get the title from the url
-        let title = match resolve_url(token, rtd) {
-            Ok(title) => title,
+        let title = match resolve_url(token, rtd, db) {
+            Ok(title) => {
+                info!("SUCCESS \"{}\"", title);
+                title
+            },
             Err(err) => {
                 error!("{:?}", err);
                 continue

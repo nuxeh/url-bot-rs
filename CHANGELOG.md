@@ -1,5 +1,6 @@
 # v0.2.0
 
+- Log title retrieval failures to database
 - Add `url-bot-get` tool
 - Cookie support
 - Re-add custom user-agent, make user agent non-configurable
