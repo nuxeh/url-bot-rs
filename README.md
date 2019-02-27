@@ -170,6 +170,19 @@ To check status or get logs:
   verbosity IRC messages received, HTTP reponse headers, and information
   regarding resolution of URLs, such as cookies set, can be printed.
 
+## Additional CLI tools
+
+The crate comes with additional binary tools, to aid in testing URL title
+retrieval.
+
+### `url-bot-get`
+
+Performs title retrieval using the same code that is used in the bot, but
+instead supplied with URLs via the command line, with tweakable request
+parameters, such as user agent, and others. It is intended to be useful for
+debugging cases where title retrieval fails for some reason, to assist in
+offline development.
+
 ## IRC
 
 There is an IRC channel on [Moznet](https://wiki.mozilla.org/IRC), `#url-bot-rs`.

@@ -51,5 +51,6 @@ assets = [
     ["example.config.toml", "usr/share/doc/url-bot-rs/", "644"],
     ["url-bot-rs.1", "usr/local/share/man/man1/", "644"],
     ["systemd/url-bot-rs.service", "lib/systemd/system/", "644"],
-    ["target/release/url-bot-rs", "usr/bin/", "755"]
+    ["target/release/url-bot-rs", "usr/bin/", "755"],
+    ["target/release/url-bot-get", "usr/bin/", "755"]
 ]
