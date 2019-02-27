@@ -39,6 +39,8 @@ toml = "0.4.8"
 image = "0.20.0"
 directories = "1.0.2"
 log = "0.4.6"
+stderrlog = "0.4.1"
+atty = "0.2.11"
 
 [package.metadata.deb]
 extended-description = """\

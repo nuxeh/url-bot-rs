@@ -11,10 +11,7 @@ use super::config::Rtd;
 pub fn handle_message(
     client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database
 ) {
-    // print the message if debug flag is set
-    if rtd.args.flag_debug {
-        eprintln!("{:?}", message.command)
-    }
+    trace!("{:?}", message.command);
 
     // match on message type
     let (target, msg) = match message.command {
@@ -52,7 +49,7 @@ pub fn handle_message(
         let title = match resolve_url(token, rtd) {
             Ok(title) => title,
             Err(err) => {
-                println!("ERROR {:?}", err);
+                error!("{:?}", err);
                 continue
             },
         };
@@ -88,13 +85,13 @@ pub fn handle_message(
                 // add new log entry to database
                 if rtd.history {
                     if let Err(err) = db.add_log(&entry) {
-                        eprintln!("SQL error: {}", err);
+                        error!("SQL error: {}", err);
                     }
                 }
                 format!("⤷ {}", title)
             },
             Err(err) => {
-                eprintln!("SQL error: {}", err);
+                error!("SQL error: {}", err);
                 continue
             },
         };
