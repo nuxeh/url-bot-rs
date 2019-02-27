@@ -12,6 +12,7 @@ use humansize::{FileSize, file_size_opts as options};
 
 use super::config::Rtd;
 use super::buildinfo;
+use super::sqlite::{Database, UrlError};
 
 const DL_BYTES: u64 = 100 * 1024; // 100kB
 
@@ -156,15 +157,32 @@ impl Session {
     }
 }
 
-pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
-    info!("RESOLVE {}", url);
+fn log_error(db: &Database, url: &str, err: &Error, resp: &Response) -> Result<(), Error> {
+    let err = UrlError {
+        url,
+        error: &format!("{:?}", err),
+        headers: &format!("{:#?}", resp.headers()),
+        status: &format!("{:?}", resp.status()),
+    };
+    db.log_error(&err)?;
+    Ok(())
+}
 
+pub fn resolve_url(url: &str, rtd: &Rtd, db: &Database) -> Result<String, Error> {
     let mut resp = Session::new()
         .accept_lang(&rtd.conf.params.accept_lang)
         .request(url)?;
 
-    get_title(&mut resp, rtd, false)
-        .and_then(|t| { info!("SUCCESS \"{}\"", t); Ok(t) })
+    match get_title(&mut resp, rtd, false) {
+        Ok(title) => Ok(title),
+        Err(err) => {
+            match log_error(&db, url, &err, &resp) {
+                Ok(_) => info!("added entry for <{}> to error database", url),
+                Err(e) => error!("database error: {}", e)
+            };
+            Err(err)
+        }
+    }
 }
 
 pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, Error> {
@@ -276,8 +294,9 @@ mod tests {
     #[test]
     fn resolve_urls() {
         let rtd: Rtd = Rtd::default();
-        resolve_url("https://youtube.com",  &rtd).unwrap();
-        resolve_url("https://google.co.uk", &rtd).unwrap();
+        let db = Database::open_in_memory().unwrap();
+        resolve_url("https://youtube.com",  &rtd, &db).unwrap();
+        resolve_url("https://google.co.uk", &rtd, &db).unwrap();
     }
 
     #[test]
@@ -446,7 +465,8 @@ mod tests {
         });
 
         thread::sleep(time::Duration::from_millis(100));
-        let res = resolve_url("http://0.0.0.0:28482/test", &rtd);
+        let db = Database::open_in_memory().unwrap();
+        let res = resolve_url("http://0.0.0.0:28482/test", &rtd, &db);
         server_thread.join().unwrap();
         res
     }
@@ -488,7 +508,8 @@ mod tests {
         });
 
         thread::sleep(time::Duration::from_millis(100));
-        resolve_url("http://0.0.0.0:28282/test", &Rtd::default()).unwrap();
+        let db = Database::open_in_memory().unwrap();
+        resolve_url("http://0.0.0.0:28282/test", &Rtd::default(), &db).unwrap();
         let request_headers = rx.recv().unwrap();
 
         println!("Headers in request:\n{:?}", request_headers);

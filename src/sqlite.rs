@@ -30,6 +30,16 @@ impl Database {
             )",
             &[]
         )?;
+        db.execute("CREATE TABLE IF NOT EXISTS errors (
+            id              INTEGER PRIMARY KEY,
+            url             TEXT NOT NULL,
+            error           TEXT NOT NULL,
+            headers         TEXT NOT NULL,
+            status          TEXT NOT NULL,
+            time_created    TEXT NOT NULL
+            )",
+            &[]
+        )?;
 
         Ok(Self { db })
     }
@@ -60,6 +70,19 @@ impl Database {
 
         Ok(rows.next())
     }
+
+    pub fn log_error(&self, error: &UrlError) -> Result<(), Error> {
+        let params = to_params_named(error).map_err(SyncFailure::new)?;
+        let params = params.to_slice();
+
+        self.db.execute_named("
+            INSERT INTO errors ( url,  error,  headers,  status)
+            VALUES             (:url, :error, :headers, :status)",
+            &params
+        )?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -75,4 +98,12 @@ pub struct PrevPost {
     pub user: String,
     pub time_created: String,
     pub channel: String
+}
+
+#[derive(Debug, Serialize)]
+pub struct UrlError<'a> {
+    pub error: &'a str,
+    pub url: &'a str,
+    pub status: &'a str,
+    pub headers: &'a str,
 }
