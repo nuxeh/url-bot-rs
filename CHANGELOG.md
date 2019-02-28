@@ -1,5 +1,6 @@
 # v0.2.0
 
+- Use html5ever to parse HTML, rather than a regex
 - Log title retrieval failures to database
 - Add `url-bot-get` tool
 - Cookie support

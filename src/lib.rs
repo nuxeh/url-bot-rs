@@ -9,7 +9,6 @@ extern crate regex;
 extern crate lazy_static;
 #[macro_use]
 extern crate failure;
-extern crate htmlescape;
 extern crate time;
 extern crate reqwest;
 extern crate cookie;
@@ -18,6 +17,7 @@ extern crate serde_rusqlite;
 extern crate mime;
 extern crate humansize;
 extern crate unicode_segmentation;
+extern crate html5ever;
 extern crate toml;
 extern crate directories;
 #[macro_use]

@@ -1,7 +1,5 @@
-use htmlescape::decode_html;
 use std::time::Duration;
 use itertools::Itertools;
-use regex::Regex;
 use failure::Error;
 use reqwest::{Client, header, RedirectPolicy, Response};
 use cookie::Cookie;
@@ -9,6 +7,10 @@ use std::io::Read;
 use image::{gif, jpeg, png, ImageDecoder};
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
+use html5ever::driver::ParseOpts;
+use html5ever::parse_document;
+use html5ever::tendril::TendrilSink;
+use html5ever::rcdom::{Handle, NodeData, RcDom};
 
 use super::config::Rtd;
 use super::buildinfo;
@@ -258,12 +260,45 @@ fn get_image_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
     }
 }
 
-fn parse_title(page_contents: &str) -> Option<String> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new("<(?i:title).*?>((.|\n)*?)</(?i:title)>").unwrap();
+/// Walk an HTML DOM recursively until a `<title>` tag is found
+fn walk_html_dom(handle: Handle, found: bool) -> Option<String> {
+    let node = handle;
+    let mut title_found = false;
+
+    match node.data {
+        NodeData::Element { ref name, .. } => {
+            if name.local.get(..).unwrap_or("") == "title" {
+                title_found = true;
+            }
+        },
+        NodeData::Text { ref contents } => {
+            if found {
+                return Some(format!("{}", contents.borrow()));
+            }
+        },
+        _ => (),
     }
-    let title_enc = RE.captures(page_contents)?.get(1)?.as_str();
-    let title_dec = decode_html(title_enc).ok()?;
+
+    for child in node.children.borrow().iter() {
+        if let Some(title) = walk_html_dom(child.clone(), title_found) {
+            return Some(title);
+        }
+    }
+
+    None
+}
+
+/// Attempt to extract a page title from downloaded HTML
+fn parse_title(page_contents: &str) -> Option<String> {
+    let dom = parse_document(RcDom::default(), ParseOpts::default())
+        .from_utf8()
+        .read_from(&mut page_contents.as_bytes())
+        .unwrap();
+
+    let title_dec = match walk_html_dom(dom.document, false) {
+        Some(t) => t,
+        None => return None,
+    };
 
     // make any multi-line title string into a single line,
     // trim leading and trailing whitespace
