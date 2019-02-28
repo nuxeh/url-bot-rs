@@ -15,7 +15,6 @@ extern crate itertools;
 extern crate regex;
 extern crate lazy_static;
 extern crate failure;
-extern crate htmlescape;
 extern crate time;
 extern crate reqwest;
 extern crate cookie;
@@ -30,6 +29,7 @@ extern crate directories;
 extern crate log;
 extern crate atty;
 extern crate stderrlog;
+extern crate scraper;
 
 use url_bot_rs::VERSION;
 use url_bot_rs::sqlite::Database;

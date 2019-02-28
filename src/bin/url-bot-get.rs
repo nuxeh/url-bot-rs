@@ -40,7 +40,6 @@ extern crate url_bot_rs;
 #[macro_use]
 extern crate serde_derive;
 extern crate lazy_static;
-extern crate htmlescape;
 extern crate itertools;
 extern crate regex;
 extern crate failure;
@@ -57,6 +56,7 @@ extern crate docopt;
 extern crate log;
 extern crate atty;
 extern crate stderrlog;
+extern crate scraper;
 
 use url_bot_rs::config;
 use url_bot_rs::http;
