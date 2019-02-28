@@ -19,7 +19,6 @@ diff = "0.1.11"
 [dependencies]
 irc = "0.13.6"
 tokio-core = "0.1.17"
-htmlescape = "0.3.1"
 rusqlite = "0.14.0"
 time = "0.1.40"
 docopt = "1.0.1"
@@ -41,6 +40,7 @@ directories = "1.0.2"
 log = "0.4.6"
 stderrlog = "0.4.1"
 atty = "0.2.11"
+scraper = "0.9.1"
 
 [package.metadata.deb]
 extended-description = """\

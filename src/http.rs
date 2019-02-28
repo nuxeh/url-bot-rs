@@ -1,7 +1,5 @@
-use htmlescape::decode_html;
 use std::time::Duration;
 use itertools::Itertools;
-use regex::Regex;
 use failure::Error;
 use reqwest::{Client, header, RedirectPolicy, Response};
 use cookie::Cookie;
@@ -15,7 +13,8 @@ use super::config::Rtd;
 use super::buildinfo;
 use super::sqlite::{Database, UrlError, ErrorInfo};
 
-const DL_BYTES: u64 = 100 * 1024; // 100kB
+const CHUNK_BYTES: u64 = 100 * 1024; // 100kB
+const CHUNKS_MAX: u64 = 10; // 1000kB
 
 lazy_static! {
     static ref USER_AGENT: String = format!(
@@ -212,39 +211,47 @@ pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, E
         trace!("[{}] {}", k, v.to_str().unwrap());
     });
 
-    // calculate download size based on the response's MIME type
-    let bytes = content_type.clone()
-        .and_then(|ct| {
-            match (ct.type_(), ct.subtype()) {
-                (IMAGE, _) => Some(10 * 1024 * 1024), // 10MB
-                _ => None
-            }})
-        .unwrap_or(DL_BYTES);
-
-    // download body
+    // vector to hold page content, which is progressively built from chunks of
+    // downloaded data until a title is found (up to CHUNKS_MAX chunks)
     let mut body = Vec::new();
-    resp.take(bytes).read_to_end(&mut body)?;
-    let contents = String::from_utf8_lossy(&body);
 
-    // print downloaded body
-    if dump { println!("{}", contents); }
+    for i in 1..=CHUNKS_MAX {
+        // download a chunk
+        let mut chunk = Vec::new();
+        resp.take(CHUNK_BYTES).read_to_end(&mut chunk)?;
 
-    // get title or metadata
-    let title = match content_type {
-        None => parse_title(&contents),
-        Some(mime) => {
-            match (mime.type_(), mime.subtype()) {
-                (TEXT, HTML) => parse_title(&contents),
-                (IMAGE, _) => parse_title(&contents)
-                    .or_else(|| get_image_metadata(&rtd, &body))
-                    .or_else(|| get_mime(&rtd, &mime, &size)),
-                _ => parse_title(&contents)
-                    .or_else(|| get_mime(&rtd, &mime, &size)),
-            }
-        },
-    }.ok_or_else(|| format_err!("failed to parse title"))?;
+        // print downloaded chunk
+        if dump { print!("{}", String::from_utf8_lossy(&chunk)); }
 
-    Ok(title)
+        // append to downloaded content (move)
+        body.append(&mut chunk);
+
+        // get title or metadata
+        let contents = String::from_utf8_lossy(&body);
+        let title = match content_type.clone() {
+            None => parse_title(&contents),
+            Some(mime) => {
+                match (mime.type_(), mime.subtype()) {
+                    (TEXT, HTML) => parse_title(&contents),
+                    (IMAGE, _) => parse_title(&contents)
+                        .or_else(|| get_image_metadata(&rtd, &body))
+                        .or_else(|| get_mime(&rtd, &mime, &size)),
+                    _ => parse_title(&contents)
+                        .or_else(|| get_mime(&rtd, &mime, &size)),
+                }
+            },
+        };
+
+        match title {
+            Some(t) => {
+                trace!("title found in {} chunks ({} B)", i, i * CHUNK_BYTES);
+                return Ok(t)
+            },
+            None => continue,
+        }
+    }
+
+    bail!("failed to parse title");
 }
 
 fn get_mime(rtd: &Rtd, mime: &Mime, size: &str) -> Option<String> {
@@ -269,12 +276,12 @@ fn get_image_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
     }
 }
 
+/// Attempt to extract a page title from downloaded HTML
 fn parse_title(page_contents: &str) -> Option<String> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new("<(?i:title).*?>((.|\n)*?)</(?i:title)>").unwrap();
-    }
-    let title_enc = RE.captures(page_contents)?.get(1)?.as_str();
-    let title_dec = decode_html(title_enc).ok()?;
+    let title_dec = match parse_html_title(page_contents) {
+        Some(t) => t,
+        None => return None,
+    };
 
     // make any multi-line title string into a single line,
     // trim leading and trailing whitespace
