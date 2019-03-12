@@ -49,10 +49,7 @@ pub fn handle_message(
 
         // try to get the title from the url
         let title = match resolve_url(token, rtd, db) {
-            Ok(title) => {
-                info!("SUCCESS \"{}\"", title);
-                title
-            },
+            Ok(title) => title,
             Err(err) => {
                 error!("{:?}", err);
                 continue
@@ -103,6 +100,8 @@ pub fn handle_message(
 
         // limit response length, see RFC1459
         msg = utf8_truncate(&msg, 510);
+
+        info!("{}", msg);
 
         // send the IRC response
         let target = message.response_target().unwrap_or(target);

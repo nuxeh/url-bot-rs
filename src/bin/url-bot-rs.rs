@@ -88,6 +88,7 @@ fn main() {
     stderrlog::new()
         .module(module_path!())
         .modules(vec![
+            "url_bot_rs::message",
             "url_bot_rs::config",
             "url_bot_rs::http",
         ])
