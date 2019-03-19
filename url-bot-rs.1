@@ -14,21 +14,21 @@ Show usage.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Enable verbose mode.
+Enable verbose mode. Add extra \-v flags for increased verbosity, and printing of debugging information. For example, this can include information pertaining to website retrieval and title parsing, or printing of all received irc messages.
 
 .TP
-\fB\-D\fR, \fB\-\-debug\fR
-Enable debug mode, print all IRC messages received, and HTTP requests.
+\fB\-t\fR, \fB\-\-timestamp\fR
+Force timestamps in the output, even if they have been automatically disabled.
 .SH OPTIONS
 .TP
 \fB\-d\fR, \fB\-\-db\fR=\fIdatabase\fR
-Path to store a sqlite database
+Path to store a sqlite database. If not provided, a default path is used, based on the XDG specification.
 
 .TP
 \fB\-c\fR, \fB\-\-conf\fR=\fIconfiguration\fR
-Path to read configuration file from.
+Path to read configuration file from. If not provided, a default path is used, based on the XDG specification.
 .SH CONFIGURATION
-Most settings are read from the configuration file. This includes the details used to connect to an IRC server, features, and some runtime parameters. Running for the first time, a default\-valued configuration will be generated in either the default XDG config path, or in the location specified with \-\-conf.
+Most settings are read from the configuration file. This includes the details used to connect to an IRC server, features, and some runtime parameters. Running for the first time, a default\-valued configuration will be generated in either the default XDG config path, or in the location specified with \-\-conf. Once the bot has been run for the first time, and the default configuration has been generated, this should be edited and the bot restarted.
 
 
 .SH EXIT STATUS
