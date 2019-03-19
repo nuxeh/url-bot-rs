@@ -19,6 +19,7 @@ pub fn handle_message(
         _ => return,
     };
 
+    let is_chanmsg = target.starts_with('#');
     let user = message.source_nickname().unwrap();
     let mut num_processed = 0;
 
@@ -65,7 +66,7 @@ pub fn handle_message(
         };
 
         // check for pre-post
-        let mut msg = match if rtd.history {
+        let mut msg = match if rtd.history && is_chanmsg {
             db.check_prepost(token)
         } else {
             Ok(None)
@@ -85,7 +86,7 @@ pub fn handle_message(
             },
             Ok(None) => {
                 // add new log entry to database
-                if rtd.history {
+                if rtd.history && is_chanmsg {
                     if let Err(err) = db.add_log(&entry) {
                         error!("SQL error: {}", err);
                     }
@@ -105,7 +106,7 @@ pub fn handle_message(
 
         // send the IRC response
         let target = message.response_target().unwrap_or(target);
-        if rtd.conf.features.send_notice {
+        if rtd.conf.features.send_notice && is_chanmsg {
             client.send_notice(target, &msg).unwrap()
         } else {
             client.send_privmsg(target, &msg).unwrap()
