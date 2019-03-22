@@ -31,6 +31,18 @@ Path to read configuration file from. If not provided, a default path is used, b
 Most settings are read from the configuration file. This includes the details used to connect to an IRC server, features, and some runtime parameters. Running for the first time, a default\-valued configuration will be generated in either the default XDG config path, or in the location specified with \-\-conf. Once the bot has been run for the first time, and the default configuration has been generated, this should be edited and the bot restarted.
 
 
+.SH FEATURES
+Report metadata. Report metadata for images.
+
+Report mime. Report mime data for images.
+
+Mask highlights. Insert non\-printing characters to defeat nick highlighting regexes.
+
+Send notice. Send IRC notices rather than normal private messages in response, on channels only.
+
+History. If enabled, maintain a database of URLs posted, and when new URLs are posted, check to see if they have been posted before. If they have, provide some information in the response about the previous postings \- the nick who posted, the channel and the time.
+
+
 .SH EXIT STATUS
 .TP
 \fB0\fR
