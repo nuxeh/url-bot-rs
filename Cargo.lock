@@ -1341,7 +1341,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "scraper"
-version = "0.9.1"
+version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cssparser 0.24.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1964,7 +1964,7 @@ dependencies = [
  "regex 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.9.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusqlite 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "scraper 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "scraper 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.88 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.88 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_rusqlite 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2216,7 +2216,7 @@ dependencies = [
 "checksum schannel 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "0e1a231dc10abf6749cfa5d7767f25888d484201accbd919b66ab5413c502d56"
 "checksum scoped-tls 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "332ffa32bf586782a3efaeb58f127980944bbc8c4d6913a86107ac2a5ab24b28"
 "checksum scopeguard 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "94258f53601af11e6a49f722422f6e3425c52b06245a5cf9bc09908b174f5e27"
-"checksum scraper 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "52ef549273c828f0f45380985420c4cd1ddf9bd6e85b0c0acadf4f4111079be4"
+"checksum scraper 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)" = "40a3d37660c223176739fbe55d3ed2689b2b99308b03dff3686de0b9a8d55b56"
 "checksum security-framework 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "bfab8dda0e7a327c696d893df9ffa19cadc4bd195797997f5223cf5831beaf05"
 "checksum security-framework-sys 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3d6696852716b589dff9e886ff83778bb635150168e83afa8ac6b8a78cb82abc"
 "checksum selectors 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e04a98f1932524325e84b13c1843628b2ac4e843e6fd181271c499d7b93159b4"
