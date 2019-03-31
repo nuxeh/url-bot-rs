@@ -41,6 +41,7 @@ log = "0.4.6"
 stderrlog = "0.4.1"
 atty = "0.2.11"
 scraper = { version = "0.9.2", default-features = false, features = [] }
+phf = "0.7.24"
 
 [package.metadata.deb]
 extended-description = """\

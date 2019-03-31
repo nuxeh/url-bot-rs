@@ -7,6 +7,7 @@ use regex::Regex;
 use super::http::resolve_url;
 use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;
+use super::tld::TLD;
 
 pub fn handle_message(
     client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database
@@ -25,9 +26,20 @@ pub fn handle_message(
 
     // look at each space-separated message token
     for token in msg.split_whitespace() {
+        // get a full URL for tokens without a scheme
+        let maybe_token = get_tld_url(token);
+        let token = maybe_token
+            .as_ref()
+            .map_or(token, String::as_str);
+
         // limit the number of processed URLs
         if num_processed == rtd.conf.params.url_limit {
             break;
+        }
+
+        // the token must not contain unsafe characters
+        if contains_unsafe_chars(token) {
+            continue;
         }
 
         // the token must be a valid url
@@ -35,11 +47,6 @@ pub fn handle_message(
             Ok(url) => url,
             _ => continue,
         };
-
-        // the token must not contain unsafe characters
-        if contains_unsafe_chars(token) {
-            continue;
-        }
 
         // the schema must be http or https
         if !["http", "https"].contains(&url.scheme()) {
@@ -145,6 +152,24 @@ fn utf8_truncate(s: &str, n: usize) -> String {
         .collect()
 }
 
+/// attempt to extract the TLD from a URL
+fn extract_tld(token: &str) -> Option<&str> {
+    Some(token
+        .split(&['/', '#', '?'][..])
+        .next()?
+        .split('.')
+        .last()?)
+}
+
+/// if a token has a valid TLD, but no scheme, add one
+fn get_tld_url(token: &str) -> Option<String> {
+    if TLD.contains(extract_tld(token)?) {
+        Some(format!("http://{}", token))
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,5 +204,35 @@ mod tests {
             assert!(contains_unsafe_chars(&format!("http://z/{}", c)));
         }
         assert_eq!(contains_unsafe_chars("http://z.zzz/"), false);
+    }
+
+    #[test]
+    fn test_extract_tld() {
+        assert_eq!(extract_tld("rustup.rs"), Some("rs"));
+        assert_eq!(extract_tld("google.co.uk"), Some("uk"));
+        assert_eq!(extract_tld("endless.horse"), Some("horse"));
+        assert_eq!(extract_tld("this.co.uk/isnt/real"), Some("uk"));
+        assert_eq!(extract_tld("this.co.uk/#isnt"), Some("uk"));
+        assert_eq!(extract_tld("this.co.uk/isnt?real=0"), Some("uk"));
+        assert_eq!(extract_tld("this.co.uk?isnt=real"), Some("uk"));
+        assert_eq!(extract_tld("this.co.uk/?isnt=real"), Some("uk"));
+        assert_eq!(extract_tld("this.co.uk/?isnt=re.al"), Some("uk"));
+        assert_ne!(extract_tld("notaurl"), None);
+    }
+
+    #[test]
+    fn test_get_tld_url() {
+        assert!(get_tld_url("crates.rs").is_some());
+        assert!(get_tld_url("nomnomnom.xyz").is_some());
+        assert!(get_tld_url("endless.horse").is_some());
+        assert!(get_tld_url("notreal.co.uk/#banana").is_some());
+        assert!(get_tld_url("notreal.co.uk/?banana=3").is_some());
+        assert!(get_tld_url("cheese").is_none());
+        assert!(get_tld_url("abc.cheese").is_none());
+        assert!(get_tld_url("http://nomnomnom.xyz").is_none());
+        assert_eq!(
+            get_tld_url("nomnomnom.xyz"),
+            Some(String::from("http://nomnomnom.xyz"))
+        );
     }
 }
