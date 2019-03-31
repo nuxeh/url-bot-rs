@@ -26,21 +26,16 @@ pub fn handle_message(
 
     // look at each space-separated message token
     for token in msg.split_whitespace() {
+        // the token must not contain unsafe characters
+        if contains_unsafe_chars(token) {
+            continue;
+        }
+
         // get a full URL for tokens without a scheme
         let maybe_token = get_tld_url(token);
         let token = maybe_token
             .as_ref()
             .map_or(token, String::as_str);
-
-        // limit the number of processed URLs
-        if num_processed == rtd.conf.params.url_limit {
-            break;
-        }
-
-        // the token must not contain unsafe characters
-        if contains_unsafe_chars(token) {
-            continue;
-        }
 
         // the token must be a valid url
         let url = match token.parse::<Url>() {
@@ -48,7 +43,7 @@ pub fn handle_message(
             _ => continue,
         };
 
-        // the schema must be http or https
+        // the scheme must be http or https
         if !["http", "https"].contains(&url.scheme()) {
             continue;
         }
@@ -73,11 +68,14 @@ pub fn handle_message(
         };
 
         // check for pre-post
-        let mut msg = match if rtd.history {
+        let pre_post = if rtd.history {
             db.check_prepost(token)
         } else {
             Ok(None)
-        } {
+        };
+
+        // generate response string
+        let mut msg = match pre_post {
             Ok(Some(previous_post)) => {
                 let user = if rtd.conf.features.mask_highlights {
                     create_non_highlighting_name(&previous_post.user)
@@ -109,6 +107,7 @@ pub fn handle_message(
         // limit response length, see RFC1459
         msg = utf8_truncate(&msg, 510);
 
+        // log
         info!("{}", msg);
 
         // send the IRC response
@@ -119,13 +118,18 @@ pub fn handle_message(
             client.send_privmsg(target, &msg).unwrap()
         }
 
+        // limit the number of processed URLs
         num_processed += 1;
+        if num_processed == rtd.conf.params.url_limit {
+            break;
+        }
     };
 }
 
 // regex for unsafe characters, as defined in RFC 1738
 const RE_UNSAFE_CHARS: &str = r#"[{}|\\^~\[\]`<>"]"#;
 
+/// does the token contain characters not permitted by RFC 1738
 fn contains_unsafe_chars(token: &str) -> bool {
     lazy_static! {
         static ref UNSAFE: Regex = Regex::new(RE_UNSAFE_CHARS).unwrap();
@@ -133,6 +137,7 @@ fn contains_unsafe_chars(token: &str) -> bool {
     UNSAFE.is_match(token)
 }
 
+/// create a name that doesn't trigger highlight regexes
 fn create_non_highlighting_name(name: &str) -> String {
     let mut graphemes = name.graphemes(true);
     let first = graphemes.next();
@@ -144,7 +149,7 @@ fn create_non_highlighting_name(name: &str) -> String {
         .collect()
 }
 
-// truncate to a maximum number of bytes, taking UTF-8 into account
+/// truncate to a maximum number of bytes, taking UTF-8 into account
 fn utf8_truncate(s: &str, n: usize) -> String {
     s.char_indices()
         .take_while(|(len, c)| len + c.len_utf8() <= n)
