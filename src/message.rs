@@ -7,6 +7,7 @@ use regex::Regex;
 use super::http::resolve_url;
 use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;
+use super::tld::TLD;
 
 pub fn handle_message(
     client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database
@@ -25,6 +26,12 @@ pub fn handle_message(
 
     // look at each space-separated message token
     for token in msg.split_whitespace() {
+        // get a full URL for tokens without a scheme
+        let maybe_token = add_scheme_for_tld(token);
+        let token = maybe_token
+            .as_ref()
+            .map_or(token, String::as_str);
+
         // limit the number of processed URLs
         if num_processed == rtd.conf.params.url_limit {
             break;
@@ -145,6 +152,29 @@ fn utf8_truncate(s: &str, n: usize) -> String {
         .collect()
 }
 
+/// if a token has a recognised TLD, but no scheme, add one
+fn add_scheme_for_tld(token: &str) -> Option<String> {
+    if token.parse::<Url>().is_err() {
+        let new_token = format!("http://{}", token);
+
+        if let Ok(url) = new_token.parse::<Url>() {
+            if !url.domain()?.contains('.') {
+                return None;
+            }
+
+            let tld = url.domain()?
+                .split('.')
+                .last()?;
+
+            if TLD.contains(tld) {
+                return Some(new_token);
+            }
+        }
+    }
+
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,5 +209,39 @@ mod tests {
             assert!(contains_unsafe_chars(&format!("http://z/{}", c)));
         }
         assert_eq!(contains_unsafe_chars("http://z.zzz/"), false);
+    }
+
+    #[test]
+    fn test_add_scheme_for_tld() {
+        // appears to be a URL, and has a valid TLD
+        assert!(add_scheme_for_tld("docs.rs").is_some());
+        assert!(add_scheme_for_tld("nomnomnom.xyz").is_some());
+        assert!(add_scheme_for_tld("endless.horse").is_some());
+        assert!(add_scheme_for_tld("google.co.uk").is_some());
+        assert!(add_scheme_for_tld("notreal.co.uk/#banana").is_some());
+        assert!(add_scheme_for_tld("notreal.co.uk/?banana=3").is_some());
+
+        // return value is as expected
+        assert_eq!(
+            Some(String::from("http://nomnomnom.xyz")),
+            add_scheme_for_tld("nomnomnom.xyz")
+        );
+        assert_eq!(
+            Some(String::from("http://google.co.uk")),
+            add_scheme_for_tld("google.co.uk")
+        );
+
+        // already a valid URL
+        assert!(add_scheme_for_tld("http://nomnomnom.xyz").is_none());
+        assert!(add_scheme_for_tld("http://endless.horse").is_none());
+
+        // not a recognised TLD
+        assert!(add_scheme_for_tld("abc.cheese").is_none());
+        assert!(add_scheme_for_tld("abc.limes").is_none());
+
+        // recognised TLD, but incomplete as a URL
+        assert!(add_scheme_for_tld("xyz").is_none());
+        assert!(add_scheme_for_tld("uk").is_none());
+        assert!(add_scheme_for_tld("horse").is_none());
     }
 }
