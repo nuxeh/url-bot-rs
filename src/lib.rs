@@ -24,12 +24,14 @@ extern crate directories;
 extern crate log;
 extern crate atty;
 extern crate stderrlog;
+extern crate phf;
 
 pub mod sqlite;
 pub mod http;
 pub mod title;
 pub mod config;
 pub mod message;
+pub mod tld;
 pub mod buildinfo {
    include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }

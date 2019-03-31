@@ -1,5 +1,6 @@
 # v0.2.0
 
+- Attempt to retrieve titles where a scheme is missing
 - Adaptively download webpage content until a title is found
 - Use scraper/html5ever to parse HTML, rather than a regex
 - Log title retrieval failures to database
