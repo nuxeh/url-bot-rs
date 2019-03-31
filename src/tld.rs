@@ -1,6 +1,6 @@
 /// Top level domain static map, list is obtained from iana.org.
 pub static TLD: phf::Set<&'static str> = ::phf::Set { map: ::phf::Map {
-    key: 3213172566270843353,
+    key: 3_213_172_566_270_843_353,
     disps: ::phf::Slice::Static(&[
         (0, 2),
         (0, 119),
