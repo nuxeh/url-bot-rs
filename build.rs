@@ -73,17 +73,20 @@ fn generate_manpage() {
         )
         .custom(
             Section::new("features")
-                .paragraph("Report metadata. Report metadata for images. \
-                - Report mime. Report mime data for images.\
-                - Mask highlights. Insert non-printing characters to defeat \
-                  nick highlighting regexes.\
-                - Send notice. Send IRC notices rather than normal private \
-                  messages in response, on channels only.\
-                - History. If enabled, maintain a database of URLs posted, \
-                  and when new URLs are posted, check to see if they have \
-                  been posted before. If they have, provide some \
-                  information in the response about the previous postings - \
-                  the nick who posted, the channel and the time.")
+                .list("Report metadata. Report metadata for images.")
+                .paragraph("Report mime. Report mime data for images.")
+                .paragraph("\
+                    Mask highlights. Insert non-printing characters to defeat \
+                    nick highlighting regexes.")
+                .paragraph("\
+                    Send notice. Send IRC notices rather than normal private \
+                    messages in response, on channels only.")
+                .paragraph("\
+                    History. If enabled, maintain a database of URLs posted, \
+                    and when new URLs are posted, check to see if they have \
+                    been posted before. If they have, provide some \
+                    information in the response about the previous postings - \
+                    the nick who posted, the channel and the time.")
         )
         .render();
 
