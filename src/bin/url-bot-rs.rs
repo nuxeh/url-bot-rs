@@ -99,7 +99,7 @@ fn main() {
         .unwrap();
 
     // get a run-time configuration data structure
-    let rtd: Rtd = Rtd::new()
+    let mut rtd: Rtd = Rtd::new()
         .conf(&args.flag_conf)
         .db(args.flag_db)
         .load()
@@ -139,7 +139,7 @@ fn main() {
 
     // register handler
     reactor.register_client_with_handler(client, move |client, message| {
-        handle_message(client, &message, &rtd, &db);
+        handle_message(client, &message, &mut rtd, &db);
         Ok(())
     });
 
