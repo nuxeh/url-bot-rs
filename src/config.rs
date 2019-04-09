@@ -23,6 +23,8 @@ pub struct Features {
     pub mask_highlights: bool,
     pub send_notice: bool,
     pub history: bool,
+    pub invite: bool,
+    pub autosave: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -69,18 +71,36 @@ pub struct Conf {
 }
 
 impl Conf {
-    // load configuration TOML from a file
+    /// load configuration TOML from a file
     pub fn load(path: impl AsRef<Path>) -> Result<Self, Error> {
         let conf = fs::read_to_string(path.as_ref())?;
         let conf: Conf = toml::de::from_str(&conf)?;
         Ok(conf)
     }
 
-    // write configuration to a file
-    pub fn write(self, path: impl AsRef<Path>) -> Result<(), Error> {
+    /// write configuration to a file
+    pub fn write(&self, path: impl AsRef<Path>) -> Result<(), Error> {
         let mut file = File::create(path)?;
         file.write_all(toml::ser::to_string(&self)?.as_bytes())?;
         Ok(())
+    }
+
+    /// add an IRC channel to the list of channels in the configuration
+    pub fn add_channel(&mut self, name: String) {
+        if let Some(ref mut c) = self.client.channels {
+            if !c.contains(&name) {
+                c.push(name);
+            }
+        }
+    }
+
+    /// remove an IRC channel from the list of channels in the configuration
+    pub fn remove_channel(&mut self, name: &str) {
+        if let Some(ref mut c) = self.client.channels {
+            if let Some(index) = c.iter().position(|c| c == name) {
+                c.remove(index);
+            }
+        }
     }
 }
 

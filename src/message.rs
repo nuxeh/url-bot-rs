@@ -8,17 +8,69 @@ use super::http::resolve_url;
 use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;
 
-pub fn handle_message(
-    client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database
-) {
+pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: &Database) {
     trace!("{:?}", message.command);
 
-    // match on message type
-    let (target, msg) = match message.command {
-        Command::PRIVMSG(ref target, ref msg) => (target, msg),
+    match message.command {
+        Command::KICK(ref chan, ref nick, _) => kick(client, rtd, chan, nick),
+        Command::INVITE(ref nick, ref chan) => invite(client, rtd, nick, chan),
+        Command::PRIVMSG(ref target, ref msg) => {
+            privmsg(client, message, rtd, db, target, msg)
+        },
         _ => return,
     };
+}
 
+fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
+    if !rtd.conf.features.autosave {
+        return;
+    }
+    if nick != client.current_nickname() {
+        return;
+    }
+
+    info!("kicked from channel: {}", chan);
+
+    rtd.conf.remove_channel(chan);
+    rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
+        error!("error writing config: {}", err);
+        return;
+    });
+
+    info!("configuration saved");
+}
+
+fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
+    if !rtd.conf.features.invite {
+        return;
+    }
+    if nick != client.current_nickname() {
+        return;
+    }
+
+    info!("invited to channel: {}", chan);
+
+    client.send_join(chan).unwrap_or_else(|err| {
+        error!("error joining channel: {}", err);
+        return;
+    });
+
+    info!("joined successfully");
+
+    if !rtd.conf.features.autosave {
+        return;
+    }
+
+    rtd.conf.add_channel(chan.to_string());
+    rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
+        error!("error writing config: {}", err);
+        return;
+    });
+
+    info!("configuration saved");
+}
+
+fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, target: &str, msg: &str) {
     let is_chanmsg = target.starts_with('#');
     let user = message.source_nickname().unwrap();
     let mut num_processed = 0;
