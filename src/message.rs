@@ -29,7 +29,7 @@ fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
         return;
     }
 
-    info!("kicked from channel: {}", chan);
+    info!("kicked from {}", chan);
 
     rtd.conf.remove_channel(chan);
     rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
@@ -55,7 +55,7 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
         return;
     });
 
-    info!("joined successfully");
+    info!("joined {}", chan);
 
     if !rtd.conf.features.autosave {
         return;
