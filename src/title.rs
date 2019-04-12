@@ -52,7 +52,7 @@ pub fn parse_title(page_contents: &str) -> Option<String> {
     let title_one_line = title_dec
         .trim()
         .lines()
-        .map(|line| line.trim())
+        .map(str::trim)
         .join(" ");
 
     if title_one_line.is_empty() {
