@@ -7,6 +7,7 @@ use regex::Regex;
 use super::http::resolve_url;
 use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;
+use super::tld::TLD;
 
 pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: &Database) {
     trace!("{:?}", message.command);
@@ -77,10 +78,16 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
 
     // look at each space-separated message token
     for token in msg.split_whitespace() {
-        // limit the number of processed URLs
-        if num_processed == rtd.conf.params.url_limit {
-            break;
+        // the token must not contain unsafe characters
+        if contains_unsafe_chars(token) {
+            continue;
         }
+
+        // get a full URL for tokens without a scheme
+        let maybe_token = add_scheme_for_tld(token);
+        let token = maybe_token
+            .as_ref()
+            .map_or(token, String::as_str);
 
         // the token must be a valid url
         let url = match token.parse::<Url>() {
@@ -88,12 +95,7 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             _ => continue,
         };
 
-        // the token must not contain unsafe characters
-        if contains_unsafe_chars(token) {
-            continue;
-        }
-
-        // the schema must be http or https
+        // the scheme must be http or https
         if !["http", "https"].contains(&url.scheme()) {
             continue;
         }
@@ -118,11 +120,14 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
         };
 
         // check for pre-post
-        let mut msg = match if rtd.history {
+        let pre_post = if rtd.history {
             db.check_prepost(token)
         } else {
             Ok(None)
-        } {
+        };
+
+        // generate response string
+        let mut msg = match pre_post {
             Ok(Some(previous_post)) => {
                 let user = if rtd.conf.features.mask_highlights {
                     create_non_highlighting_name(&previous_post.user)
@@ -154,6 +159,7 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
         // limit response length, see RFC1459
         msg = utf8_truncate(&msg, 510);
 
+        // log
         info!("{}", msg);
 
         // send the IRC response
@@ -164,13 +170,18 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             client.send_privmsg(target, &msg).unwrap()
         }
 
+        // limit the number of processed URLs
         num_processed += 1;
+        if num_processed == rtd.conf.params.url_limit {
+            break;
+        }
     };
 }
 
 // regex for unsafe characters, as defined in RFC 1738
 const RE_UNSAFE_CHARS: &str = r#"[{}|\\^~\[\]`<>"]"#;
 
+/// does the token contain characters not permitted by RFC 1738
 fn contains_unsafe_chars(token: &str) -> bool {
     lazy_static! {
         static ref UNSAFE: Regex = Regex::new(RE_UNSAFE_CHARS).unwrap();
@@ -178,6 +189,7 @@ fn contains_unsafe_chars(token: &str) -> bool {
     UNSAFE.is_match(token)
 }
 
+/// create a name that doesn't trigger highlight regexes
 fn create_non_highlighting_name(name: &str) -> String {
     let mut graphemes = name.graphemes(true);
     let first = graphemes.next();
@@ -189,12 +201,35 @@ fn create_non_highlighting_name(name: &str) -> String {
         .collect()
 }
 
-// truncate to a maximum number of bytes, taking UTF-8 into account
+/// truncate to a maximum number of bytes, taking UTF-8 into account
 fn utf8_truncate(s: &str, n: usize) -> String {
     s.char_indices()
         .take_while(|(len, c)| len + c.len_utf8() <= n)
         .map(|(_, c)| c)
         .collect()
+}
+
+/// if a token has a recognised TLD, but no scheme, add one
+fn add_scheme_for_tld(token: &str) -> Option<String> {
+    if token.parse::<Url>().is_err() {
+        let new_token = format!("http://{}", token);
+
+        if let Ok(url) = new_token.parse::<Url>() {
+            if !url.domain()?.contains('.') {
+                return None;
+            }
+
+            let tld = url.domain()?
+                .split('.')
+                .last()?;
+
+            if TLD.contains(tld) {
+                return Some(new_token);
+            }
+        }
+    }
+
+    None
 }
 
 #[cfg(test)]
@@ -231,5 +266,39 @@ mod tests {
             assert!(contains_unsafe_chars(&format!("http://z/{}", c)));
         }
         assert_eq!(contains_unsafe_chars("http://z.zzz/"), false);
+    }
+
+    #[test]
+    fn test_add_scheme_for_tld() {
+        // appears to be a URL, and has a valid TLD
+        assert!(add_scheme_for_tld("docs.rs").is_some());
+        assert!(add_scheme_for_tld("nomnomnom.xyz").is_some());
+        assert!(add_scheme_for_tld("endless.horse").is_some());
+        assert!(add_scheme_for_tld("google.co.uk").is_some());
+        assert!(add_scheme_for_tld("notreal.co.uk/#banana").is_some());
+        assert!(add_scheme_for_tld("notreal.co.uk/?banana=3").is_some());
+
+        // return value is as expected
+        assert_eq!(
+            Some(String::from("http://nomnomnom.xyz")),
+            add_scheme_for_tld("nomnomnom.xyz")
+        );
+        assert_eq!(
+            Some(String::from("http://google.co.uk")),
+            add_scheme_for_tld("google.co.uk")
+        );
+
+        // already a valid URL
+        assert!(add_scheme_for_tld("http://nomnomnom.xyz").is_none());
+        assert!(add_scheme_for_tld("http://endless.horse").is_none());
+
+        // not a recognised TLD
+        assert!(add_scheme_for_tld("abc.cheese").is_none());
+        assert!(add_scheme_for_tld("abc.limes").is_none());
+
+        // recognised TLD, but incomplete as a URL
+        assert!(add_scheme_for_tld("xyz").is_none());
+        assert!(add_scheme_for_tld("uk").is_none());
+        assert!(add_scheme_for_tld("horse").is_none());
     }
 }
