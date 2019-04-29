@@ -116,7 +116,21 @@ in-memory database will be used.
     cargo install cargo-deb
     cargo deb --install
 
-After this, the bot may be started manually by running `url-bot-rs`.
+### Nix
+
+The following should be run on NixOS, or inside a Nix environment on another
+OS.
+
+    git clone https://github.com/nuxeh/url-bot-rs
+    cd url-bot-rs
+    nix-build
+    nix-env -if default.nix
+
+If the nix derivation needs to be updated after adding dependencies, etc, run
+the following command, having installed
+[crate2nix](https://github.com/kolloch/crate2nix):
+
+    crate2nix generate -o derivation.nix -n "<nixpkgs>"
 
 ## Running as a service
 
