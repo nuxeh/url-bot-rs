@@ -109,7 +109,7 @@ in-memory database will be used.
 
     cargo install --git https://github.com/nuxeh/url-bot-rs
 
-### Debian/Ubuntu (linux)
+### Debian/Ubuntu (Linux)
 
     git clone https://github.com/nuxeh/url-bot-rs
     cd url-bot-rs
@@ -170,7 +170,7 @@ To check status or get logs:
 - Usage is printed by providing `--help` on run.
 - To print additional runtime information, add `-v` or `--verbose`. The level
   of verbosity can be increased by adding extra `v`s; at higher levels of
-  verbosity IRC messages received, HTTP reponse headers, and information
+  verbosity IRC messages received, HTTP response headers, and information
   regarding resolution of URLs, such as cookies set, can be printed.
 
 ## Additional CLI tools
