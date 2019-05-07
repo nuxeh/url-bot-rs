@@ -219,6 +219,11 @@ pub fn add_scheme_for_tld(token: &str) -> Option<String> {
                 return None;
             }
 
+            // reject email addresses
+            if url.username() != "" {
+                return None;
+            }
+
             let tld = url.domain()?
                 .split('.')
                 .last()?;
