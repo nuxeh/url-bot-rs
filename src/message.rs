@@ -210,7 +210,7 @@ fn utf8_truncate(s: &str, n: usize) -> String {
 }
 
 /// if a token has a recognised TLD, but no scheme, add one
-fn add_scheme_for_tld(token: &str) -> Option<String> {
+pub fn add_scheme_for_tld(token: &str) -> Option<String> {
     if token.parse::<Url>().is_err() {
         let new_token = format!("http://{}", token);
 
