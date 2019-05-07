@@ -61,6 +61,7 @@ extern crate scraper;
 use url_bot_rs::VERSION;
 use url_bot_rs::config::Rtd;
 use url_bot_rs::http::{Session, get_title};
+use url_bot_rs::message::add_scheme_for_tld;
 
 use docopt::Docopt;
 use stderrlog::{Timestamp, ColorChoice};
@@ -118,9 +119,12 @@ fn main() {
         session.accept_lang(&v);
     }
 
+    // get short url, if applicable
+    let token = add_scheme_for_tld(&args.arg_url).unwrap_or(args.arg_url);
+
     // make request
     let mut resp = session
-        .request(&args.arg_url)
+        .request(&token)
         .unwrap_or_else(|err| {
             error!("Error making request: {}", err);
             process::exit(1);
