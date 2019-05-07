@@ -221,6 +221,10 @@ fn utf8_truncate(s: &str, n: usize) -> String {
 /// if a token has a recognised TLD, but no scheme, add one
 pub fn add_scheme_for_tld(token: &str) -> Option<String> {
     if token.parse::<Url>().is_err() {
+        if token.starts_with('@') {
+            return None;
+        }
+
         let new_token = format!("http://{}", token);
 
         if let Ok(url) = new_token.parse::<Url>() {
@@ -318,5 +322,9 @@ mod tests {
         // don't resolve email addresses
         assert!(add_scheme_for_tld("test@gmail.com").is_none());
         assert!(add_scheme_for_tld("word.word@gmail.com").is_none());
+
+        // don't resolve tokens beinning with @
+        assert!(add_scheme_for_tld("@gmail.com").is_none());
+        assert!(add_scheme_for_tld("@endless.horse").is_none());
     }
 }
