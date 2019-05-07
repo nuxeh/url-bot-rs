@@ -58,14 +58,11 @@ extern crate atty;
 extern crate stderrlog;
 extern crate scraper;
 
-use url_bot_rs::config;
-use url_bot_rs::http;
 use url_bot_rs::VERSION;
+use url_bot_rs::config::Rtd;
+use url_bot_rs::http::{Session, get_title};
 
-use http::{Session, get_title};
-use config::Rtd;
 use docopt::Docopt;
-
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
 use std::process;
@@ -97,12 +94,13 @@ fn main() {
         .init()
         .unwrap();
 
+    // create configuration
     let mut rtd: Rtd = Rtd::default();
     rtd.conf.features.report_metadata = args.flag_metadata;
     rtd.conf.features.report_mime = args.flag_mime;
 
+    // set session properties for the request
     let mut session = Session::new();
-
     if let Some(v) = args.flag_timeout {
         info!("overriding timeout to {}s", v);
         session.params.timeout_s = v;
@@ -120,6 +118,7 @@ fn main() {
         session.accept_lang(&v);
     }
 
+    // make request
     let mut resp = session
         .request(&args.arg_url)
         .unwrap_or_else(|err| {
@@ -127,6 +126,7 @@ fn main() {
             process::exit(1);
         });
 
+    // output
     let ret = match get_title(&mut resp, &rtd, args.flag_curl) {
         Ok(t) => {
             if !args.flag_curl { println!("{}", t) };
