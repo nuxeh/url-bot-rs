@@ -300,5 +300,9 @@ mod tests {
         assert!(add_scheme_for_tld("xyz").is_none());
         assert!(add_scheme_for_tld("uk").is_none());
         assert!(add_scheme_for_tld("horse").is_none());
+
+        // don't resolve email addresses
+        assert!(add_scheme_for_tld("test@gmail.com").is_none());
+        assert!(add_scheme_for_tld("word.word@gmail.com").is_none());
     }
 }
