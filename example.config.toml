@@ -9,11 +9,13 @@ autosave = false
 send_errors_to_poster = false
 reply_with_errors = false
 partial_urls = false
+nick_response = false
 
 [parameters]
 url_limit = 10
 accept_lang = "en"
 status_channels = []
+nick_response_str = "beep boop"
 
 [database]
 path = ""
