@@ -78,11 +78,25 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
     let mut num_processed = 0;
     let mut dedup_urls = HashSet::new();
 
+    // flags to mark whether we've got a ping or url
+    let mut nick_seen = false;
+    let mut url_seen = false;
+    let mut url_failed = false;
+
+    let nick = client.current_nickname();
+    let nick_response = rtd.conf.features.nick_response;
+
     // look at each space-separated message token
     for token in msg.split_whitespace() {
         // the token must not contain unsafe characters
         if contains_unsafe_chars(token) {
             continue;
+        }
+
+        // check for nick in token and flag if found
+        if nick_response && !url_seen && !nick_seen && token.starts_with(nick) {
+            nick_seen = true;
+            continue
         }
 
         // get a full URL for tokens without a scheme
@@ -118,6 +132,7 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
                 if rtd.conf.features.send_errors_to_poster {
                     client.send_privmsg(user, &err).unwrap()
                 }
+                url_failed = true;
                 continue
             },
         };
@@ -163,6 +178,7 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             },
             Err(err) => {
                 error!("SQL error: {}", err);
+                url_failed = true;
                 continue
             },
         };
@@ -181,6 +197,9 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             client.send_privmsg(target, &msg).unwrap()
         }
 
+        // sent a url message so set this flag
+        url_seen = true;
+
         dedup_urls.insert(url);
 
         // limit the number of processed URLs
@@ -189,6 +208,13 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             break;
         }
     };
+
+    // if we had no url message and got a ping send the message
+    if !url_seen && !url_failed && nick_seen {
+        let nick_response_str = &rtd.conf.params.nick_response;
+        client.send_privmsg(target, &nick_response_str).unwrap();
+    }
+
 }
 
 // regex for unsafe characters, as defined in RFC 1738

@@ -73,12 +73,16 @@ operation, specified in the `[features]` section:
   out the active configuration with an updated list of channels.
 - `send_errors_to_poster` (bool) if enabled, sends any errors occurring when
   trying to resolve a link to the user posting the link, in a private message.
+- `nick_response` (bool) if enabled, the bot will respond to pings with
+  `nick_response` set in parameters.
 
 The `[parameters]` section includes a number of tunable parameters:
 
 - `url_limit` (u8) max number of URLs to process for each message (default: 10)
 - `accept_lang` (String) language requested in http content requests
   (default: "en")
+- `nick_response` (String) the response to pings the bot will send when
+  `nick_response` in features is set to true. (default: "beep boop")
 
 The `[database]` section contains options for the database, as follows:
 

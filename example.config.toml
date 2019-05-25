@@ -7,11 +7,13 @@ history = false
 invite = false
 autosave = false
 send_errors_to_poster = false
+nick_response = false
 
 [parameters]
 url_limit = 10
 accept_lang = "en"
 status_channels = []
+nick_response = "beep boop"
 
 [database]
 path = ""

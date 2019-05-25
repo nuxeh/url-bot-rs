@@ -26,6 +26,7 @@ pub struct Features {
     pub invite: bool,
     pub autosave: bool,
     pub send_errors_to_poster: bool,
+    pub nick_response: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -50,6 +51,7 @@ pub struct Parameters {
     pub url_limit: u8,
     pub accept_lang: String,
     pub status_channels: Vec<String>,
+    pub nick_response: String,
 }
 
 impl Default for Parameters {
@@ -58,6 +60,7 @@ impl Default for Parameters {
             url_limit: 10,
             accept_lang: "en".to_string(),
             status_channels: vec![],
+            nick_response: "beep boop".to_string()
         }
     }
 }
