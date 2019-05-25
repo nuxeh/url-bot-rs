@@ -72,11 +72,25 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
     let mut num_processed = 0;
     let mut dedup_urls = HashSet::new();
 
+    // flags to mark whether we've got a ping or url
+    let mut nick_ping: bool = false;
+    let mut url_ping: bool = false;
+
+    let nick = &rtd.conf.client.nickname;
+    let nick_response = rtd.conf.features.nick_response;
+
     // look at each space-separated message token
     for token in msg.split_whitespace() {
         // the token must not contain unsafe characters
         if contains_unsafe_chars(token) {
             continue;
+        }
+
+        // check for nick in token and flag if found
+        if nick_response && !url_ping && !nick_ping && nick.is_some()
+            && token.starts_with(nick.as_ref().unwrap()) {
+            nick_ping = true;
+            continue
         }
 
         // get a full URL for tokens without a scheme
@@ -177,6 +191,9 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
 
         respond(client, rtd, target, msg);
 
+        // sent a url message so set this flag
+        url_ping = true;
+
         dedup_urls.insert(url);
 
         // limit the number of processed URLs
@@ -185,6 +202,13 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             break;
         }
     };
+
+    // if we had no url message and got a ping send the message
+    if !url_ping && nick_ping {
+        let nick_response_str = &rtd.conf.params.nick_response_str;
+        client.send_privmsg(target, &nick_response_str).unwrap();
+    }
+
 }
 
 /// send IRC response

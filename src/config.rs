@@ -28,6 +28,7 @@ pub struct Features {
     pub send_errors_to_poster: bool,
     pub reply_with_errors: bool,
     pub partial_urls: bool,
+    pub nick_response: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -52,6 +53,7 @@ pub struct Parameters {
     pub url_limit: u8,
     pub accept_lang: String,
     pub status_channels: Vec<String>,
+    pub nick_response_str: String,
 }
 
 impl Default for Parameters {
@@ -60,6 +62,7 @@ impl Default for Parameters {
             url_limit: 10,
             accept_lang: "en".to_string(),
             status_channels: vec![],
+            nick_response_str: "beep boop".to_string()
         }
     }
 }
