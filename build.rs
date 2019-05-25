@@ -6,6 +6,7 @@ use std::io::Write;
 use man::prelude::*;
 
 fn main() {
+    println!("cargo:rerun-if-changed=src");
     built::write_built_file().expect("Failed to store build-time information");
     generate_manpage();
 }
