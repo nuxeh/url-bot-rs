@@ -102,8 +102,8 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             continue;
         }
 
-        // skip duplicate urls in the same message
-        if !dedup_urls.insert(String::from(token)) {
+        // skip duplicate urls within the message
+        if dedup_urls.contains(&url) {
             continue;
         }
 
@@ -176,6 +176,8 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
         } else {
             client.send_privmsg(target, &msg).unwrap()
         }
+
+        dedup_urls.insert(url);
 
         // limit the number of processed URLs
         num_processed += 1;
