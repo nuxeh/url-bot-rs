@@ -1,5 +1,6 @@
 use irc::client::prelude::*;
 use std::iter;
+use std::collections::HashSet;
 use unicode_segmentation::UnicodeSegmentation;
 use reqwest::Url;
 use regex::Regex;
@@ -76,6 +77,7 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
     let user = message.source_nickname().unwrap();
     let mut num_processed = 0;
 
+    let mut dedup_urls = HashSet::new();
     // look at each space-separated message token
     for token in msg.split_whitespace() {
         // the token must not contain unsafe characters
@@ -97,6 +99,11 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
 
         // the scheme must be http or https
         if !["http", "https"].contains(&url.scheme()) {
+            continue;
+        }
+
+        // skip duplicate urls in the same message
+        if !dedup_urls.insert(String::from(token)) {
             continue;
         }
 
