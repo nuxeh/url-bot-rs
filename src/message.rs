@@ -114,6 +114,9 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             Ok(title) => title,
             Err(err) => {
                 error!("{:?}", err);
+                if rtd.conf.features.send_errors_to_poster {
+                    client.send_privmsg(user, err).unwrap()
+                }
                 continue
             },
         };

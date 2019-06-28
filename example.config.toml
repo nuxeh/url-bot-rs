@@ -6,6 +6,7 @@ send_notice = false
 history = false
 invite = false
 autosave = false
+send_errors_to_poster = false
 
 [parameters]
 url_limit = 10

@@ -71,6 +71,8 @@ operation, specified in the `[features]` section:
 - `invite` (bool) if enabled, `/invite` will cause the bot to join a channel.
 - `autosave` (bool) if enabled, `/invite` and `/kick` will automatically write
   out the active configuration with an updated list of channels.
+- `send_errors_to_poster` (bool) if enabled, sends any errors occurring when
+  trying to resolve a link to the user posting the link, in a private message.
 
 The `[parameters]` section includes a number of tunable parameters:
 
