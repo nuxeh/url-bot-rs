@@ -266,6 +266,7 @@ mod tests {
     use std::sync::mpsc;
 
     #[test]
+    #[ignore]
     fn resolve_urls() {
         let rtd: Rtd = Rtd::default();
         let db = Database::open_in_memory().unwrap();
