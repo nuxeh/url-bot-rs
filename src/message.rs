@@ -76,8 +76,8 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
     let is_chanmsg = target.starts_with('#');
     let user = message.source_nickname().unwrap();
     let mut num_processed = 0;
-
     let mut dedup_urls = HashSet::new();
+
     // look at each space-separated message token
     for token in msg.split_whitespace() {
         // the token must not contain unsafe characters
