@@ -114,8 +114,9 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             Ok(title) => title,
             Err(err) => {
                 error!("{:?}", err);
+                msg_status_chans(client, rtd, &err);
                 if rtd.conf.features.send_errors_to_poster {
-                    client.send_privmsg(user, err).unwrap()
+                    client.send_privmsg(user, &err).unwrap()
                 }
                 continue
             },
@@ -251,6 +252,32 @@ pub fn add_scheme_for_tld(token: &str) -> Option<String> {
     }
 
     None
+}
+
+/// join any status channels not already joined and send a message to them
+pub fn msg_status_chans<S>(client: &IrcClient, rtd: &Rtd, msg: S)
+where
+    S: ToString,
+    S: std::fmt::Display,
+{
+    if rtd.conf.params.status_channels.is_empty() {
+        return;
+    };
+
+    let joined_channels = client.list_channels().unwrap_or_else(|| vec![]);
+
+    rtd.conf.params.status_channels
+        .iter()
+        .filter(|c| !joined_channels.contains(c))
+        .for_each(|c| client.send_join(c).unwrap_or_else(|err| {
+            error!("Error joining status channel {}: {}", c, err)
+        }));
+
+    rtd.conf.params.status_channels
+        .iter()
+        .for_each(|c| client.send_privmsg(c, &msg).unwrap_or_else(|err| {
+            error!("Error messaging status channel {}: {}", c, err)
+        }));
 }
 
 #[cfg(test)]
