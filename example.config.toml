@@ -11,6 +11,7 @@ send_errors_to_poster = false
 [parameters]
 url_limit = 10
 accept_lang = "en"
+status_channels = []
 
 [database]
 path = ""

@@ -49,13 +49,15 @@ impl Default for Database {
 pub struct Parameters {
     pub url_limit: u8,
     pub accept_lang: String,
+    pub status_channels: Vec<String>,
 }
 
 impl Default for Parameters {
     fn default() -> Self {
         Self {
             url_limit: 10,
-            accept_lang: "en".to_string()
+            accept_lang: "en".to_string(),
+            status_channels: vec![],
         }
     }
 }
