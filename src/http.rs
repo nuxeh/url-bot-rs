@@ -251,7 +251,7 @@ pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, E
         }
     }
 
-    bail!("failed to parse title");
+    bail!(format!("{}: failed to parse title", resp.url()));
 }
 
 #[cfg(test)]
