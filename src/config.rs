@@ -12,7 +12,7 @@ use failure::Error;
 use std::fmt;
 use directories::{ProjectDirs, BaseDirs};
 
-use super::buildinfo;
+use super::VERSION;
 
 // serde structures defining the configuration file structure
 #[derive(Default, Serialize, Deserialize, Clone)]
@@ -201,7 +201,7 @@ impl Rtd {
         }
 
         // set url-bot-rs version number in the irc client configuration
-        self.conf.client.version = Some(String::from(buildinfo::PKG_VERSION));
+        self.conf.client.version = Some(VERSION.to_string());
 
         Ok(self.clone())
     }
