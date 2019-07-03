@@ -73,6 +73,7 @@ operation, specified in the `[features]` section:
   out the active configuration with an updated list of channels.
 - `send_errors_to_poster` (bool) if enabled, sends any errors occurring when
   trying to resolve a link to the user posting the link, in a private message.
+- `reply_with_errors` (bool) if enabled, always reply with error messages.
 
 The `[parameters]` section includes a number of tunable parameters:
 

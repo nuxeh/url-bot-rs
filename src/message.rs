@@ -66,6 +66,7 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
 }
 
 fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, target: &str, msg: &str) {
+    let target = message.response_target().unwrap_or(target);
     let is_chanmsg = target.starts_with('#');
     let user = message.source_nickname().unwrap();
     let mut num_processed = 0;
@@ -109,9 +110,12 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
                 error!("{:?}", err);
                 msg_status_chans(client, rtd, &err);
                 if rtd.conf.features.send_errors_to_poster {
-                    client.send_privmsg(user, &err).unwrap()
-                }
-                continue
+                    respond(client, rtd, user, &err);
+                };
+                if rtd.conf.features.reply_with_errors {
+                    respond(client, rtd, target, &err);
+                };
+                continue;
             },
         };
 
@@ -146,7 +150,7 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
                 )
             },
             Ok(None) => {
-                // add new log entry to database
+                // add new log entry to database, if posted in a channel
                 if rtd.history && is_chanmsg {
                     if let Err(err) = db.add_log(&entry) {
                         error!("SQL error: {}", err);
@@ -166,13 +170,7 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
         // log
         info!("{}", msg);
 
-        // send the IRC response
-        let target = message.response_target().unwrap_or(target);
-        if rtd.conf.features.send_notice && is_chanmsg {
-            client.send_notice(target, &msg).unwrap()
-        } else {
-            client.send_privmsg(target, &msg).unwrap()
-        }
+        respond(client, rtd, target, msg);
 
         dedup_urls.insert(url);
 
@@ -182,6 +180,25 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
             break;
         }
     };
+}
+
+/// send IRC response
+fn respond<S>(client: &IrcClient, rtd: &Rtd, target: &str, msg: S)
+where
+    S: ToString,
+    S: std::fmt::Display,
+{
+    let is_chanmsg = target.starts_with('#');
+
+    let result = if rtd.conf.features.send_notice && is_chanmsg {
+        client.send_notice(target, &msg)
+    } else {
+        client.send_privmsg(target, &msg)
+    };
+
+    result.unwrap_or_else(|err| {
+        error!("Error sending response {}: {}", target, err);
+    });
 }
 
 // regex for unsafe characters, as defined in RFC 1738
@@ -265,11 +282,10 @@ where
             error!("Error joining status channel {}: {}", c, err)
         }));
 
+
     rtd.conf.params.status_channels
         .iter()
-        .for_each(|c| client.send_privmsg(c, &msg).unwrap_or_else(|err| {
-            error!("Error messaging status channel {}: {}", c, err)
-        }));
+        .for_each(|c| respond(client, rtd, c, &msg));
 }
 
 #[cfg(test)]
