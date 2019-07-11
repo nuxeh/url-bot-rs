@@ -77,13 +77,14 @@ operation, specified in the `[features]` section:
 The `[parameters]` section includes a number of tunable parameters:
 
 - `url_limit` (u8) max number of URLs to process for each message (default: 10)
-- `accept_lang` (String) language requested in http content requests
+- `accept_lang` (string) language requested in http content requests
   (default: "en")
+- `status_channels` (list) join and message channel(s) with any error messages produced from URL created and messaged with any error messages produced from URL
 
 The `[database]` section contains options for the database, as follows:
 
-- `path` (String) is the path to a database file (for `sqlite`)
-- `type` (String) is the type of database to use, e.g. `sqlite`
+- `path` (string) is the path to a database file (for `sqlite`)
+- `type` (string) is the type of database to use, e.g. `sqlite`
 
 If no configuration file exists at the expected location, a default-valued
 configuration file will be created. An example configuration is provided as
