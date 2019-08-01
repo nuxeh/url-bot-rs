@@ -282,7 +282,6 @@ where
             error!("Error joining status channel {}: {}", c, err)
         }));
 
-
     rtd.conf.params.status_channels
         .iter()
         .for_each(|c| respond(client, rtd, c, &msg));
