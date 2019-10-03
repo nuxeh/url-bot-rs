@@ -19,7 +19,7 @@ pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: 
         Command::PRIVMSG(ref target, ref msg) => {
             privmsg(client, message, rtd, db, target, msg)
         },
-        _ => return,
+        _ => {},
     };
 }
 
@@ -27,6 +27,7 @@ fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
     if !rtd.conf.features.autosave {
         return;
     }
+
     if nick != client.current_nickname() {
         return;
     }
@@ -36,40 +37,32 @@ fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
     rtd.conf.remove_channel(chan);
     rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
         error!("error writing config: {}", err);
-        return;
     });
-
-    info!("configuration saved");
 }
 
 fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
     if !rtd.conf.features.invite {
         return;
     }
+
     if nick != client.current_nickname() {
         return;
     }
 
     info!("invited to channel: {}", chan);
 
-    client.send_join(chan).unwrap_or_else(|err| {
-        error!("error joining channel: {}", err);
-        return;
-    });
+    if let Err(e) = client.send_join(chan) {
+        error!("error joining channel: {}", e);
+    } else {
+        info!("joined {}", chan);
 
-    info!("joined {}", chan);
-
-    if !rtd.conf.features.autosave {
-        return;
-    }
-
-    rtd.conf.add_channel(chan.to_string());
-    rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
-        error!("error writing config: {}", err);
-        return;
-    });
-
-    info!("configuration saved");
+        if rtd.conf.features.autosave {
+            rtd.conf.add_channel(chan.to_string());
+            rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
+                error!("error writing config: {}", err);
+            });
+        };
+    };
 }
 
 fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, target: &str, msg: &str) {

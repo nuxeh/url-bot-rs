@@ -173,12 +173,11 @@ fn log_error(rtd: &Rtd, db: &Database, url: &str, err: &Error, resp: &Response) 
         error_info: &toml::ser::to_string(&e).unwrap(),
     };
 
+    info!("adding error record to database");
+
     db.log_error(&err).unwrap_or_else(|e| {
         error!("database error: {}", e);
-        return;
     });
-
-    info!("added error record to database")
 }
 
 pub fn resolve_url(url: &str, rtd: &Rtd, db: &Database) -> Result<String, Error> {
