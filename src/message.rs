@@ -250,8 +250,7 @@ pub fn add_scheme_for_tld(token: &str) -> Option<String> {
 /// join any status channels not already joined and send a message to them
 pub fn msg_status_chans<S>(client: &IrcClient, rtd: &Rtd, msg: S)
 where
-    S: ToString,
-    S: std::fmt::Display,
+    S: ToString + std::fmt::Display,
 {
     if rtd.conf.params.status_channels.is_empty() {
         return;
