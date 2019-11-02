@@ -27,6 +27,7 @@ pub struct Features {
     pub autosave: bool,
     pub send_errors_to_poster: bool,
     pub reply_with_errors: bool,
+    pub partial_urls: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

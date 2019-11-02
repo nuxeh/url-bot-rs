@@ -8,6 +8,7 @@ invite = false
 autosave = false
 send_errors_to_poster = false
 reply_with_errors = false
+partial_urls = false
 
 [parameters]
 url_limit = 10
