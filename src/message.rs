@@ -80,7 +80,12 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
         }
 
         // get a full URL for tokens without a scheme
-        let maybe_token = add_scheme_for_tld(token);
+        let maybe_token = if rtd.conf.features.partial_urls {
+            add_scheme_for_tld(token)
+        } else {
+            None
+        };
+
         let token = maybe_token
             .as_ref()
             .map_or(token, String::as_str);
