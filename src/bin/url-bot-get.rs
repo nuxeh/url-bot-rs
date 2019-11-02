@@ -37,8 +37,9 @@ pub struct Args {
 
 extern crate url_bot_rs;
 
-#[macro_use]
-extern crate serde_derive;
+#[macro_use] extern crate log;
+#[macro_use] extern crate serde_derive;
+
 extern crate lazy_static;
 extern crate itertools;
 extern crate regex;
@@ -52,8 +53,6 @@ extern crate irc;
 extern crate directories;
 extern crate toml;
 extern crate docopt;
-#[macro_use]
-extern crate log;
 extern crate atty;
 extern crate stderrlog;
 extern crate scraper;
@@ -78,7 +77,7 @@ fn main() {
     // don't output colours on stderr if piped
     let coloured_output = if is(Stream::Stderr) {
         ColorChoice::Auto
-    } else{
+    } else {
         ColorChoice::Never
     };
 

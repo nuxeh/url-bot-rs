@@ -6,11 +6,12 @@
  */
 extern crate url_bot_rs;
 
+#[macro_use] extern crate log;
+#[macro_use] extern crate serde_derive;
+
 extern crate irc;
 extern crate rusqlite;
 extern crate docopt;
-#[macro_use]
-extern crate serde_derive;
 extern crate itertools;
 extern crate regex;
 extern crate lazy_static;
@@ -25,8 +26,6 @@ extern crate humansize;
 extern crate unicode_segmentation;
 extern crate toml;
 extern crate directories;
-#[macro_use]
-extern crate log;
 extern crate atty;
 extern crate stderrlog;
 extern crate scraper;
@@ -78,7 +77,7 @@ fn main() {
     // don't output colours or include timestamps on stderr if piped
     let (coloured_output, mut timestamp) = if is(Stream::Stderr) {
         (ColorChoice::Auto, Timestamp::Second)
-    } else{
+    } else {
         (ColorChoice::Never, Timestamp::Off)
     };
 
