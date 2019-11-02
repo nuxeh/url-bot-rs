@@ -79,7 +79,8 @@ The `[parameters]` section includes a number of tunable parameters:
 - `url_limit` (u8) max number of URLs to process for each message (default: 10)
 - `accept_lang` (string) language requested in http content requests
   (default: "en")
-- `status_channels` (list) join and message channel(s) with any error messages produced from URL created and messaged with any error messages produced from URL
+- `status_channels` (list) channel(s) to create, join and message with any
+  error messages produced from URL title retrieval
 
 The `[database]` section contains options for the database, as follows:
 
