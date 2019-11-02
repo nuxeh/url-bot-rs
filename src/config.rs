@@ -125,15 +125,8 @@ impl Default for Conf {
                 port: Some(6667),
                 password: Some("".to_string()),
                 use_ssl: Some(false),
-                encoding: Some("UTF-8".to_string()),
                 channels: Some(vec!["#url-bot-rs".to_string()]),
                 user_info: Some("Feed me URLs.".to_string()),
-                source: Some("https://github.com/nuxeh/url-bot-rs".to_string()),
-                ping_time: Some(180),
-                ping_timeout: Some(10),
-                burst_window_length: Some(8),
-                max_messages_in_burst: Some(15),
-                should_ghost: Some(false),
                 ..IrcConfig::default()
             }
         }
