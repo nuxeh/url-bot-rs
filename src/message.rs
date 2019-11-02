@@ -185,8 +185,7 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
 /// send IRC response
 fn respond<S>(client: &IrcClient, rtd: &Rtd, target: &str, msg: S)
 where
-    S: ToString,
-    S: std::fmt::Display,
+    S: ToString + std::fmt::Display,
 {
     let is_chanmsg = target.starts_with('#');
 
