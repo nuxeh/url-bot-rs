@@ -17,7 +17,9 @@ pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: 
         Command::KICK(ref chan, ref nick, _) => kick(client, rtd, chan, nick),
         Command::INVITE(ref nick, ref chan) => invite(client, rtd, nick, chan),
         Command::PRIVMSG(ref target, ref msg) => {
-            privmsg(client, message, rtd, db, target, msg)
+            let target = message.response_target().unwrap_or(target);
+            let sender = message.source_nickname().unwrap();
+            privmsg(client, rtd, db, &target, msg, &sender)
         },
         _ => {},
     };
@@ -65,9 +67,7 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
     };
 }
 
-fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, target: &str, msg: &str) {
-    let target = message.response_target().unwrap_or(target);
-    let user = message.source_nickname().unwrap();
+fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, target: &str, msg: &str, user: &str) {
     let nick = rtd.conf.client.nickname.as_ref().unwrap();
 
     let is_chanmsg = target.starts_with('#');
