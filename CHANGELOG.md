@@ -1,5 +1,9 @@
-# v0.2.0
+# v0.2.1
 
+- URL de-duplication
+- Addition of preliminary Nix files
+- Reporting of errors over IRC via PRIVMSG
+- Make schemeless URL matching optional (disabled by default)
 - Attempt to retrieve titles where a scheme is missing
 - Add `/invite` and `/kick` capability
 - Adaptively download webpage content until a title is found
@@ -19,6 +23,6 @@
 - Unified configuration and XDG paths
 - Ignore tokens containing invalid characters in URLs
 
-# v0.1.0
+# v0.2.0
 
 Initial development
