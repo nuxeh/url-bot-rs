@@ -67,30 +67,20 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
 
 fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, target: &str, msg: &str) {
     let target = message.response_target().unwrap_or(target);
-    let is_chanmsg = target.starts_with('#');
     let user = message.source_nickname().unwrap();
+    let nick = rtd.conf.client.nickname.as_ref().unwrap();
+
+    let is_chanmsg = target.starts_with('#');
+    let is_ping = is_ping(&nick, &msg);
+
     let mut num_processed = 0;
     let mut dedup_urls = HashSet::new();
-
-    // flags to mark whether we've got a ping or url
-    let mut nick_ping: bool = false;
-    let mut url_ping: bool = false;
-
-    let nick = &rtd.conf.client.nickname;
-    let nick_response = rtd.conf.features.nick_response;
 
     // look at each space-separated message token
     for token in msg.split_whitespace() {
         // the token must not contain unsafe characters
         if contains_unsafe_chars(token) {
             continue;
-        }
-
-        // check for nick in token and flag if found
-        if nick_response && !url_ping && !nick_ping && nick.is_some()
-            && token.starts_with(nick.as_ref().unwrap()) {
-            nick_ping = true;
-            continue
         }
 
         // get a full URL for tokens without a scheme
@@ -191,9 +181,6 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
 
         respond(client, rtd, target, msg);
 
-        // sent a url message so set this flag
-        url_ping = true;
-
         dedup_urls.insert(url);
 
         // limit the number of processed URLs
@@ -203,12 +190,10 @@ fn privmsg(client: &IrcClient, message: &Message, rtd: &Rtd, db: &Database, targ
         }
     };
 
-    // if we had no url message and got a ping send the message
-    if !url_ping && nick_ping {
-        let nick_response_str = &rtd.conf.params.nick_response_str;
-        client.send_privmsg(target, &nick_response_str).unwrap();
+    // if we had no url message and got a ping send nick response
+    if dedup_urls.is_empty() && is_ping {
+        respond(client, rtd, target, &rtd.conf.params.nick_response_str);
     }
-
 }
 
 /// send IRC response
@@ -238,6 +223,13 @@ fn contains_unsafe_chars(token: &str) -> bool {
         static ref UNSAFE: Regex = Regex::new(RE_UNSAFE_CHARS).unwrap();
     }
     UNSAFE.is_match(token)
+}
+
+/// does a message look like it contains a ping
+fn is_ping(nick: &str, message: &str) -> bool {
+    let regex = format!(r#"\b{}\b"#, nick);
+    let ping = Regex::new(&regex).unwrap();
+    ping.is_match(message)
 }
 
 /// create a name that doesn't trigger highlight regexes
@@ -318,6 +310,47 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_is_ping() {
+        assert_eq!(is_ping("a", "a"), true);
+        assert_eq!(is_ping("a", "a ^"), true);
+        assert_eq!(is_ping("a", "a:"), true);
+        assert_eq!(is_ping("a", "a: hi"), true);
+        assert_eq!(is_ping("a", "a hi"), true);
+        assert_eq!(is_ping("a", "a,"), true);
+        assert_eq!(is_ping("a", "a, hi"), true);
+        assert_eq!(is_ping("a", "b: a:"), true);
+        assert_eq!(is_ping("a", "b, a:"), true);
+        assert_eq!(is_ping("a", "b,a:"), true);
+        assert_eq!(is_ping("a", "b,a"), true);
+        assert_eq!(is_ping("a", "a,b:"), true);
+        assert_eq!(is_ping("a", "a,b"), true);
+        assert_eq!(is_ping("b", "also, b:"), true);
+        assert_eq!(is_ping("b", "also, b: hi"), true);
+        assert_eq!(is_ping("a", "words words words a"), true);
+        assert_eq!(is_ping("a", "hi, a"), true);
+        assert_eq!(is_ping("a", "hi a"), true);
+        assert_eq!(is_ping("a", "@a"), true);
+        assert_eq!(is_ping("a", "@a:"), true);
+        assert_eq!(is_ping("a", "@a: hi"), true);
+        assert_eq!(is_ping("a", "@a, hi"), true);
+        assert_eq!(is_ping("a", "@a hi"), true);
+        assert_eq!(is_ping("a", "...a"), true);
+        assert_eq!(is_ping("a", "a... hi"), true);
+        assert_eq!(is_ping("a", "b/a:"), true);
+        assert_eq!(is_ping("a", "a/b:"), true);
+        assert_eq!(is_ping("a", " a:"), true);
+    }
+
+    #[test]
+    fn test_is_ping_no_partial_nick() {
+        assert_eq!(is_ping("a", "abc"), false);
+        assert_eq!(is_ping("a", "bac"), false);
+        assert_eq!(is_ping("a", "bca"), false);
+        assert_eq!(is_ping("a", "abc bac bca"), false);
+        assert_eq!(is_ping("a", "lemonades are happy at car parks"), false);
+    }
 
     #[test]
     fn test_utf8_truncate() {
