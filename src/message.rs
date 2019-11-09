@@ -100,12 +100,8 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
 
     for resp in &titles {
         match resp {
-            TitleResp::TITLE(t) => {
-                respond(client, rtd, msg, t);
-            },
-            TitleResp::ERROR(ref e) => {
-                respond_error(client, rtd, msg, e);
-            },
+            TitleResp::TITLE(t) => respond(client, rtd, msg, t),
+            TitleResp::ERROR(e) => respond_error(client, rtd, msg, e),
         }
     }
 
