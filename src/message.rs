@@ -17,9 +17,10 @@ pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: 
         Command::KICK(ref chan, ref nick, _) => kick(client, rtd, chan, nick),
         Command::INVITE(ref nick, ref chan) => invite(client, rtd, nick, chan),
         Command::PRIVMSG(ref target, ref msg) => {
-            let target = message.response_target().unwrap_or(target);
             let sender = message.source_nickname().unwrap();
-            privmsg(client, rtd, db, &target, msg, &sender)
+            let target = message.response_target().unwrap_or(target);
+            let message = Msg::new(rtd, sender, target, msg);
+            privmsg(client, rtd, db, &message)
         },
         _ => {},
     };
@@ -67,17 +68,71 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
     };
 }
 
-fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, target: &str, msg: &str, user: &str) {
-    let nick = rtd.conf.client.nickname.as_ref().unwrap();
+enum TitleResp {
+    TITLE(String),
+    ERROR(String),
+}
 
-    let is_chanmsg = target.starts_with('#');
-    let is_ping = is_ping(&nick, &msg);
+struct Msg {
+    is_chanmsg: bool,
+    is_ping: bool,
+    target: String,
+    sender: String,
+    text: String,
+}
+
+impl Msg {
+    fn new(rtd: &Rtd, sender: &str, target: &str, text: &str) -> Msg {
+        let our_nick = rtd.conf.client.nickname.as_ref().unwrap();
+
+        Msg {
+            is_chanmsg: target.starts_with('#'),
+            is_ping: is_ping(&our_nick, text),
+            sender: sender.to_string(),
+            target: target.to_string(),
+            text: text.to_string(),
+        }
+    }
+}
+
+fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
+    let titles: Vec<_> = process_titles(rtd, db, msg).collect();
+
+    for resp in &titles {
+        match resp {
+            TitleResp::TITLE(t) => {
+                respond(client, rtd, &msg.target, t);
+            },
+            TitleResp::ERROR(ref e) => {
+                if rtd.conf.features.reply_with_errors {
+                    respond(client, rtd, &msg.target, e);
+                };
+
+                if rtd.conf.features.send_errors_to_poster {
+                    respond(client, rtd, &msg.sender, e);
+                };
+
+                msg_status_chans(client, rtd, e);
+            },
+        }
+    }
+
+    // if we had no url message and got a ping send nick response
+    if titles.is_empty() && msg.is_ping {
+        respond(client, rtd, &msg.target, &rtd.conf.params.nick_response_str);
+    }
+
+}
+
+/// find titles in a message and generate responses
+fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = TitleResp> {
+    let mut responses: Vec<TitleResp> = vec![];
 
     let mut num_processed = 0;
     let mut dedup_urls = HashSet::new();
 
     // look at each space-separated message token
-    for token in msg.split_whitespace() {
+    for token in msg.text.split_whitespace() {
         // the token must not contain unsafe characters
         if contains_unsafe_chars(token) {
             continue;
@@ -117,13 +172,7 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, target: &str, msg: &str
             Ok(title) => title,
             Err(err) => {
                 error!("{:?}", err);
-                msg_status_chans(client, rtd, &err);
-                if rtd.conf.features.send_errors_to_poster {
-                    respond(client, rtd, user, &err);
-                };
-                if rtd.conf.features.reply_with_errors {
-                    respond(client, rtd, target, &err);
-                };
+                responses.push(TitleResp::ERROR(err.to_string()));
                 continue;
             },
         };
@@ -132,8 +181,8 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, target: &str, msg: &str
         let entry = NewLogEntry {
             title: &title,
             url: token,
-            user,
-            channel: target,
+            user: &msg.sender,
+            channel: &msg.target,
         };
 
         // check for pre-post
@@ -160,7 +209,7 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, target: &str, msg: &str
             },
             Ok(None) => {
                 // add new log entry to database, if posted in a channel
-                if rtd.history && is_chanmsg {
+                if rtd.history && msg.is_chanmsg {
                     if let Err(err) = db.add_log(&entry) {
                         error!("SQL error: {}", err);
                     }
@@ -179,7 +228,7 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, target: &str, msg: &str
         // log
         info!("{}", msg);
 
-        respond(client, rtd, target, msg);
+        responses.push(TitleResp::TITLE(msg.to_string()));
 
         dedup_urls.insert(url);
 
@@ -190,10 +239,7 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, target: &str, msg: &str
         }
     };
 
-    // if we had no url message and got a ping send nick response
-    if dedup_urls.is_empty() && is_ping {
-        respond(client, rtd, target, &rtd.conf.params.nick_response_str);
-    }
+    responses.into_iter()
 }
 
 /// send IRC response
