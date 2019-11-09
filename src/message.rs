@@ -262,7 +262,11 @@ where
         respond(client, rtd, &msg, &text);
     };
 
-    msg_status_chans(client, rtd, &text);
+    // send error messages to status channels, for channel messages only
+    // this may still leak link information from, e.g. secret channels
+    if msg.is_chanmsg {
+        msg_status_chans(client, rtd, &text);
+    }
 }
 
 // regex for unsafe characters, as defined in RFC 1738
