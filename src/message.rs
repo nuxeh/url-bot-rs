@@ -101,25 +101,17 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
     for resp in &titles {
         match resp {
             TitleResp::TITLE(t) => {
-                respond(client, rtd, &msg.target, t);
+                respond(client, rtd, msg, t);
             },
             TitleResp::ERROR(ref e) => {
-                if rtd.conf.features.reply_with_errors {
-                    respond(client, rtd, &msg.target, e);
-                };
-
-                if rtd.conf.features.send_errors_to_poster {
-                    respond(client, rtd, &msg.sender, e);
-                };
-
-                msg_status_chans(client, rtd, e);
+                respond_error(client, rtd, msg, e);
             },
         }
     }
 
     // if we had no url message and got a ping send nick response
     if titles.is_empty() && msg.is_ping {
-        respond(client, rtd, &msg.target, &rtd.conf.params.nick_response_str);
+        respond(client, rtd, &msg, &rtd.conf.params.nick_response_str);
     }
 
 }
@@ -243,21 +235,34 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
 }
 
 /// send IRC response
-fn respond<S>(client: &IrcClient, rtd: &Rtd, target: &str, msg: S)
+fn respond<S>(client: &IrcClient, rtd: &Rtd, msg: &Msg, text: S)
 where
     S: ToString + std::fmt::Display,
 {
-    let is_chanmsg = target.starts_with('#');
-
-    let result = if rtd.conf.features.send_notice && is_chanmsg {
-        client.send_notice(target, &msg)
+    let result = if rtd.conf.features.send_notice && msg.is_chanmsg {
+        client.send_notice(&msg.target, &text)
     } else {
-        client.send_privmsg(target, &msg)
+        client.send_privmsg(&msg.target, &text)
     };
 
     result.unwrap_or_else(|err| {
-        error!("Error sending response {}: {}", target, err);
+        error!("Error sending response {}: {}", msg.target, err);
     });
+}
+
+fn respond_error<S>(client: &IrcClient, rtd: &Rtd, msg: &Msg, text: S)
+where
+    S: ToString + std::fmt::Display,
+{
+    if rtd.conf.features.reply_with_errors {
+        respond(client, rtd, &msg, &text);
+    };
+
+    if rtd.conf.features.send_errors_to_poster {
+        respond(client, rtd, &msg, &text);
+    };
+
+    msg_status_chans(client, rtd, &text);
 }
 
 // regex for unsafe characters, as defined in RFC 1738
@@ -350,7 +355,7 @@ where
 
     rtd.conf.params.status_channels
         .iter()
-        .for_each(|c| respond(client, rtd, c, &msg));
+        .for_each(|c| client.send_privmsg(c, &msg).unwrap());
 }
 
 #[cfg(test)]
