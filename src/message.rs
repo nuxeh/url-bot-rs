@@ -368,11 +368,8 @@ where
         return;
     };
 
-    let joined_channels = client.list_channels().unwrap_or_else(|| vec![]);
-
     rtd.conf.params.status_channels
         .iter()
-        .filter(|c| !joined_channels.contains(c))
         .for_each(|c| client.send_join(c).unwrap_or_else(|err| {
             error!("Error joining status channel {}: {}", c, err)
         }));
