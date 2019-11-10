@@ -13,12 +13,15 @@ use super::tld::TLD;
 pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: &Database) {
     trace!("{:?}", message.command);
 
+    let sender = message.source_nickname();
+    let target = message.response_target();
+
     match message.command {
         Command::KICK(ref chan, ref nick, _) => kick(client, rtd, chan, nick),
         Command::INVITE(ref nick, ref chan) => invite(client, rtd, nick, chan),
-        Command::PRIVMSG(ref target, ref msg) => {
-            let sender = message.source_nickname().unwrap();
-            let target = message.response_target().unwrap_or(target);
+        Command::PRIVMSG(ref tgt, ref msg) => {
+            let sender = sender.unwrap();
+            let target = target.unwrap_or(tgt);
             let message = Msg::new(rtd, sender, target, msg);
             privmsg(client, rtd, db, &message)
         },
@@ -96,6 +99,15 @@ impl Msg {
 }
 
 fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
+    // ignore messages sent to status channels
+    if rtd.conf.params.status_channels.contains(&msg.target.to_string()) {
+        if msg.is_ping || contains_urls(&msg.text) {
+            let m = format!("ignoring messages in channel {}", msg.target);
+            client.send_privmsg(&msg.sender, m).unwrap();
+        }
+        return;
+    }
+
     let titles: Vec<_> = process_titles(rtd, db, msg).collect();
 
     for resp in &titles {
@@ -268,6 +280,13 @@ where
     if msg.is_chanmsg {
         msg_status_chans(client, rtd, &text);
     }
+}
+
+fn contains_urls(text: &str) -> bool {
+    text
+        .split_whitespace()
+        .filter(|token| token.parse::<Url>().is_ok())
+        .count() > 0
 }
 
 // regex for unsafe characters, as defined in RFC 1738
