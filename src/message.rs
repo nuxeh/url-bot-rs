@@ -250,12 +250,17 @@ fn respond_error<S>(client: &IrcClient, rtd: &Rtd, msg: &Msg, text: S)
 where
     S: ToString + std::fmt::Display,
 {
-    if rtd.conf.features.reply_with_errors {
+    // reply with error, if message was sent in a channel
+    // always reply with errors in queries
+    if !msg.is_chanmsg || rtd.conf.features.reply_with_errors {
         respond(client, rtd, &msg, &text);
     };
 
-    if rtd.conf.features.send_errors_to_poster {
-        respond(client, rtd, &msg, &text);
+    // send errors to poster by query
+    // do not send if link was already sent in a query, since this
+    // duplicates messages
+    if msg.is_chanmsg && rtd.conf.features.send_errors_to_poster {
+        client.send_privmsg(&msg.sender, &text).unwrap();
     };
 
     // send error messages to status channels, for channel messages only
