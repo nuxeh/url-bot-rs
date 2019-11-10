@@ -62,7 +62,7 @@ impl Default for Parameters {
             url_limit: 10,
             accept_lang: "en".to_string(),
             status_channels: vec![],
-            nick_response_str: "beep boop".to_string()
+            nick_response_str: "".to_string()
         }
     }
 }

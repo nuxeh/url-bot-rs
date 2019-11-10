@@ -15,7 +15,7 @@ nick_response = false
 url_limit = 10
 accept_lang = "en"
 status_channels = []
-nick_response_str = "beep boop"
+nick_response_str = ""
 
 [database]
 path = ""
