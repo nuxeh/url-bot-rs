@@ -16,13 +16,13 @@ pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: 
     let sender = message.source_nickname();
     let target = message.response_target();
 
-    match message.command {
-        Command::KICK(ref chan, ref nick, _) => kick(client, rtd, chan, nick),
-        Command::INVITE(ref nick, ref chan) => invite(client, rtd, nick, chan),
-        Command::PRIVMSG(ref tgt, ref msg) => {
+    match &message.command {
+        Command::KICK(chan, nick, _) => kick(client, rtd, &chan, &nick),
+        Command::INVITE(nick, chan) => invite(client, rtd, &nick, &chan),
+        Command::PRIVMSG(tgt, msg) => {
             let sender = sender.unwrap();
-            let target = target.unwrap_or(tgt);
-            let message = Msg::new(rtd, sender, target, msg);
+            let target = target.unwrap_or(&tgt);
+            let message = Msg::new(rtd, sender, target, &msg);
             privmsg(client, rtd, db, &message)
         },
         _ => {},
