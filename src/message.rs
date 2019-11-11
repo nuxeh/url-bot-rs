@@ -71,11 +71,13 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
     };
 }
 
+#[derive(Debug, PartialEq)]
 enum TitleResp {
     TITLE(String),
     ERROR(String),
 }
 
+#[derive(Debug)]
 struct Msg {
     is_chanmsg: bool,
     is_ping: bool,
@@ -381,7 +383,124 @@ where
 
 #[cfg(test)]
 mod tests {
+    extern crate tiny_http;
+
     use super::*;
+    use std::{thread, time};
+    use self::tiny_http::Response;
+    use super::TitleResp::TITLE;
+
+    fn serve_html() {
+        let _ = thread::spawn(move || {
+            let srv = tiny_http::Server::http("0.0.0.0:8084").unwrap();
+            loop {
+                let rq = srv.recv().unwrap();
+                let resp = Response::from_string("<title>|t|</title>");
+                rq.respond(resp).unwrap();
+            }
+        });
+        thread::sleep(time::Duration::from_millis(100));
+    }
+
+    fn pt(m: &str) -> Vec<TitleResp> {
+        let rtd = Rtd::default();
+        let msg = Msg::new(&rtd, "testnick", "#testchannel", m);
+        let db = Database::open_in_memory().unwrap();
+        let ret = process_titles(&rtd, &db, &msg).collect();
+        println!("message: \"{}\"", m);
+        println!("{:?}", ret);
+        ret
+    }
+
+    fn pt_n(n: usize) -> Vec<TitleResp> {
+        let mut c = 0;
+        let m = iter::repeat("http://0.0.0.0:8084/")
+            .take(n)
+            .map(|t| {c += 1; format!("{}{}", t, c)})
+            .collect::<Vec<String>>()
+            .join(" ");
+        pt(&m)
+    }
+
+    #[test]
+    fn test_process_titles_count() {
+        serve_html();
+        assert_eq!(0, pt("").len());
+        assert_eq!(1, pt("http://0.0.0.0:8084/").len());
+        assert_eq!(2, pt("http://0.0.0.0:8084/1 http://0.0.0.0:8084/2").len());
+        assert_eq!(4, pt_n(4).len());
+        assert_eq!(8, pt_n(8).len());
+    }
+
+    #[test]
+    fn test_process_titles_deduplicate() {
+        assert_eq!(1, pt("http://0.0.0.0:8084 http://0.0.0.0:8084").len());
+        let m = iter::repeat("http://0.0.0.0:8084/")
+            .take(10)
+            .collect::<Vec<&str>>()
+            .join(" ");
+        assert_eq!(1, pt(&m).len());
+    }
+
+    #[test]
+    fn test_process_titles_limit() {
+        // default limit is 10
+        assert_eq!(10, pt_n(10).len());
+        assert_eq!(10, pt_n(11).len());
+        assert_eq!(10, pt_n(16).len());
+        assert_eq!(10, pt_n(32).len());
+    }
+
+    #[test]
+    fn test_process_titles_value() {
+        pt("http://0.0.0.0:8084/")
+            .iter()
+            .for_each(|v| assert_eq!(&TITLE("⤷ |t|".to_string()), v));
+    }
+
+    #[test]
+    fn test_process_titles_repost() {
+        let mut rtd = Rtd::default();
+        rtd.history = true;
+
+        let msg = Msg::new(&rtd, "testnick", "#test", "http://0.0.0.0:8084/");
+        let db = Database::open_in_memory().unwrap();
+
+        let d = r#"( [[:alpha:]]{3}){2} \d{2} \d{2}:\d{2}:\d{2} \d{4}"#;
+        let date = Regex::new(&d).unwrap();
+
+        process_titles(&rtd, &db, &msg)
+            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), v));
+
+        process_titles(&rtd, &db, &msg)
+            .for_each(|v| {
+                println!("{:?}", v);
+                if let TITLE(s) = v {
+                    assert!(s.starts_with("⤷ |t| → "));
+                    assert!(date.is_match(&s));
+                    assert!(s.ends_with(" testnick (#test)"));
+                } else {
+                    assert!(false);
+                }
+            });
+    }
+
+    #[test]
+    #[ignore]
+    fn test_process_titles_partial() {
+        let mut rtd = Rtd::default();
+        rtd.conf.features.partial_urls = true;
+
+        let db = Database::open_in_memory().unwrap();
+
+        let msg = Msg::new(&rtd, "testnick", "#test", "google.com");
+        println!("{:?}", msg);
+        assert_eq!(1, process_titles(&rtd, &db, &msg).count());
+
+        let msg = Msg::new(&rtd, "testnick", "#test", "docs.rs");
+        println!("{:?}", msg);
+        assert_eq!(1, process_titles(&rtd, &db, &msg).count());
+    }
 
     #[test]
     fn test_is_ping() {
