@@ -37,7 +37,7 @@ fn parse_html_title(page_contents: &str) -> Option<String> {
     fragment
         .select(&title_selector)
         .next()
-        .and_then(|n| Some(n.text().collect()))
+        .map(|n| n.text().collect())
 }
 
 /// Attempt to extract a page title from downloaded HTML

@@ -222,7 +222,7 @@ impl Rtd {
         };
 
         self.history = hist_enabled;
-        self.paths.db = db_path.and_then(|p| Some(expand_tilde(&p)));
+        self.paths.db = db_path.map(|p| expand_tilde(&p));
     }
 }
 
