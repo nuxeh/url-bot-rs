@@ -388,14 +388,18 @@ mod tests {
     use super::*;
     use std::{thread, time};
     use self::tiny_http::Response;
-    use super::TitleResp::TITLE;
+    use super::TitleResp::{TITLE, ERROR};
 
     fn serve_html() {
         let _ = thread::spawn(move || {
             let srv = tiny_http::Server::http("0.0.0.0:8084").unwrap();
             loop {
                 let rq = srv.recv().unwrap();
-                let resp = Response::from_string("<title>|t|</title>");
+                let resp = match rq.url() {
+                    "/empty" => Response::from_string(""),
+                    "/blank" => Response::from_string("<title></title>"),
+                    _ => Response::from_string("<title>|t|</title>"),
+                };
                 rq.respond(resp).unwrap();
             }
         });
@@ -509,6 +513,20 @@ mod tests {
     #[test]
     fn test_process_titles_unsafe_chars() {
         assert_eq!(0, pt("http://0.0.0.0:8084/{}").len());
+    }
+
+    fn err_val(r: &TitleResp, s: &str) -> bool {
+        if let ERROR(st) = r {
+            if st == s { true } else { false }
+        } else { false }
+    }
+
+    #[test]
+    fn test_process_titles_resolve_error() {
+        assert!(err_val(&pt("http://0.0.0.0:8084/empty")[0],
+            "http://0.0.0.0:8084/empty: failed to parse title"));
+        assert!(err_val(&pt("http://0.0.0.0:8084/blank")[0],
+            "http://0.0.0.0:8084/blank: failed to parse title"));
     }
 
     #[test]
