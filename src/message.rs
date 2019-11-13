@@ -483,6 +483,20 @@ mod tests {
                     assert!(false);
                 }
             });
+
+        rtd.conf.features.mask_highlights = true;
+
+        process_titles(&rtd, &db, &msg)
+            .for_each(|v| {
+                println!("{:?}", v);
+                if let TITLE(s) = v {
+                    assert!(s.starts_with("⤷ |t| → "));
+                    assert!(date.is_match(&s));
+                    assert!(s.ends_with(" t\u{200c}estnick (#test)"));
+                } else {
+                    assert!(false);
+                }
+            });
     }
 
     #[test]
