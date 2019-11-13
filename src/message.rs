@@ -517,7 +517,7 @@ mod tests {
 
     fn err_val(r: &TitleResp, s: &str) -> bool {
         if let ERROR(st) = r {
-            if st == s { true } else { false }
+            st == s
         } else { false }
     }
 
