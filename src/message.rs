@@ -486,6 +486,18 @@ mod tests {
     }
 
     #[test]
+    fn test_process_titles_http_https_only() {
+        assert_eq!(0, pt("git://0.0.0.0:8084/").len());
+        assert_eq!(0, pt("ssh://0.0.0.0:8084/").len());
+        assert_eq!(0, pt("ftp://0.0.0.0:8084/").len());
+    }
+
+    #[test]
+    fn test_process_titles_unsafe_chars() {
+        assert_eq!(0, pt("http://0.0.0.0:8084/{}").len());
+    }
+
+    #[test]
     #[ignore]
     fn test_process_titles_partial() {
         let mut rtd = Rtd::default();
