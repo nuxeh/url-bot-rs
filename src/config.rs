@@ -146,7 +146,6 @@ pub struct Rtd {
     pub paths: Paths,
     /// configuration file data
     pub conf: Conf,
-    pub history: bool,
 }
 
 #[derive(Default, Clone)]
@@ -158,11 +157,6 @@ pub struct Paths {
 impl Rtd {
     pub fn new() -> Self {
         Rtd::default()
-    }
-
-    pub fn db(&mut self, path: Option<PathBuf>) -> &mut Self {
-        self.paths.db = path;
-        self
     }
 
     pub fn conf(&mut self, path: &Option<PathBuf>) -> &mut Self {
@@ -207,24 +201,16 @@ impl Rtd {
     fn set_db_info(&mut self) {
         let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
 
-        let (hist_enabled, db_path) = if let Some(ref path) = self.paths.db {
-            // enable history when db path given as CLI argument
-            (true, Some(PathBuf::from(path)))
-        } else if !self.conf.features.history {
-            // no path specified on CLI, and history disabled in configuration
-            (false, None)
+        let db_path = if !self.conf.features.history {
+            None
         } else if !self.conf.database.path.is_empty() {
-            // (non-empty) db path specified in configuration
-            (true, Some(PathBuf::from(&self.conf.database.path)))
+            Some(PathBuf::from(&self.conf.database.path))
         } else if self.conf.database.db_type == "sqlite" {
-            // database type is sqlite, but no path given, use default
-            (true, Some(dirs.data_local_dir().join("history.db")))
+            Some(dirs.data_local_dir().join("history.db"))
         } else {
-            // use in-memory database
-            (true, None)
+            None
         };
 
-        self.history = hist_enabled;
         self.paths.db = db_path.map(|p| expand_tilde(&p));
     }
 }

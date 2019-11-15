@@ -188,7 +188,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         };
 
         // check for pre-post
-        let pre_post = if rtd.history {
+        let pre_post = if rtd.conf.features.history {
             db.check_prepost(token)
         } else {
             Ok(None)
@@ -211,7 +211,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
             },
             Ok(None) => {
                 // add new log entry to database, if posted in a channel
-                if rtd.history && msg.is_chanmsg {
+                if rtd.conf.features.history && msg.is_chanmsg {
                     if let Err(err) = db.add_log(&entry) {
                         error!("SQL error: {}", err);
                     }
@@ -465,7 +465,7 @@ mod tests {
     #[test]
     fn test_process_titles_repost() {
         let mut rtd = Rtd::default();
-        rtd.history = true;
+        rtd.conf.features.history = true;
 
         let msg = Msg::new(&rtd, "testnick", "#test", "http://0.0.0.0:8084/");
         let db = Database::open_in_memory().unwrap();
