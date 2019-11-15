@@ -47,13 +47,12 @@ const USAGE: &str = "
 URL munching IRC bot.
 
 Usage:
-    url-bot-rs [options] [-v...] [--db=PATH]
+    url-bot-rs [options] [-v...]
 
 Options:
     -h --help       Show this help message.
     --version       Print version.
     -v --verbose    Show extra information.
-    -d --db=PATH    Use a sqlite database at PATH.
     -c --conf=PATH  Use configuration file at PATH.
     -t --timestamp  Force timestamps.
 ";
@@ -61,7 +60,6 @@ Options:
 #[derive(Debug, Deserialize, Default)]
 pub struct Args {
     flag_verbose: usize,
-    flag_db: Option<PathBuf>,
     flag_conf: Option<PathBuf>,
     flag_timestamp: bool,
 }
@@ -100,7 +98,6 @@ fn main() {
     // get a run-time configuration data structure
     let mut rtd: Rtd = Rtd::new()
         .conf(&args.flag_conf)
-        .db(args.flag_db)
         .load()
         .unwrap_or_else(|err| {
             error!("Error loading configuration: {}", err);
@@ -122,7 +119,7 @@ fn main() {
             process::exit(1);
         })
     } else {
-        if rtd.history { info!("Using in-memory database"); }
+        if rtd.conf.features.history { info!("using in-memory database"); }
         Database::open_in_memory().unwrap()
     };
 
