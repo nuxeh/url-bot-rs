@@ -188,7 +188,7 @@ impl Rtd {
         // get db path, and history
         self.set_db_info();
 
-        if let Some(dp) = self.paths.db.clone() {
+        if let Some(dp) = &self.paths.db {
             create_dir_if_missing(dp.parent().unwrap())?;
         }
 
