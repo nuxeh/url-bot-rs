@@ -76,6 +76,8 @@ operation, specified in the `[features]` section:
 - `reply_with_errors` (bool) if enabled, always reply with error messages.
 - `partial_urls` (bool) attempt to resolve titles for URLs without scheme, e.g.
   "docs.rs".
+- `nick_response` (bool) respond with a message if bot is pinged in a message
+  with no other action to perform.
 
 The `[parameters]` section includes a number of tunable parameters:
 
@@ -84,6 +86,7 @@ The `[parameters]` section includes a number of tunable parameters:
   (default: "en")
 - `status_channels` (list) channel(s) to create, join and message with any
   error messages produced from URL title retrieval
+- `nick_response_str` (string) the message to send for the nick response feature
 
 The `[database]` section contains options for the database, as follows:
 
