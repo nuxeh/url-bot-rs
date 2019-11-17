@@ -171,7 +171,7 @@ impl Rtd {
     }
 
     pub fn load(&mut self) -> Result<Self, Error> {
-        create_dir_if_missing(self.paths.conf.parent().unwrap())?;
+        ensure_parent_dir(&self.paths.conf)?;
 
         // create a default-valued config if it doesn't exist
         if !self.paths.conf.exists() {
@@ -189,7 +189,7 @@ impl Rtd {
         self.set_db_info();
 
         if let Some(dp) = &self.paths.db {
-            create_dir_if_missing(dp.parent().unwrap())?;
+            ensure_parent_dir(dp)?;
         }
 
         // set url-bot-rs version number in the irc client configuration
@@ -227,14 +227,22 @@ macro_rules! impl_display {
 }
 impl_display!(Features, Parameters, Database);
 
-fn create_dir_if_missing(dir: &Path) -> Result<bool, Error> {
-    let pdir = dir.to_str().unwrap();
-    let exists = pdir.is_empty() || dir.exists();
-    if !exists {
-        info!("Directory `{}` doesn't exist, creating it", pdir);
-        fs::create_dir_all(dir)?;
+fn ensure_parent_dir(file: &Path) -> Result<bool, Error> {
+    let without_path = file.components().count() == 1;
+
+    match file.parent() {
+        Some(dir) if !without_path => {
+            let create = !dir.exists();
+            if create {
+                info!(
+                    "directory `{}` doesn't exist, creating it", dir.display()
+                );
+                fs::create_dir_all(dir)?;
+            }
+            Ok(create)
+        },
+        _ => Ok(false),
     }
-    Ok(exists)
 }
 
 fn expand_tilde(path: &Path) -> PathBuf {
@@ -246,7 +254,12 @@ fn expand_tilde(path: &Path) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
+    extern crate tempfile;
+
     use super::*;
+    use self::tempfile::tempdir;
+    use std::env;
+    use std::panic;
 
     #[test]
     /// test that the example configuration file parses without error
@@ -255,6 +268,48 @@ mod tests {
             .conf(&Some(PathBuf::from("example.config.toml")))
             .load()
             .unwrap();
+    }
+
+    #[test]
+    fn test_ensure_parent() {
+        let tmp_dir = tempdir().unwrap();
+        let tmp_path = tmp_dir.path().join("test/test.file");
+
+        assert_eq!(ensure_parent_dir(&tmp_path).unwrap(), true);
+        assert_eq!(ensure_parent_dir(&tmp_path).unwrap(), false);
+        assert_eq!(ensure_parent_dir(&tmp_path).unwrap(), false);
+    }
+
+    #[test]
+    /// CWD should always exist, so don't try to create it
+    fn test_ensure_parent_file_in_cwd() {
+        assert_eq!(ensure_parent_dir(Path::new("test.f")).unwrap(), false);
+        assert_eq!(ensure_parent_dir(Path::new("./test.f")).unwrap(), false);
+    }
+
+    #[test]
+    fn test_ensure_parent_relative() {
+        let tmp_dir = tempdir().unwrap();
+        let test_dir = tmp_dir.path().join("subdir");
+        println!("creating temp path: {}", test_dir.display());
+        fs::create_dir_all(&test_dir).unwrap();
+
+        let cwd = env::current_dir().unwrap();
+        env::set_current_dir(test_dir).unwrap();
+
+        let result = panic::catch_unwind(|| {
+            assert_eq!(ensure_parent_dir(Path::new("../dir/file")).unwrap(), true);
+            assert_eq!(ensure_parent_dir(Path::new("../dir/file")).unwrap(), false);
+            assert_eq!(ensure_parent_dir(Path::new("./dir/file")).unwrap(), true);
+            assert_eq!(ensure_parent_dir(Path::new("./dir/file")).unwrap(), false);
+            assert_eq!(ensure_parent_dir(Path::new("dir2/file")).unwrap(), true);
+            assert_eq!(ensure_parent_dir(Path::new("dir2/file")).unwrap(), false);
+            assert_eq!(ensure_parent_dir(Path::new("./dir3/file")).unwrap(), true);
+            assert_eq!(ensure_parent_dir(Path::new("dir3/file2")).unwrap(), false);
+        });
+
+        env::set_current_dir(cwd).unwrap();
+        assert!(result.is_ok());
     }
 
     #[test]
