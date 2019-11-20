@@ -271,6 +271,21 @@ mod tests {
     }
 
     #[test]
+    fn load_write_default() {
+        let tmp_dir = tempdir().unwrap();
+        let cfg_path = tmp_dir.path().join("config.toml");
+
+        Rtd::new()
+            .conf(&Some(cfg_path))
+            .load()
+            .unwrap();
+
+        let example = fs::read_to_string("example.config.toml").unwrap();
+        let written = fs::read_to_string(cfg_path).unwrap();
+        assert_eq!(example, written);
+    }
+
+    #[test]
     fn test_ensure_parent() {
         let tmp_dir = tempdir().unwrap();
         let tmp_path = tmp_dir.path().join("test/test.file");
