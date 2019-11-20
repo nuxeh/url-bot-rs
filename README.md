@@ -47,6 +47,9 @@ or, if `$XDG_CONFIG_PATH` is set:
 
     $XDG_CONFIG_HOME/url-bot-rs/config.toml
 
+The `--conf` parameter may be provided multiple times, in order to connect to
+multiple servers/networks.
+
 ### Configuration file options
 
 The configuration includes settings pertaining to the IRC server the bot will
