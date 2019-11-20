@@ -347,6 +347,32 @@ mod tests {
     }
 
     #[test]
+    fn conf_add_remove_channel() {
+        let mut rtd = Rtd::default();
+        check_channels(&rtd, "#url-bot-rs", 1);
+
+        rtd.conf.add_channel("#cheese".to_string());
+        check_channels(&rtd, "#cheese", 2);
+
+        rtd.conf.add_channel("#cheese-2".to_string());
+        check_channels(&rtd, "#cheese-2", 3);
+
+        rtd.conf.remove_channel(&"#cheese-2".to_string());
+        let c = rtd.conf.client.channels.clone().unwrap();
+
+        assert!(!c.contains(&"#cheese-2".to_string()));
+        assert_eq!(2, c.len());
+    }
+
+    fn check_channels(rtd: &Rtd, contains: &str, len: usize) {
+        let c = rtd.conf.client.channels.clone().unwrap();
+        println!("{:?}", c);
+
+        assert!(c.contains(&contains.to_string()));
+        assert_eq!(len, c.len());
+    }
+
+    #[test]
     fn test_expand_tilde() {
         let homedir: PathBuf = BaseDirs::new()
             .unwrap()
