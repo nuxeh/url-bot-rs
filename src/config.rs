@@ -146,6 +146,7 @@ pub struct Rtd {
     pub paths: Paths,
     /// configuration file data
     pub conf: Conf,
+    pub history: bool,
 }
 
 #[derive(Default, Clone)]
@@ -159,14 +160,8 @@ impl Rtd {
         Rtd::default()
     }
 
-    pub fn conf(&mut self, path: &Option<PathBuf>) -> &mut Self {
-        let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
-
-        self.paths.conf = match path {
-            Some(ref cp) => expand_tilde(cp),
-            None => dirs.config_dir().join("config.toml")
-        };
-
+    pub fn conf(&mut self, path: &PathBuf) -> &mut Self {
+        self.paths.conf = expand_tilde(path);
         self
     }
 
@@ -265,7 +260,7 @@ mod tests {
     /// test that the example configuration file parses without error
     fn load_example_conf() {
         Rtd::new()
-            .conf(&Some(PathBuf::from("example.config.toml")))
+            .conf(&"example.config.toml".into())
             .load()
             .unwrap();
     }
@@ -276,7 +271,7 @@ mod tests {
         let cfg_path = tmp_dir.path().join("config.toml");
 
         Rtd::new()
-            .conf(&Some(cfg_path))
+            .conf(&cfg_path)
             .load()
             .unwrap();
 
