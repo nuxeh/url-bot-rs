@@ -97,57 +97,60 @@ fn main() {
 
     let threads: Vec<_> = args.flag_conf
         .into_iter()
-        .map(|conf| { thread::spawn(move || {
-            let conf = conf.clone();
-
-            // get a run-time configuration data structure
-            let mut rtd: Rtd = Rtd::new()
-                .conf(&conf)
-                .load()
-                .unwrap_or_else(|err| {
-                    error!("Error loading configuration: {}", err);
-                    process::exit(1);
-                });
-
-            info!("Using configuration: {}", rtd.paths.conf.display());
-
-            // open the sqlite database for logging
-            let db = if let Some(ref path) = rtd.paths.db {
-                info!("Using database: {}", path.display());
-                Database::open(path).unwrap_or_else(|err| {
-                    error!("Database error: {}", err);
-                    process::exit(1);
-                })
-            } else {
-                if rtd.conf.features.history { info!("Using in-memory database"); }
-                Database::open_in_memory().unwrap()
-            };
-
-            // create IRC reactor
-            let mut reactor = IrcReactor::new().unwrap();
-            let client = reactor
-                .prepare_client_and_connect(&rtd.conf.client)
-                .unwrap_or_else(|err| {
-                    error!("IRC prepare error: {}", err);
-                    process::exit(1);
-                });
-            client.identify().unwrap();
-
-            // register handler
-            reactor.register_client_with_handler(client, move |client, message| {
-                handle_message(client, &message, &mut rtd, &db);
-                Ok(())
-            });
-
-            reactor.run().unwrap_or_else(|err| {
-                error!("IRC client error: {}", err);
-                process::exit(1);
-            });
+        .map(|conf| {
+            thread::spawn(move || {
+                let conf = conf.clone();
+                run_instance(&conf);
+            })
         })
-    })
-    .collect();
+        .collect();
 
     for thread in threads {
         thread.join().ok();
     }
+}
+
+fn run_instance(conf: &PathBuf) {
+    let mut rtd: Rtd = Rtd::new()
+        .conf(conf)
+        .load()
+        .unwrap_or_else(|err| {
+            error!("loading configuration: {}", err);
+            process::exit(1);
+        });
+
+    info!("using configuration: {}", rtd.paths.conf.display());
+
+    // open the sqlite database for logging
+    let db = if let Some(ref path) = rtd.paths.db {
+        info!("using database: {}", path.display());
+        Database::open(path).unwrap_or_else(|err| {
+            error!("database error: {}", err);
+            process::exit(1);
+        })
+    } else {
+        if rtd.conf.features.history { info!("using in-memory database"); }
+        Database::open_in_memory().unwrap()
+    };
+
+    // create IRC reactor
+    let mut reactor = IrcReactor::new().unwrap();
+    let client = reactor
+        .prepare_client_and_connect(&rtd.conf.client)
+        .unwrap_or_else(|err| {
+            error!("IRC prepare error: {}", err);
+            process::exit(1);
+        });
+    client.identify().unwrap();
+
+    // register handler
+    reactor.register_client_with_handler(client, move |client, message| {
+        handle_message(client, &message, &mut rtd, &db);
+        Ok(())
+    });
+
+    reactor.run().unwrap_or_else(|err| {
+        error!("IRC client error: {}", err);
+        process::exit(1);
+    });
 }
