@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use irc::client::data::Config as IrcConfig;
 use failure::Error;
 use std::fmt;
-use directories::{ProjectDirs, BaseDirs};
+use directories::BaseDirs;
 
 use super::VERSION;
 
@@ -31,20 +31,24 @@ pub struct Features {
     pub nick_response: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
+pub enum DbType {
+    InMemory,
+    SQLite,
+}
+
+impl Default for DbType {
+    fn default() -> Self {
+        Self::InMemory
+    }
+}
+
+#[derive(Serialize, Deserialize, Default, Clone)]
 #[serde(default)]
 pub struct Database {
-    pub path: String,
     #[serde(rename = "type")]
-    pub db_type: String,
-}
-impl Default for Database {
-    fn default() -> Self {
-        Self {
-            path: "".to_string(),
-            db_type: "in-memory".to_string(),
-        }
-    }
+    pub db_type: DbType,
+    pub path: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -185,8 +189,7 @@ impl Rtd {
         // load config file
         self.conf = Conf::load(&self.paths.conf)?;
 
-        // get db path, and history
-        self.set_db_info();
+        self.paths.db = self.get_db_info().map(|p| expand_tilde(&p));
 
         if let Some(dp) = &self.paths.db {
             ensure_parent_dir(dp)?;
@@ -198,20 +201,23 @@ impl Rtd {
         Ok(self.clone())
     }
 
-    fn set_db_info(&mut self) {
-        let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
-
-        let db_path = if !self.conf.features.history {
-            None
-        } else if !self.conf.database.path.is_empty() {
-            Some(PathBuf::from(&self.conf.database.path))
-        } else if self.conf.database.db_type == "sqlite" {
-            Some(dirs.data_local_dir().join("history.db"))
+    fn get_db_info(&mut self) -> Option<PathBuf> {
+        if self.conf.features.history {
+            match self.conf.database.db_type {
+                DbType::InMemory => { None },
+                DbType::SQLite => {
+                    if let Some(p) = &self.paths.db {
+                        Some(p.into())
+                    } else if let Some(p) = &self.conf.database.path {
+                        Some(p.into())
+                    } else {
+                        None
+                    }
+                },
+            }
         } else {
             None
-        };
-
-        self.paths.db = db_path.map(|p| expand_tilde(&p));
+        }
     }
 }
 
