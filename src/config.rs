@@ -165,6 +165,11 @@ impl Rtd {
         self
     }
 
+    pub fn db(&mut self, path: Option<&PathBuf>) -> &mut Self {
+        self.paths.db = path.map(|p| expand_tilde(p));
+        self
+    }
+
     pub fn load(&mut self) -> Result<Self, Error> {
         ensure_parent_dir(&self.paths.conf)?;
 

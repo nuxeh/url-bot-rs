@@ -99,7 +99,9 @@ fn main() {
     // default instance
     if args.flag_conf.is_empty() {
         let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
-        run_instance(&dirs.config_dir().join("config.toml"));
+        let conf = dirs.config_dir().join("config.toml");
+        let db = dirs.data_local_dir().join("history.db");
+        run_instance(&conf, Some(&db));
     }
 
     // threaded instances
@@ -108,7 +110,7 @@ fn main() {
         .map(|conf| {
             thread::spawn(move || {
                 let conf = conf.clone();
-                run_instance(&conf);
+                run_instance(&conf, None);
             })
         })
         .collect();
@@ -118,9 +120,10 @@ fn main() {
     }
 }
 
-fn run_instance(conf: &PathBuf) {
+fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) {
     let mut rtd: Rtd = Rtd::new()
         .conf(conf)
+        .db(db)
         .load()
         .unwrap_or_else(|err| {
             error!("loading configuration: {}", err);
