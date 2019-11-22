@@ -42,6 +42,7 @@ use std::thread;
 use std::path::PathBuf;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
+use directories::ProjectDirs;
 
 // docopt usage string
 const USAGE: &str = "
@@ -95,6 +96,13 @@ fn main() {
         .init()
         .unwrap();
 
+    // default instance
+    if args.flag_conf.is_empty() {
+        let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
+        run_instance(&dirs.config_dir().join("config.toml"));
+    }
+
+    // threaded instances
     let threads: Vec<_> = args.flag_conf
         .into_iter()
         .map(|conf| {
