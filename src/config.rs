@@ -14,7 +14,20 @@ use directories::BaseDirs;
 
 use super::VERSION;
 
-// serde structures defining the configuration file structure
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
+pub struct Network {
+    pub name: String,
+}
+
+impl Default for Network {
+    fn default() -> Self {
+        Self {
+            name: "default".into(),
+        }
+    }
+}
+
 #[derive(Default, Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct Features {
@@ -74,6 +87,7 @@ impl Default for Parameters {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct Conf {
+    pub network: Network,
     pub features: Features,
     #[serde(rename = "parameters")]
     pub params: Parameters,
@@ -119,6 +133,7 @@ impl Conf {
 impl Default for Conf {
     fn default() -> Self {
         Self {
+            network: Network::default(),
             features: Features::default(),
             params: Parameters::default(),
             database: Database::default(),

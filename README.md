@@ -60,6 +60,11 @@ connect to, including among other things:
 - The nick the bot will use when joining
 - Channels to join
 
+The `[network]` section gives some metadata for the network the configuration
+will connect to, including:
+
+- `name` (string) an identifier for the network.
+
 It is also possible to configure a number of optional features for the bot's
 operation, specified in the `[features]` section:
 

@@ -1,3 +1,6 @@
+[network]
+name = "default"
+
 [features]
 report_metadata = false
 report_mime = false
