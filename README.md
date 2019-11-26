@@ -121,6 +121,10 @@ The database type may be specified in the `[database]` configuration section,
 as field `type`. A corresponding path to use for the database may be given as
 field, `path`.
 
+For SQLite, if no path is specified, a default path will be used, and a
+database will be created according to the network name specified in the
+`[network]` section of the configuration.
+
 ## Install from source
 
 ### Cargo
