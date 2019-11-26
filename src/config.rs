@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use irc::client::data::Config as IrcConfig;
 use failure::Error;
 use std::fmt;
-use directories::BaseDirs;
+use directories::{BaseDirs, ProjectDirs};
 
 use super::VERSION;
 
@@ -221,13 +221,27 @@ impl Rtd {
             match self.conf.database.db_type {
                 DbType::InMemory => { None },
                 DbType::SQLite => {
-                    if let Some(p) = &self.paths.db {
-                        Some(p.into())
-                    } else if let Some(p) = &self.conf.database.path {
+                    let mut path = if let Some(p) = &self.conf.database.path {
+                        if p.is_empty() {
+                            None
+                        } else {
+                            Some(p.into())
+                        }
+                    } else if let Some(p) = &self.paths.db {
                         Some(p.into())
                     } else {
                         None
-                    }
+                    };
+
+                    if path.is_none() {
+                        // generate and use a default database path
+                        let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
+                        let db = format!("history.{}.db", self.conf.network.name);
+                        let db = dirs.data_local_dir().join(&db);
+                        path = Some(db);
+                    };
+
+                    path
                 },
             }
         } else {
