@@ -363,6 +363,49 @@ mod tests {
     }
 
     #[test]
+    fn sqlite_path_default() {
+        let tmp_dir = tempdir().unwrap();
+        let cfg_path = tmp_dir.path().join("config.toml");
+
+        let mut cfg = Conf::default();
+        cfg.features.history = true;
+        cfg.database.db_type = DbType::SQLite;
+        cfg.write(&cfg_path).unwrap();
+
+        let rtd = Rtd::new()
+            .conf(&cfg_path)
+            .load()
+            .unwrap();
+
+        let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
+        let default = dirs.data_local_dir().join("history.default.db");
+        println!("database path: {}", default.to_str().unwrap());
+        assert_eq!(rtd.paths.db, Some(default));
+
+        cfg.network.name = "test_net".to_string();
+        cfg.write(&cfg_path).unwrap();
+
+        let rtd = Rtd::new()
+            .conf(&cfg_path)
+            .load()
+            .unwrap();
+
+        let default = dirs.data_local_dir().join("history.test_net.db");
+        println!("database path: {}", default.to_str().unwrap());
+        assert_eq!(rtd.paths.db, Some(default.clone()));
+
+        cfg.database.path = Some("".to_string());
+        cfg.write(&cfg_path).unwrap();
+
+        let rtd = Rtd::new()
+            .conf(&cfg_path)
+            .load()
+            .unwrap();
+
+        assert_eq!(rtd.paths.db, Some(default));
+    }
+
+    #[test]
     fn test_ensure_parent() {
         let tmp_dir = tempdir().unwrap();
         let tmp_path = tmp_dir.path().join("test/test.file");
