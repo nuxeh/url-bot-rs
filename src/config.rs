@@ -45,9 +45,10 @@ pub struct Features {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub enum DbType {
     InMemory,
-    SQLite,
+    Sqlite,
 }
 
 impl Default for DbType {
@@ -220,7 +221,7 @@ impl Rtd {
         if self.conf.features.history {
             match self.conf.database.db_type {
                 DbType::InMemory => { None },
-                DbType::SQLite => {
+                DbType::Sqlite => {
                     let mut path = if let Some(p) = &self.conf.database.path {
                         if p.is_empty() {
                             None
@@ -328,7 +329,7 @@ mod tests {
 
         let mut cfg = Conf::default();
         cfg.features.history = true;
-        cfg.database.db_type = DbType::SQLite;
+        cfg.database.db_type = DbType::Sqlite;
         cfg.write(&cfg_path).unwrap();
 
         let rtd = Rtd::new()
@@ -349,7 +350,7 @@ mod tests {
 
         let mut cfg = Conf::default();
         cfg.features.history = true;
-        cfg.database.db_type = DbType::SQLite;
+        cfg.database.db_type = DbType::Sqlite;
         cfg.database.path = Some(db_path_cfg.to_str().unwrap().to_string());
         cfg.write(&cfg_path).unwrap();
 
@@ -369,7 +370,7 @@ mod tests {
 
         let mut cfg = Conf::default();
         cfg.features.history = true;
-        cfg.database.db_type = DbType::SQLite;
+        cfg.database.db_type = DbType::Sqlite;
         cfg.write(&cfg_path).unwrap();
 
         let rtd = Rtd::new()
@@ -413,7 +414,7 @@ mod tests {
 
         let mut cfg = Conf::default();
         cfg.features.history = true;
-        cfg.database.db_type = DbType::SQLite;
+        cfg.database.db_type = DbType::Sqlite;
         cfg.database.path = Some(db_path_cfg.to_str().unwrap().to_string());
         cfg.write(&cfg_path).unwrap();
 

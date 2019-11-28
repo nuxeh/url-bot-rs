@@ -21,7 +21,7 @@ status_channels = []
 nick_response_str = ""
 
 [database]
-type = "InMemory"
+type = "in-memory"
 
 [connection]
 nickname = "url-bot-rs"
