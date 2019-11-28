@@ -204,7 +204,7 @@ impl Rtd {
         // load config file
         self.conf = Conf::load(&self.paths.conf)?;
 
-        self.paths.db = self.get_db_info().map(|p| expand_tilde(&p));
+        self.paths.db = self.get_db_path().map(|p| expand_tilde(&p));
 
         if let Some(dp) = &self.paths.db {
             ensure_parent_dir(dp)?;
@@ -216,37 +216,39 @@ impl Rtd {
         Ok(self.clone())
     }
 
-    fn get_db_info(&mut self) -> Option<PathBuf> {
+    fn get_db_path(&mut self) -> Option<PathBuf> {
         if self.conf.features.history {
             match self.conf.database.db_type {
-                DbType::InMemory => { None },
-                DbType::Sqlite => {
-                    let mut path = if let Some(p) = &self.conf.database.path {
-                        if p.is_empty() {
-                            None
-                        } else {
-                            Some(p.into())
-                        }
-                    } else if let Some(p) = &self.paths.db {
-                        Some(p.into())
-                    } else {
-                        None
-                    };
-
-                    if path.is_none() {
-                        // generate and use a default database path
-                        let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
-                        let db = format!("history.{}.db", self.conf.network.name);
-                        let db = dirs.data_local_dir().join(&db);
-                        path = Some(db);
-                    };
-
-                    path
-                },
+                DbType::InMemory => None,
+                DbType::Sqlite => self.get_sqlite_path(),
             }
         } else {
             None
         }
+    }
+
+    fn get_sqlite_path(&self) -> Option<PathBuf> {
+        let mut path = if let Some(p) = &self.conf.database.path {
+            if p.is_empty() {
+                None
+            } else {
+                Some(p.into())
+            }
+        } else if let Some(p) = &self.paths.db {
+            Some(p.into())
+        } else {
+            None
+        };
+
+        if path.is_none() {
+            // generate and use a default database path
+            let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
+            let db = format!("history.{}.db", self.conf.network.name);
+            let db = dirs.data_local_dir().join(&db);
+            path = Some(db);
+        };
+
+        path
     }
 }
 
