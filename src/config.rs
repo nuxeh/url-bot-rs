@@ -9,7 +9,6 @@ use toml;
 use std::path::{Path, PathBuf};
 use irc::client::data::Config as IrcConfig;
 use failure::Error;
-use std::fmt;
 use directories::{BaseDirs, ProjectDirs};
 
 use super::VERSION;
@@ -250,18 +249,6 @@ impl Rtd {
         }
     }
 }
-
-/// implementation of Display trait for multiple structs in this module
-macro_rules! impl_display {
-    ($($t:ty),+) => {
-        $(impl fmt::Display for $t {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                write!(f, "{}", toml::ser::to_string(self).unwrap())
-            }
-        })+
-    }
-}
-impl_display!(Features, Parameters, Database);
 
 fn ensure_parent_dir(file: &Path) -> Result<bool, Error> {
     let without_path = file.components().count() == 1;
