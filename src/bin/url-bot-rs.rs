@@ -8,6 +8,7 @@ extern crate url_bot_rs;
 
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
+#[macro_use] extern crate failure;
 
 extern crate irc;
 extern crate rusqlite;
@@ -15,7 +16,6 @@ extern crate docopt;
 extern crate itertools;
 extern crate regex;
 extern crate lazy_static;
-extern crate failure;
 extern crate time;
 extern crate reqwest;
 extern crate cookie;

@@ -277,6 +277,16 @@ fn expand_tilde(path: &Path) -> PathBuf {
     }
 }
 
+/// non-recursively search for configuration files in a directory
+pub fn find_configs_in_dir(dir: &Path) -> Result<Vec<PathBuf>, Error> {
+    Ok(fs::read_dir(dir)?
+        .flatten()
+        .map(|e| e.path())
+        .filter(|e| !e.is_dir() && Conf::load(e).is_ok())
+        .take(32)
+        .collect())
+}
+
 #[cfg(test)]
 mod tests {
     extern crate tempfile;
@@ -284,6 +294,7 @@ mod tests {
     use super::*;
     use self::tempfile::tempdir;
     use std::env;
+    use std::iter;
     use std::panic;
 
     #[test]
@@ -517,5 +528,34 @@ mod tests {
             PathBuf::from(format!("{}/", homedir.to_str().unwrap())));
         assert_eq!(expand_tilde(&PathBuf::from("~/ac/df/gi/")),
             PathBuf::from(format!("{}/ac/df/gi/", homedir.to_str().unwrap())));
+    }
+
+    fn write_n_configs(n: usize, dir: &Path) {
+        iter::repeat(dir)
+            .take(n)
+            .enumerate()
+            .map(|(i, p)| p.join(i.to_string() + ".conf"))
+            .for_each(|p| Conf::default().write(p).unwrap());
+    }
+
+    #[test]
+    fn test_find_configs_in_dir() {
+        let tmp_dir = tempdir().unwrap();
+        let cfg_dir = tmp_dir.path();
+
+        assert_eq!(find_configs_in_dir(cfg_dir).unwrap().len(), 0);
+
+        write_n_configs(10, cfg_dir);
+        assert_eq!(find_configs_in_dir(cfg_dir).unwrap().len(), 10);
+
+        let mut f = File::create(cfg_dir.join("fake.conf")).unwrap();
+        f.write_all(b"not a config").unwrap();
+        assert_eq!(find_configs_in_dir(cfg_dir).unwrap().len(), 10);
+
+        fs::create_dir(cfg_dir.join("fake.dir")).unwrap();
+        assert_eq!(find_configs_in_dir(cfg_dir).unwrap().len(), 10);
+
+        write_n_configs(33, cfg_dir);
+        assert_eq!(find_configs_in_dir(cfg_dir).unwrap().len(), 32);
     }
 }
