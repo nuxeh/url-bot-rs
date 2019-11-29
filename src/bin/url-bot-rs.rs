@@ -150,6 +150,7 @@ fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) -> Result<(), Error> {
     if rtd.conf.network.enable {
         info!("using configuration: {}", conf.display());
     } else {
+        warn!("ignoring configuration: {}", conf.display());
         return Ok(());
     }
 
