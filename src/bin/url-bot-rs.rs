@@ -77,14 +77,12 @@ fn main() {
         .and_then(|d| d.version(Some(VERSION.to_string())).deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    // don't output colours or include timestamps on stderr if piped
-    let (coloured_output, mut timestamp) = if is(Stream::Stderr) {
-        (ColorChoice::Auto, Timestamp::Second)
+    // avoid timestamping when piped, e.g. systemd
+    let timestamp = if is(Stream::Stderr) || args.flag_timestamp {
+        Timestamp::Second
     } else {
-        (ColorChoice::Never, Timestamp::Off)
+        Timestamp::Off
     };
-
-    if args.flag_timestamp { timestamp = Timestamp::Second };
 
     stderrlog::new()
         .module(module_path!())
@@ -95,7 +93,7 @@ fn main() {
         ])
         .verbosity(args.flag_verbose + MIN_VERBOSITY)
         .timestamp(timestamp)
-        .color(coloured_output)
+        .color(ColorChoice::Never)
         .init()
         .unwrap();
 
