@@ -206,3 +206,49 @@ fn connect_instance(rtd: &Rtd) -> Result<(), Error> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate tempfile;
+
+    use super::*;
+    use self::tempfile::tempdir;
+    use url_bot_rs::config::Conf;
+
+    #[test]
+    fn test_get_configs() {
+        let tmp_dir = tempdir().unwrap();
+        let cfg_dir = tmp_dir.path();
+
+        let mut args = Args::default();
+        args.flag_conf_dir = vec![cfg_dir.to_path_buf()];
+
+        // dir is empty
+        assert_eq!(get_configs(&args).unwrap().len(), 0);
+
+        // add configs to --conf-dir directory
+        for i in 1..=10 {
+            Conf::default().write(cfg_dir.join(i.to_string() + ".cf")).unwrap();
+            assert_eq!(get_configs(&args).unwrap().len(), i);
+        }
+
+        // add --conf option
+        args.flag_conf.extend(vec![cfg_dir.join("c1.conf")]);
+        assert_eq!(get_configs(&args).unwrap().len(), 11);
+
+        // add more --conf options
+        for i in 12..=20 {
+            args.flag_conf.extend(vec![cfg_dir.join(i.to_string() + ".toml")]);
+            assert_eq!(get_configs(&args).unwrap().len(), i);
+        }
+    }
+
+    #[test]
+    fn test_get_configs_failures() {
+        // dir doesn't exist
+        let mut args = Args::default();
+        args.flag_conf_dir = vec![PathBuf::from("/surely/no/way/this/exists")];
+        assert!(get_configs(&args).is_err());
+    }
+
+}
