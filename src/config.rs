@@ -548,10 +548,28 @@ mod tests {
         f.write_all(b"not a config").unwrap();
         assert_eq!(find_configs_in_dir(cfg_dir).unwrap().count(), 10);
 
+        let mut f = File::create(cfg_dir.join("fake.toml")).unwrap();
+        f.write_all(b"[this]\nis = \"valid toml\"").unwrap();
+        assert_eq!(find_configs_in_dir(cfg_dir).unwrap().count(), 10);
+
         fs::create_dir(cfg_dir.join("fake.dir")).unwrap();
         assert_eq!(find_configs_in_dir(cfg_dir).unwrap().count(), 10);
 
         write_n_configs(33, cfg_dir);
         assert_eq!(find_configs_in_dir(cfg_dir).unwrap().count(), 32);
+    }
+
+    #[test]
+    fn test_do_not_promiscuously_load_any_toml() {
+        let tmp_dir = tempdir().unwrap();
+        let cfg_path = tmp_dir.path().join("fake.toml");
+        let mut f = File::create(&cfg_path).unwrap();
+        f.write_all(b"[this]\nis = \"valid toml\"").unwrap();
+
+        let rtd = Rtd::new()
+            .conf(&cfg_path)
+            .load();
+
+        assert!(rtd.is_err());
     }
 }
