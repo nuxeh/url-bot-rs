@@ -570,4 +570,17 @@ mod tests {
 
         assert!(rtd.is_err());
     }
+
+    #[test]
+    fn test_allow_loading_with_missing_optional_fields() {
+        let tmp_dir = tempdir().unwrap();
+        let cfg_path = tmp_dir.path().join("fake.toml");
+        let mut f = File::create(&cfg_path).unwrap();
+        f.write_all(b"[connection]\n[features]\n[parameters]\n").unwrap();
+
+        Rtd::new()
+            .conf(&cfg_path)
+            .load()
+            .unwrap();
+    }
 }
