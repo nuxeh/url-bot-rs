@@ -157,17 +157,12 @@ impl Default for Conf {
     }
 }
 
-// run time data structure. this is used to pass around mutable runtime data
-// where it's needed, including command line arguments, configuration file
-// settings, any parameters defined based on both of these sources, and
-// any other data used at runtime
 #[derive(Default, Clone)]
 pub struct Rtd {
     /// paths
     pub paths: Paths,
     /// configuration file data
     pub conf: Conf,
-    pub history: bool,
 }
 
 #[derive(Default, Clone)]
