@@ -131,11 +131,13 @@ fn main() {
 }
 
 fn get_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
-    let dir_configs: Vec<PathBuf> = args.flag_conf_dir
+    let dir_configs = args.flag_conf_dir
         .iter()
-        .map(|d| find_configs_in_dir(d).unwrap())
-        .flatten()
-        .collect();
+        .try_fold(vec![], |mut result, dir| -> Result<_, Error> {
+            let dir_configs = find_configs_in_dir(dir)?;
+            result.extend(dir_configs);
+            Ok(result)
+        })?;
     Ok([&dir_configs[..], &args.flag_conf[..]].concat())
 }
 
