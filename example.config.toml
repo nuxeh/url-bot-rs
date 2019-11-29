@@ -1,5 +1,6 @@
 [network]
 name = "default"
+enable = true
 
 [features]
 report_metadata = false

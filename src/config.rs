@@ -17,12 +17,14 @@ use super::VERSION;
 #[serde(default)]
 pub struct Network {
     pub name: String,
+    pub enable: bool,
 }
 
 impl Default for Network {
     fn default() -> Self {
         Self {
             name: "default".into(),
+            enable: true,
         }
     }
 }
