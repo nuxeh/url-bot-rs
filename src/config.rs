@@ -42,6 +42,7 @@ pub struct Features {
     pub reply_with_errors: bool,
     pub partial_urls: bool,
     pub nick_response: bool,
+    pub reconnect: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]

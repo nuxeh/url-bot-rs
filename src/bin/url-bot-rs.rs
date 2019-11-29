@@ -161,12 +161,14 @@ fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) -> Result<(), Error> {
     }
 
     loop {
-        info!("[{}] connecting...", net);
-
         match connect_instance(&rtd) {
             Ok(_) => error!("[{}] disconnected for unknown reason", net),
             Err(e) => error!("[{}] disconnected: {}", net, e),
         };
+
+        if !rtd.conf.features.reconnect {
+            break Ok(());
+        }
 
         info!("[{}] reconnecting in 10 seconds", net);
         thread::sleep(sleep_dur);
@@ -192,6 +194,8 @@ fn connect_instance(rtd: &Rtd) -> Result<(), Error> {
 
     let client = reactor.prepare_client_and_connect(&rtd.conf.client)?;
     client.identify()?;
+
+    info!("[{}] connected", net);
 
     reactor.register_client_with_handler(client, move |client, message| {
         handle_message(client, &message, &mut rtd, &db);

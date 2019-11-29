@@ -98,6 +98,7 @@ operation, specified in the `[features]` section:
   "docs.rs".
 - `nick_response` (bool) respond with a message if bot is pinged in a message
   with no other action to perform.
+- `reconnect` (bool) reconnect to the server after errors.
 
 The `[parameters]` section includes a number of tunable parameters:
 
