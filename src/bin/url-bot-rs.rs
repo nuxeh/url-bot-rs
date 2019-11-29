@@ -32,10 +32,11 @@ extern crate scraper;
 
 use url_bot_rs::VERSION;
 use url_bot_rs::sqlite::Database;
-use url_bot_rs::config::Rtd;
+use url_bot_rs::config::{Rtd, find_configs_in_dir};
 use url_bot_rs::message::handle_message;
 
 use docopt::Docopt;
+use failure::Error;
 use irc::client::prelude::*;
 use std::process;
 use std::thread;
@@ -52,17 +53,19 @@ Usage:
     url-bot-rs [options] [-v...] [--conf=PATH...]
 
 Options:
-    -h --help       Show this help message.
-    --version       Print version.
-    -v --verbose    Show extra information.
-    -c --conf=PATH  Use configuration file(s) at PATH.
-    -t --timestamp  Force timestamps.
+    -h --help           Show this help message.
+    --version           Print version.
+    -v --verbose        Show extra information.
+    -c --conf=PATH      Use configuration file(s) at PATH.
+    -d --conf-dir=DIR   Search for configuration file(s) in DIR.
+    -t --timestamp      Force timestamps.
 ";
 
 #[derive(Debug, Deserialize, Default)]
 pub struct Args {
     flag_verbose: usize,
     flag_conf: Vec<PathBuf>,
+    flag_conf_dir: Vec<PathBuf>,
     flag_timestamp: bool,
 }
 
@@ -96,21 +99,30 @@ fn main() {
         .init()
         .unwrap();
 
-    // default instance
-    if args.flag_conf.is_empty() {
+    let configs = get_configs(&args).unwrap_or_else(|e| {
+        error!("{}", e);
+        process::exit(1);
+    });
+
+    if configs.is_empty() {
         let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
         let conf = dirs.config_dir().join("config.toml");
         let db = dirs.data_local_dir().join("history.db");
-        run_instance(&conf, Some(&db));
+        run_instance(&conf, Some(&db)).unwrap_or_else(|e| {
+            error!("{}", e);
+            process::exit(1);
+        });
     }
 
-    // threaded instances
-    let threads: Vec<_> = args.flag_conf
+    let threads: Vec<_> = configs
         .into_iter()
         .map(|conf| {
             thread::spawn(move || {
                 let conf = conf.clone();
-                run_instance(&conf, None);
+                run_instance(&conf, None).unwrap_or_else(|e| {
+                    error!("{}", e);
+                    process::exit(1);
+                });
             })
         })
         .collect();
@@ -120,48 +132,45 @@ fn main() {
     }
 }
 
-fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) {
+fn get_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
+    let dir_configs: Vec<PathBuf> = args.flag_conf_dir
+        .iter()
+        .map(|d| find_configs_in_dir(d).unwrap())
+        .flatten()
+        .collect();
+    Ok([&dir_configs[..], &args.flag_conf[..]].concat())
+}
+
+fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) -> Result<(), Error> {
+    info!("using configuration: {}", conf.display());
+
     let mut rtd: Rtd = Rtd::new()
         .conf(conf)
         .db(db)
-        .load()
-        .unwrap_or_else(|err| {
-            error!("loading configuration: {}", err);
-            process::exit(1);
-        });
+        .load()?;
 
-    info!("using configuration: {}", rtd.paths.conf.display());
-
-    // open the sqlite database for logging
     let db = if let Some(ref path) = rtd.paths.db {
         info!("using database: {}", path.display());
-        Database::open(path).unwrap_or_else(|err| {
-            error!("database error: {}", err);
-            process::exit(1);
-        })
+        Database::open(path)?
     } else {
-        if rtd.conf.features.history { info!("using in-memory database"); }
-        Database::open_in_memory().unwrap()
+        Database::open_in_memory()?
     };
 
-    // create IRC reactor
-    let mut reactor = IrcReactor::new().unwrap();
-    let client = reactor
-        .prepare_client_and_connect(&rtd.conf.client)
-        .unwrap_or_else(|err| {
-            error!("IRC prepare error: {}", err);
-            process::exit(1);
-        });
-    client.identify().unwrap();
+    if rtd.conf.features.history && rtd.paths.db.is_none() {
+        info!("using in-memory database");
+    }
 
-    // register handler
+    let mut reactor = IrcReactor::new()?;
+
+    let client = reactor.prepare_client_and_connect(&rtd.conf.client)?;
+    client.identify()?;
+
     reactor.register_client_with_handler(client, move |client, message| {
         handle_message(client, &message, &mut rtd, &db);
         Ok(())
     });
 
-    reactor.run().unwrap_or_else(|err| {
-        error!("IRC client error: {}", err);
-        process::exit(1);
-    });
+    reactor.run()?;
+
+    Ok(())
 }
