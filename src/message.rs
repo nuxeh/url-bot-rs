@@ -167,7 +167,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
             continue;
         }
 
-        info!("RESOLVE <{}>", token);
+        info!("[{}] RESOLVE <{}>", rtd.conf.network.name, token);
 
         // try to get the title from the url
         let title = match resolve_url(token, rtd, db) {
@@ -227,8 +227,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         // limit response length, see RFC1459
         msg = utf8_truncate(&msg, 510);
 
-        // log
-        info!("{}", msg);
+        info!("[{}] {}", rtd.conf.network.name, msg);
 
         responses.push(TitleResp::TITLE(msg.to_string()));
 

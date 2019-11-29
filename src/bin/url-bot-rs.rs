@@ -10,6 +10,7 @@ extern crate url_bot_rs;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate failure;
 
+extern crate chrono;
 extern crate irc;
 extern crate rusqlite;
 extern crate docopt;
@@ -35,6 +36,7 @@ use url_bot_rs::sqlite::Database;
 use url_bot_rs::config::{Rtd, find_configs_in_dir};
 use url_bot_rs::message::handle_message;
 
+use chrono::Duration;
 use docopt::Docopt;
 use failure::Error;
 use irc::client::prelude::*;
@@ -142,27 +144,48 @@ fn get_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
 }
 
 fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) -> Result<(), Error> {
-    let mut rtd: Rtd = Rtd::new()
+    let sleep_dur = Duration::seconds(10).to_std().unwrap();
+
+    let rtd: Rtd = Rtd::new()
         .conf(conf)
         .db(db)
         .load()?;
 
+    let net = &rtd.conf.network.name;
+
     if rtd.conf.network.enable {
-        info!("using configuration: {}", conf.display());
+        info!("[{}] using configuration: {}", net, conf.display());
     } else {
         warn!("ignoring configuration: {}", conf.display());
         return Ok(());
     }
 
+    loop {
+        info!("[{}] connecting...", net);
+
+        match connect_instance(&rtd) {
+            Ok(_) => error!("[{}] disconnected for unknown reason", net),
+            Err(e) => error!("[{}] disconnected: {}", net, e),
+        };
+
+        info!("[{}] reconnecting in 10 seconds", net);
+        thread::sleep(sleep_dur);
+    }
+}
+
+fn connect_instance(rtd: &Rtd) -> Result<(), Error> {
+    let mut rtd = rtd.clone();
+    let net = &rtd.conf.network.name;
+
     let db = if let Some(ref path) = rtd.paths.db {
-        info!("using database: {}", path.display());
+        info!("[{}] using database: {}", net, path.display());
         Database::open(path)?
     } else {
         Database::open_in_memory()?
     };
 
     if rtd.conf.features.history && rtd.paths.db.is_none() {
-        info!("using in-memory database");
+        info!("[{}] using in-memory database", net);
     }
 
     let mut reactor = IrcReactor::new()?;
