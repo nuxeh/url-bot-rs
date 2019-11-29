@@ -50,6 +50,11 @@ or, if `$XDG_CONFIG_PATH` is set:
 The `--conf` parameter may be provided multiple times, in order to connect to
 multiple servers/networks.
 
+Additionally, a search path may be specified with the `--conf-dir=<dir>` CLI
+argument, with the effect that any valid configurations existing
+non-recursively under this path will be loaded. This option may also be
+specified multiple times.
+
 ### Configuration file options
 
 The configuration includes settings pertaining to the IRC server the bot will
