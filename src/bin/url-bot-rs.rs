@@ -52,7 +52,7 @@ const USAGE: &str = "
 URL munching IRC bot.
 
 Usage:
-    url-bot-rs [options] [-v...] [--conf=PATH...]
+    url-bot-rs [options] [-v...] [--conf=PATH...] [--conf-dir=DIR...]
 
 Options:
     -h --help           Show this help message.
