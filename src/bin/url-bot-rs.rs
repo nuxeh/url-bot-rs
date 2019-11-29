@@ -142,12 +142,16 @@ fn get_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
 }
 
 fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) -> Result<(), Error> {
-    info!("using configuration: {}", conf.display());
-
     let mut rtd: Rtd = Rtd::new()
         .conf(conf)
         .db(db)
         .load()?;
+
+    if rtd.conf.network.enable {
+        info!("using configuration: {}", conf.display());
+    } else {
+        return Ok(());
+    }
 
     let db = if let Some(ref path) = rtd.paths.db {
         info!("using database: {}", path.display());

@@ -55,6 +55,10 @@ argument, with the effect that any valid configurations existing
 non-recursively under this path will be loaded. This option may also be
 specified multiple times.
 
+When searching for configurations using the `--conf-dir` option, any
+configurations in which the `enable` field under the `[network]` section is set
+to false will not be loaded.
+
 ### Configuration file options
 
 The configuration includes settings pertaining to the IRC server the bot will
@@ -69,6 +73,9 @@ The `[network]` section gives some metadata for the network the configuration
 will connect to, including:
 
 - `name` (string) an identifier for the network.
+- `enable` (bool) whether to enable this network - only used when a
+  configuration is found in a search path using the `--conf-dir` CLI argument,
+  and ignored if the configuration is explicitly loaded.
 
 It is also possible to configure a number of optional features for the bot's
 operation, specified in the `[features]` section:
