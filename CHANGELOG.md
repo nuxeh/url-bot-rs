@@ -1,11 +1,28 @@
-# v0.2.2
+# v0.2.3
 
-# v0.2.1
+- Add capability of running multiple instances, to connect to multiple IRC
+  networks
+- Remove `--db` command line parameter
+- Add `--conf-dir` command line parameter, allowing configurations to be
+  searched for and loaded from a directory
+- Add a configuration file section, `network`, which may be used to specify a
+  network name, and to enable or disable it
+- Use network name to create a default sqlite db path
+- Allow multiple `--conf` command line parameters
+- Fix a bug whereby the bot would load any valid TOML as a configuration, using
+  default values
+- Use an enum underneath for database type in configuration, refactor sqlite
+  database path handling
+- Add IRC server reconnection
+- Improve test coverage
+
+# v0.2.2
 
 - Nick response
 - Refactor IRC error reporting
+- Improve test coverage
 
-# v0.2.0
+# v0.2.1
 
 - URL de-duplication
 - Addition of preliminary Nix files
@@ -30,6 +47,6 @@
 - Unified configuration and XDG paths
 - Ignore tokens containing invalid characters in URLs
 
-# v0.1.0
+# v0.2.0
 
 Initial development
