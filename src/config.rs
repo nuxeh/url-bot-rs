@@ -29,6 +29,7 @@ impl Default for Network {
 }
 
 #[derive(Default, Serialize, Deserialize, Clone)]
+#[serde(default)]
 pub struct Features {
     pub report_metadata: bool,
     pub report_mime: bool,
@@ -57,6 +58,7 @@ impl Default for DbType {
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
+#[serde(default)]
 pub struct Database {
     #[serde(rename = "type")]
     pub db_type: DbType,
@@ -64,6 +66,7 @@ pub struct Database {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
 pub struct Parameters {
     pub url_limit: u8,
     pub accept_lang: String,
