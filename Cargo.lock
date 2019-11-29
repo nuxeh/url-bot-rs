@@ -2039,7 +2039,7 @@ dependencies = [
 
 [[package]]
 name = "url-bot-rs"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "atty 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "built 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",

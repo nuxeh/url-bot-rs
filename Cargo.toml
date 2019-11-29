@@ -1,6 +1,6 @@
 [package]
 name = "url-bot-rs"
-version = "0.2.1"
+version = "0.2.2"
 description = "Minimal IRC URL bot in Rust"
 repository = "https://github.com/nuxeh/url-bot-rs"
 authors = ["Edward Cragg <drq.11235@gmail.com>"]

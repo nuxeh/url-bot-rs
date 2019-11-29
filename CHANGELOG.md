@@ -1,4 +1,11 @@
+# v0.2.2
+
 # v0.2.1
+
+- Nick response
+- Refactor IRC error reporting
+
+# v0.2.0
 
 - URL de-duplication
 - Addition of preliminary Nix files
@@ -23,6 +30,6 @@
 - Unified configuration and XDG paths
 - Ignore tokens containing invalid characters in URLs
 
-# v0.2.0
+# v0.1.0
 
 Initial development
