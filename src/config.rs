@@ -14,7 +14,6 @@ use directories::{BaseDirs, ProjectDirs};
 use super::VERSION;
 
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(default)]
 pub struct Network {
     pub name: String,
     pub enable: bool,
@@ -30,7 +29,6 @@ impl Default for Network {
 }
 
 #[derive(Default, Serialize, Deserialize, Clone)]
-#[serde(default)]
 pub struct Features {
     pub report_metadata: bool,
     pub report_mime: bool,
@@ -59,7 +57,6 @@ impl Default for DbType {
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
-#[serde(default)]
 pub struct Database {
     #[serde(rename = "type")]
     pub db_type: DbType,
@@ -67,7 +64,6 @@ pub struct Database {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(default)]
 pub struct Parameters {
     pub url_limit: u8,
     pub accept_lang: String,
@@ -87,12 +83,14 @@ impl Default for Parameters {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(default)]
 pub struct Conf {
+    #[serde(default)]
     pub network: Network,
+    #[serde(default)]
     pub features: Features,
-    #[serde(rename = "parameters")]
+    #[serde(default, rename = "parameters")]
     pub params: Parameters,
+    #[serde(default)]
     pub database: Database,
     #[serde(rename = "connection")]
     pub client: IrcConfig,
