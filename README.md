@@ -104,17 +104,17 @@ configuration file will be created. An example configuration is provided as
 
 A database may be specified, which is used to cache posted links, so that if
 the same URL is posted again, the original poster and the time posted is added
-to the returned message. This feature can be enabled or disabled within the
-`[features]` section of the configuration file.
+to the returned message. This feature can be enabled using the `history`
+feature within the `[features]` section of the configuration file.
 
-History is also enabled if a path is specified with `--db=<path>` or in the
-configuration, the given path will be used to store a SQLite database,
-otherwise a default path will be used according to the XDG specification. If no
-file exists at the specified path, it will be created.
+Currently supported database type strings are:
 
-If history is enabled, no database type is specified in the `[database]`
-section of the configuration, and no database path has been specified, an
-in-memory database will be used.
+- `in-memory`
+- `sqlite`
+
+The database type may be specified in the `[database]` configuration section,
+as field `type`. A corresponding path to use for the database may be given as
+field, `path`.
 
 ## Install from source
 
