@@ -21,6 +21,7 @@ url_limit = 10
 accept_lang = "en"
 status_channels = []
 nick_response_str = ""
+reconnect_timeout = 10
 
 [database]
 type = "in-memory"
