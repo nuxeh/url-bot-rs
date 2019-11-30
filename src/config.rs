@@ -229,16 +229,12 @@ impl Rtd {
     }
 
     fn get_sqlite_path(&self) -> Option<PathBuf> {
-        let mut path = if let Some(p) = &self.conf.database.path {
-            if p.is_empty() {
-                None
-            } else {
-                Some(p.into())
-            }
-        } else if let Some(p) = &self.paths.db {
-            Some(p.into())
-        } else {
-            None
+        let mut path = self.conf.database.path.as_ref()
+            .filter(|p| !p.is_empty())
+            .map(|p| PathBuf::from(p));
+
+        if self.paths.db.is_some() && path.is_none() {
+            path = self.paths.db.clone();
         };
 
         if path.is_none() {
