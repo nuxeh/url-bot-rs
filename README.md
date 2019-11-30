@@ -108,6 +108,7 @@ The `[parameters]` section includes a number of tunable parameters:
 - `status_channels` (list) channel(s) to create, join and message with any
   error messages produced from URL title retrieval
 - `nick_response_str` (string) the message to send for the nick response feature
+- `reconnect_timeout` (u32) amount of time to wait before reconnecting.
 
 The `[database]` section contains options for the database, as follows:
 
