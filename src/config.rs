@@ -73,6 +73,7 @@ pub struct Parameters {
     pub accept_lang: String,
     pub status_channels: Vec<String>,
     pub nick_response_str: String,
+    pub reconnect_timeout: u32,
 }
 
 impl Default for Parameters {
@@ -81,7 +82,8 @@ impl Default for Parameters {
             url_limit: 10,
             accept_lang: "en".to_string(),
             status_channels: vec![],
-            nick_response_str: "".to_string()
+            nick_response_str: "".to_string(),
+            reconnect_timeout: 10,
         }
     }
 }

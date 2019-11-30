@@ -144,14 +144,14 @@ fn get_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
 }
 
 fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) -> Result<(), Error> {
-    let sleep_dur = Duration::seconds(10).to_std().unwrap();
-
     let rtd: Rtd = Rtd::new()
         .conf(conf)
         .db(db)
         .load()?;
 
     let net = &rtd.conf.network.name;
+    let timeout = rtd.conf.params.reconnect_timeout as i64;
+    let sleep_dur = Duration::seconds(timeout).to_std().unwrap();
 
     if rtd.conf.network.enable {
         info!("[{}] using configuration: {}", net, conf.display());
@@ -170,7 +170,7 @@ fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) -> Result<(), Error> {
             break Ok(());
         }
 
-        info!("[{}] reconnecting in 10 seconds", net);
+        info!("[{}] reconnecting in {} seconds", net, timeout);
         thread::sleep(sleep_dur);
     }
 }
