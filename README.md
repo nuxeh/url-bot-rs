@@ -81,13 +81,13 @@ It is also possible to configure a number of optional features for the bot's
 operation, specified in the `[features]` section:
 
 - `mask_highlights` (bool) inserts invisible characters to defeat highlight
-  regexes
+  regexes.
 - `send_notice` (bool) causes the bot to respond with notices rather than
-  private messages
-- `report_metadata` (bool) if enabled, causes image metadata to be reported
+  private messages.
+- `report_metadata` (bool) if enabled, causes image metadata to be reported.
 - `report_mime` (bool) if enabled, causes mime types to be reported, if no
   other title or metadata is found.
-- `history` (bool) enable previous post information using a database
+- `history` (bool) enable previous post information using a database.
 - `invite` (bool) if enabled, `/invite` will cause the bot to join a channel.
 - `autosave` (bool) if enabled, `/invite` and `/kick` will automatically write
   out the active configuration with an updated list of channels.
@@ -102,18 +102,17 @@ operation, specified in the `[features]` section:
 
 The `[parameters]` section includes a number of tunable parameters:
 
-- `url_limit` (u8) max number of URLs to process for each message (default: 10)
-- `accept_lang` (string) language requested in http content requests
-  (default: "en")
+- `url_limit` (u8) max number of URLs to process for each message (default: 10).
+- `accept_lang` (string) language requested in http content requests (default: "en").
 - `status_channels` (list) channel(s) to create, join and message with any
-  error messages produced from URL title retrieval
-- `nick_response_str` (string) the message to send for the nick response feature
+  error messages produced from URL title retrieval.
+- `nick_response_str` (string) the message to send for the nick response feature.
 - `reconnect_timeout` (u32) amount of time to wait before reconnecting.
 
 The `[database]` section contains options for the database, as follows:
 
-- `path` (string) is the path to a database file (for `sqlite`)
-- `type` (string) is the type of database to use, e.g. `sqlite`
+- `type` (string) is the type of database to use, e.g. `sqlite`.
+- `path` (string) is the path to a database file (for `sqlite`).
 
 If no configuration file exists at the expected location, a default-valued
 configuration file will be created. An example configuration is provided as
