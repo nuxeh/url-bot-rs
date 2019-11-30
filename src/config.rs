@@ -364,6 +364,27 @@ mod tests {
     }
 
     #[test]
+    fn sqlite_path_empty_config_path_does_not_override_explicit() {
+        let tmp_dir = tempdir().unwrap();
+        let cfg_path = tmp_dir.path().join("config.toml");
+        let db_path = tmp_dir.path().join("cfg.test.db");
+
+        let mut cfg = Conf::default();
+        cfg.features.history = true;
+        cfg.database.db_type = DbType::Sqlite;
+        cfg.database.path = Some("".to_string());
+        cfg.write(&cfg_path).unwrap();
+
+        let rtd = Rtd::new()
+            .conf(&cfg_path)
+            .db(Some(&db_path))
+            .load()
+            .unwrap();
+
+        assert_eq!(rtd.paths.db, Some(db_path));
+    }
+
+    #[test]
     fn sqlite_path_default() {
         let tmp_dir = tempdir().unwrap();
         let cfg_path = tmp_dir.path().join("config.toml");
