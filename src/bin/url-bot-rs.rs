@@ -118,7 +118,6 @@ fn main() {
         .into_iter()
         .map(|conf| {
             thread::spawn(move || {
-                let conf = conf.clone();
                 run_instance(&conf, None).unwrap_or_else(|e| {
                     error!("{}", e);
                     process::exit(1);
