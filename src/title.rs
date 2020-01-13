@@ -158,7 +158,11 @@ mod tests {
         for test in vec!(
             ("./test/img/test.png", "image/png 800×400"),
             ("./test/img/test.jpg", "image/jpeg 400×200"),
-            ("./test/img/test.gif", "image/gif 1920×1080")
+            ("./test/img/test.gif", "image/gif 1920×1080"),
+            ("./test/img/test.bmp", "image/bmp 19×19"),
+            ("./test/img/test.pnm", "image/x-portable-anymap 22×22"),
+            ("./test/img/test.pgm", "image/x-portable-anymap 24×24"),
+            ("./test/img/test.tiff", "image/tiff 4×4")
         ) {
             get_local_image_metadata(test.0, test.1);
         }
