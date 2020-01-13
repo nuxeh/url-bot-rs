@@ -15,6 +15,7 @@
   database path handling
 - Add IRC server reconnection
 - Improve test coverage
+- Update man page
 
 # v0.2.2
 

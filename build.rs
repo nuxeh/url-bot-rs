@@ -36,7 +36,7 @@ fn generate_manpage() {
     let page = Manual::new("url-bot-rs")
         .about("\
             Standalone IRC bot; for resolving URLs posted, retrieving, and \
-            posting page titles to a configurable IRC server and channels")
+            posting page titles to a configurable IRC servers and channels")
         .author(Author::new("Ed Cragg").email("drq.11325@gmail.com"))
         .flag(
             Flag::new()
@@ -52,25 +52,39 @@ fn generate_manpage() {
             Flag::new()
                 .short("-v")
                 .long("--verbose")
-                .help("Enable verbose mode."),
-        )
-        .flag(
-            Flag::new()
-                .short("-D")
-                .long("--debug")
-                .help("Enable debug mode, print all IRC messages received, and HTTP requests."),
-        )
-        .option(
-            Opt::new("database")
-                .short("-d")
-                .long("--db")
-                .help("Path to store a sqlite database"),
+                .help("\
+                    Enable verbose mode. May be specified multiple times for \
+                    more verbosity."),
         )
         .option(
             Opt::new("configuration")
                 .short("-c")
                 .long("--conf")
-                .help("Path to read configuration file from."),
+                .help("\
+                    Path to read a single configuration file from. May be \
+                    specified multiple times."),
+        )
+        .option(
+            Opt::new("configuration directory")
+                .short("-d")
+                .long("--conf-dir")
+                .help("\
+                      Directory containing configurations. The path will be \
+                      searched for valid configuration files, each \
+                      configuration may contain connection information for a \
+                      separate IRC network, with each configuration found \
+                      starting a url-bot-rs instance on a thread. Any \
+                      configuration files for which the network.enable field \
+                      is false will be ignored. May be specified multiple \
+                      times."),
+        )
+        .flag(
+            Flag::new()
+                .short("-t")
+                .long("--timestamp")
+                .help("\
+                    Force timestamps to be printed, even when they would \
+                    otherwise be disabled, e.g. when output is piped."),
         )
         .custom(
             Section::new("configuration")
