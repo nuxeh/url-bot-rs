@@ -143,7 +143,7 @@ database will be created according to the network name specified in the
 
 ### Cargo
 
-    cargo install --git https://github.com/nuxeh/url-bot-rs
+    cargo install url-bot-rs
 
 ### Debian/Ubuntu (Linux)
 
