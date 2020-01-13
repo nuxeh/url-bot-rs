@@ -2,6 +2,7 @@
 name = "url-bot-rs"
 version = "0.2.3"
 description = "Minimal IRC URL bot in Rust"
+keywords = ["irc", "bot", "title"]
 repository = "https://github.com/nuxeh/url-bot-rs"
 authors = ["Edward Cragg <drq.11235@gmail.com>"]
 license = "ISC"
@@ -68,4 +69,4 @@ assets = [
 
 [badges]
 codecov = { repository = "nuxeh/url-bot-rs", branch = "master" }
-travis-ci = { repository = "nuxel/url-bot-rs", branch = "master" }
+travis-ci = { repository = "nuxeh/url-bot-rs", branch = "master" }
