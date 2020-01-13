@@ -98,26 +98,35 @@ fn main() {
         .init()
         .unwrap();
 
-    let configs = get_configs(&args).unwrap_or_else(|e| {
+    let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
+
+    // find configs in locations specified on command line
+    let mut configs = get_configs(&args).unwrap_or_else(|e| {
         error!("{}", e);
         process::exit(1);
     });
 
+    // look in default configuration folder
     if configs.is_empty() {
-        let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
-        let conf = dirs.config_dir().join("config.toml");
-        let db = dirs.data_local_dir().join("history.db");
-        run_instance(&conf, Some(&db)).unwrap_or_else(|e| {
-            error!("{}", e);
-            process::exit(1);
-        });
+        let default_conf_dir = dirs.config_dir();
+        match find_configs_in_dir(default_conf_dir) {
+            Ok(dir_confs) => configs.extend(dir_confs),
+            _ => ()
+        };
     }
 
+    // default instance (no configs specified or found in default location)
+    if configs.is_empty() {
+        let default_conf = dirs.config_dir().join("config.toml");
+        configs.push(default_conf);
+    }
+
+    // threaded instances
     let threads: Vec<_> = configs
         .into_iter()
         .map(|conf| {
             thread::spawn(move || {
-                run_instance(&conf, None).unwrap_or_else(|e| {
+                run_instance(&conf).unwrap_or_else(|e| {
                     error!("{}", e);
                     process::exit(1);
                 });
@@ -138,13 +147,13 @@ fn get_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
             result.extend(dir_configs);
             Ok(result)
         })?;
+
     Ok([&dir_configs[..], &args.flag_conf[..]].concat())
 }
 
-fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) -> Result<(), Error> {
+fn run_instance(conf: &PathBuf) -> Result<(), Error> {
     let rtd: Rtd = Rtd::new()
         .conf(conf)
-        .db(db)
         .load()?;
 
     let net = &rtd.conf.network.name;
