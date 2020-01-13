@@ -2,6 +2,7 @@
 
 [![build status](https://api.travis-ci.org/nuxeh/url-bot-rs.png?branch=master)](https://travis-ci.org/nuxeh/url-bot-rs)
 [![codecov](https://codecov.io/gh/nuxeh/url-bot-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/nuxeh/url-bot-rs)
+[![crates.io](https://img.shields.io/crates/v/url-bot-rs)](https://crates.io/crates/url-bot-rs)
 
 URL title fetching bot for IRC in Rust. The bot monitors all messages sent to
 it in any IRC channels it's joined to, if any messages contain URLs, the bot
