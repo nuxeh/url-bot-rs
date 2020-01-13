@@ -260,7 +260,7 @@ mod tests {
     use super::*;
     use std::fs::File;
     use std::path::{Path, PathBuf};
-    use std::{thread, time};
+    use std::thread;
     use self::tiny_http::{Response, Header};
     use std::sync::mpsc;
 
@@ -346,7 +346,7 @@ mod tests {
             }
         });
 
-        thread::sleep(time::Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(100));
         let db = Database::open_in_memory().unwrap();
         let res = resolve_url("http://0.0.0.0:28482/test", &rtd, &db);
         server_thread.join().unwrap();
@@ -389,7 +389,7 @@ mod tests {
             }
         });
 
-        thread::sleep(time::Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(100));
         let db = Database::open_in_memory().unwrap();
         resolve_url("http://0.0.0.0:28282/test", &Rtd::default(), &db).unwrap();
         let request_headers = rx.recv().unwrap();

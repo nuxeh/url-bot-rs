@@ -1,3 +1,5 @@
+- Remove chrono dependency
+
 # v0.2.3
 
 - Add capability of running multiple instances, to connect to multiple IRC

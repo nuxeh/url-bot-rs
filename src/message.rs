@@ -385,7 +385,8 @@ mod tests {
     extern crate tiny_http;
 
     use super::*;
-    use std::{thread, time};
+    use std::thread;
+    use std::time::Duration;
     use self::tiny_http::Response;
     use super::TitleResp::{TITLE, ERROR};
 
@@ -402,7 +403,7 @@ mod tests {
                 rq.respond(resp).unwrap();
             }
         });
-        thread::sleep(time::Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(100));
     }
 
     fn pt(m: &str) -> Vec<TitleResp> {

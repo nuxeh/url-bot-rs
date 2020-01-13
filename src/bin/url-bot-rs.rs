@@ -10,7 +10,6 @@ extern crate url_bot_rs;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate failure;
 
-extern crate chrono;
 extern crate irc;
 extern crate rusqlite;
 extern crate docopt;
@@ -36,12 +35,12 @@ use url_bot_rs::sqlite::Database;
 use url_bot_rs::config::{Rtd, find_configs_in_dir};
 use url_bot_rs::message::handle_message;
 
-use chrono::Duration;
 use docopt::Docopt;
 use failure::Error;
 use irc::client::prelude::*;
 use std::process;
 use std::thread;
+use std::time::Duration;
 use std::path::PathBuf;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
@@ -149,8 +148,8 @@ fn run_instance(conf: &PathBuf, db: Option<&PathBuf>) -> Result<(), Error> {
         .load()?;
 
     let net = &rtd.conf.network.name;
-    let timeout = rtd.conf.params.reconnect_timeout as i64;
-    let sleep_dur = Duration::seconds(timeout).to_std().unwrap();
+    let timeout = rtd.conf.params.reconnect_timeout;
+    let sleep_dur = Duration::from_secs(timeout);
 
     if rtd.conf.network.enable {
         info!("[{}] using configuration: {}", net, conf.display());

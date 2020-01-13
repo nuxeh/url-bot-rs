@@ -73,7 +73,7 @@ pub struct Parameters {
     pub accept_lang: String,
     pub status_channels: Vec<String>,
     pub nick_response_str: String,
-    pub reconnect_timeout: u32,
+    pub reconnect_timeout: u64,
 }
 
 impl Default for Parameters {
