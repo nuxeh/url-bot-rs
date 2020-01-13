@@ -1,7 +1,9 @@
 use itertools::Itertools;
-use image::{gif, jpeg, png, ImageDecoder};
+use image::ImageFormat;
+use image::io::Reader;
 use mime::Mime;
 use scraper::{Html, Selector};
+use std::io::Cursor;
 
 use super::config::Rtd;
 
@@ -14,21 +16,36 @@ pub fn get_mime(rtd: &Rtd, mime: &Mime, size: &str) -> Option<String> {
     }
 }
 
+fn get_image_mime(format: &ImageFormat) -> Option<Mime> {
+    let mime_str = match format {
+        ImageFormat::PNG => Some("image/png"),
+        ImageFormat::JPEG => Some("image/jpeg"),
+        ImageFormat::GIF => Some("image/gif"),
+        ImageFormat::PNM => Some("image/x-portable-anymap"),
+        ImageFormat::TIFF => Some("image/tiff"),
+        ImageFormat::BMP => Some("image/bmp"),
+        _ => None,
+    };
+
+    mime_str.map(|s| s.parse().expect("invalid mime"))
+}
+
 /// Attempt to get metadata from an image
 pub fn get_image_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
     if !rtd.conf.features.report_metadata {
-        None
-    } else if let Ok(dec) = jpeg::JPEGDecoder::new(body) {
-        let (w, h) = dec.dimensions();
-        Some(format!("image/jpeg {}×{}", w, h))
-    } else if let Ok(dec) = png::PNGDecoder::new(body) {
-        let (w, h) = dec.dimensions();
-        Some(format!("image/png {}×{}", w, h))
-    } else if let Ok(dec) = gif::Decoder::new(body) {
-        let (w, h) = dec.dimensions();
-        Some(format!("image/gif {}×{}", w, h))
-    } else {
-        None
+        return None;
+    }
+
+    let reader = Reader::new(Cursor::new(body))
+        .with_guessed_format()
+        .expect("failed to create image::Reader");
+
+    let mime = reader.format()
+        .map(|f| get_image_mime(&f).expect("invalid mime type"));
+
+    match (mime, reader.into_dimensions()) {
+        (Some(m), Ok((w, h))) => Some(format!("{} {}×{}", m.to_string(), w, h)),
+        _ => None,
     }
 }
 
