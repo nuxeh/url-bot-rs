@@ -18,11 +18,14 @@ pub fn get_mime(rtd: &Rtd, mime: &Mime, size: &str) -> Option<String> {
 pub fn get_image_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
     if !rtd.conf.features.report_metadata {
         None
-    } else if let Ok((w, h)) = jpeg::JPEGDecoder::new(body).dimensions() {
+    } else if let Ok(dec) = jpeg::JPEGDecoder::new(body) {
+        let (w, h) = dec.dimensions();
         Some(format!("image/jpeg {}×{}", w, h))
-    } else if let Ok((w, h)) = png::PNGDecoder::new(body).dimensions() {
+    } else if let Ok(dec) = png::PNGDecoder::new(body) {
+        let (w, h) = dec.dimensions();
         Some(format!("image/png {}×{}", w, h))
-    } else if let Ok((w, h)) = gif::Decoder::new(body).dimensions() {
+    } else if let Ok(dec) = gif::Decoder::new(body) {
+        let (w, h) = dec.dimensions();
         Some(format!("image/gif {}×{}", w, h))
     } else {
         None
