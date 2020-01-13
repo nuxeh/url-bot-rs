@@ -2,15 +2,34 @@ extern crate built;
 extern crate man;
 
 use std::env;
-use std::fs::File;
+use std::fs::{File, create_dir};
 use std::io::Write;
-use std::path::Path;
+use std::path::PathBuf;
 use man::prelude::*;
 
 fn main() {
     println!("cargo:rerun-if-changed=src");
     built::write_built_file().expect("Failed to store build-time information");
     generate_manpage();
+}
+
+fn get_assets_dir() -> PathBuf{
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let out_path = PathBuf::from(&out_dir);
+
+    let mut path = out_path
+      .ancestors()
+      .skip(3)
+      .next()
+      .unwrap()
+      .to_owned();
+    path.push("assets");
+
+    if !path.exists() {
+        create_dir(&path).expect("could not create assets dir");
+    }
+
+    path
 }
 
 fn generate_manpage() {
@@ -65,8 +84,8 @@ fn generate_manpage() {
         )
         .render();
 
-    let out_dir = env::var("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join("url-bot-rs.1");
+    let assets_dir = get_assets_dir();
+    let dest_path = assets_dir.join("url-bot-rs.1");
     let mut file = File::create(&dest_path).unwrap();
     file.write_all(page.as_bytes()).unwrap();
 }
