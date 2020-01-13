@@ -362,13 +362,13 @@ mod tests {
     #[test]
     fn verify_request_headers() {
         let expected_headers = [
+            Header::from_bytes("cookie", "").unwrap(),
             Header::from_bytes("user-agent",
                 format!("Mozilla/5.0 url-bot-rs/{}", buildinfo::PKG_VERSION)
             ).unwrap(),
-            Header::from_bytes("accept", "*/*").unwrap(),
-            Header::from_bytes("cookie", "").unwrap(),
             Header::from_bytes("accept-language", "en").unwrap(),
             Header::from_bytes("accept-encoding", "identity").unwrap(),
+            Header::from_bytes("accept", "*/*").unwrap(),
             Header::from_bytes("host", "0.0.0.0:28282").unwrap(),
         ];
 
