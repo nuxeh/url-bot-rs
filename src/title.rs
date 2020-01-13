@@ -16,7 +16,7 @@ pub fn get_mime(rtd: &Rtd, mime: &Mime, size: &str) -> Option<String> {
     }
 }
 
-fn get_image_mime(format: &ImageFormat) -> Option<Mime> {
+fn get_image_mime(format: ImageFormat) -> Option<Mime> {
     let mime_str = match format {
         ImageFormat::PNG => Some("image/png"),
         ImageFormat::JPEG => Some("image/jpeg"),
@@ -40,8 +40,7 @@ pub fn get_image_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
         .with_guessed_format()
         .expect("failed to create image::Reader");
 
-    let mime = reader.format()
-        .map(|f| get_image_mime(&f).expect("invalid mime type"));
+    let mime = reader.format().and_then(get_image_mime);
 
     match (mime, reader.into_dimensions()) {
         (Some(m), Ok((w, h))) => Some(format!("{} {}×{}", m.to_string(), w, h)),
