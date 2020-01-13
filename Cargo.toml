@@ -7,6 +7,14 @@ authors = ["Edward Cragg <drq.11235@gmail.com>"]
 license = "ISC"
 readme = "README.md"
 build = "build.rs"
+include = [
+  "src/**/*",
+  "build.rs",
+  "Cargo.*",
+  "README.md",
+  "COPYING",
+  "example.config.toml"
+]
 
 [build-dependencies]
 built = "0.3.2"
@@ -57,3 +65,7 @@ assets = [
     ["target/release/url-bot-rs", "usr/bin/", "755"],
     ["target/release/url-bot-get", "usr/bin/", "755"]
 ]
+
+[badges]
+codecov = { repository = "nuxeh/url-bot-rs", branch = "master" }
+travis-ci = { repository = "nuxel/url-bot-rs", branch = "master" }
