@@ -187,4 +187,12 @@ mod tests {
             get_image_metadata(&rtd, &body)
         );
     }
+
+    #[test]
+    fn empty_no_metadata() {
+        let mut rtd: Rtd = Rtd::default();
+        rtd.conf.features.report_metadata = true;
+        let nothing = [0; 100 * 1024];
+        assert_eq!(None, get_image_metadata(&rtd, &nothing));
+    }
 }
