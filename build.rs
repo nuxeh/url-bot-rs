@@ -1,8 +1,10 @@
 extern crate built;
 extern crate man;
 
+use std::env;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 use man::prelude::*;
 
 fn main() {
@@ -63,6 +65,8 @@ fn generate_manpage() {
         )
         .render();
 
-    let mut file = File::create("url-bot-rs.1").unwrap();
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest_path = Path::new(&out_dir).join("url-bot-rs.1");
+    let mut file = File::create(&dest_path).unwrap();
     file.write_all(page.as_bytes()).unwrap();
 }
