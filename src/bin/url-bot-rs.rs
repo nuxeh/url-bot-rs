@@ -109,10 +109,9 @@ fn main() {
     // look in default configuration folder
     if configs.is_empty() {
         let default_conf_dir = dirs.config_dir();
-        match find_configs_in_dir(default_conf_dir) {
-            Ok(dir_confs) => configs.extend(dir_confs),
-            _ => ()
-        };
+        if let Ok(dir_confs) = find_configs_in_dir(default_conf_dir) {
+            configs.extend(dir_confs)
+        }
     }
 
     // default instance (no configs specified or found in default location)
