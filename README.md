@@ -238,4 +238,6 @@ offline development.
 
 ## IRC
 
-There is an IRC channel on [Moznet](https://wiki.mozilla.org/IRC), `#url-bot-rs`.
+There are IRC channels on [Moznet](https://wiki.mozilla.org/IRC),
+[Freenode](https://freenode.net/) and [OFTC](https://www.oftc.net/)
+`#url-bot-rs`.
