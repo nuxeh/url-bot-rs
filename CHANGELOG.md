@@ -1,3 +1,4 @@
+- Refactor image dimension extraction, and support a couple more formats.
 - Remove chrono dependency
 
 # v0.2.3
