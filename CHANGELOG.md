@@ -1,3 +1,4 @@
+- Refactor image dimension extraction, and support a couple more formats.
 - Resolve #249, relative HTTP redirection paths
 - Add Github workflows for CI
 - Upgrade dependencies
