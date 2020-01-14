@@ -45,13 +45,26 @@ e.g. on a Unix-like OS:
 
     cargo test
 
-## Configuration file
+## Configuration
 
-A configuration file is required to specify IRC server details and other
-general settings for the bot, a path to this config can be specified manually
-with the `--conf=<path>` command line option. If not provided, url bot will
-look in a default path for your platform, e.g. on Linux it will use the XDG
-specification:
+A configuration file is required to specify IRC server details, features to
+enable, database setting, and other general settings for the bot; a path to
+this config can be specified manually with the `--conf=<path>` command line
+option.
+
+If not provided, url bot will look in a default path for your platform, e.g. on
+Linux the XDG specification will be used.
+
+First, the following directory will be searched for valid configurations:
+
+    ~/.config/url-bot-rs/
+
+or, if `$XDG_CONFIG_PATH` is set:
+
+    $XDG_CONFIG_HOME/url-bot-rs/
+
+If no configurations are found in this directory, a default-valued
+configuration will be created at:
 
     ~/.config/url-bot-rs/config.toml
 
@@ -62,14 +75,13 @@ or, if `$XDG_CONFIG_PATH` is set:
 The `--conf` parameter may be provided multiple times, in order to connect to
 multiple servers/networks.
 
-Additionally, a search path may be specified with the `--conf-dir=<dir>` CLI
-argument, with the effect that any valid configurations existing
-non-recursively under this path will be loaded. This option may also be
-specified multiple times.
+Additionally, an additional search path may be specified by providing the
+`--conf-dir=<dir>` CLI argument, with the effect that any valid configurations
+existing non-recursively under this path will be loaded. This option may also
+be specified multiple times.
 
 When searching for configurations using the `--conf-dir` option, any
-configurations in which the `enable` field under the `[network]` section is set
-to false will not be loaded.
+configurations in which `network.enable` is false will not be loaded.
 
 ### Configuration file options
 
