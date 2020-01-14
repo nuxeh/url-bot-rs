@@ -1,3 +1,4 @@
+- Upgrade dependencies
 - Remove chrono dependency
 
 # v0.2.3
