@@ -220,6 +220,11 @@ the bot restarted:
 
     sudo systemctl restart url-bot-rs.service
 
+You can also place any configurations you wish to run under the default search
+path:
+
+    /home/url-bot-rs/.config/url-bot-rs/
+
 ### Checking status
 
 To check status or get logs:
