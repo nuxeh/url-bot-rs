@@ -1,4 +1,6 @@
 - Remove chrono dependency
+- Search in default search path for configurations if no configurations are
+  otherwise specified
 
 # v0.2.3
 
