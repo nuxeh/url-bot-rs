@@ -231,6 +231,8 @@ mod tests {
     extern crate tempfile;
 
     use super::*;
+    use std::fs;
+    use std::env;
     use self::tempfile::tempdir;
     use url_bot_rs::config::Conf;
 
@@ -270,4 +272,63 @@ mod tests {
         assert!(get_cli_configs(&args).is_err());
     }
 
+    /// no cli configs provided, no configs in default search path
+    /// => default configuration (config.toml)
+    #[test]
+    fn test_add_default_configs_default() {
+        let mut configs = vec![];
+        let tmp_dir = tempdir().unwrap();
+        let cfg_home = tmp_dir.path();
+        let cfg_dir = cfg_home.join("url-bot-rs");
+
+        env::set_var("XDG_CONFIG_HOME", &cfg_home.as_os_str());
+
+        add_default_configs(&mut configs);
+
+        println!("{:?}", configs);
+        assert_eq!(configs.len(), 1);
+        assert_eq!(configs[0], cfg_dir.join("config.toml"));
+    }
+
+    /// no cli configs, config in default search path
+    #[test]
+    fn test_add_default_configs_dir() {
+        let mut configs = vec![];
+        let tmp_dir = tempdir().unwrap();
+        let cfg_home = tmp_dir.path();
+        let cfg_dir = cfg_home.join("url-bot-rs");
+
+        fs::create_dir(&cfg_dir).unwrap();
+        env::set_var("XDG_CONFIG_HOME", &cfg_home.as_os_str());
+
+        let conf = cfg_dir.join("a.conf");
+        Conf::default().write(&conf).unwrap();
+        add_default_configs(&mut configs);
+
+        println!("{:?}", configs);
+        assert_eq!(configs.len(), 1);
+        assert_eq!(configs, vec![conf]);
+    }
+
+    /// no cli configs, multiple configs in default search path
+    #[test]
+    fn test_add_default_configs_dir_many() {
+        let mut configs = vec![];
+        let tmp_dir = tempdir().unwrap();
+        let cfg_home = tmp_dir.path();
+        let cfg_dir = cfg_home.join("url-bot-rs");
+
+        fs::create_dir(&cfg_dir).unwrap();
+        env::set_var("XDG_CONFIG_HOME", &cfg_home.as_os_str());
+
+        let conf_a = cfg_dir.join("a.conf");
+        let conf_b = cfg_dir.join("b.conf");
+        Conf::default().write(&conf_a).unwrap();
+        Conf::default().write(&conf_b).unwrap();
+        add_default_configs(&mut configs);
+
+        println!("{:?}", configs);
+        assert_eq!(configs.len(), 2);
+        assert_eq!(configs, vec![conf_b, conf_a]);
+    }
 }
