@@ -45,7 +45,7 @@ mime = "0.3.16"
 humansize = "1.1.0"
 unicode-segmentation = "1.6.0"
 toml = "0.5.5"
-image = { version = "0.22.3", default-features = false, features = ["gif_codec", "jpeg", "png_codec"] }
+image = { version = "0.22.4", default-features = false, features = ["gif_codec", "jpeg", "png_codec"] }
 directories = "2.0.2"
 log = "0.4.8"
 stderrlog = "0.4.3"
