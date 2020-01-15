@@ -98,27 +98,13 @@ fn main() {
         .init()
         .unwrap();
 
-    let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
-
     // find configs in locations specified on command line
-    let mut configs = get_configs(&args).unwrap_or_else(|e| {
+    let mut configs = get_cli_configs(&args).unwrap_or_else(|e| {
         error!("{}", e);
         process::exit(1);
     });
 
-    // look in default configuration folder
-    if configs.is_empty() {
-        let default_conf_dir = dirs.config_dir();
-        if let Ok(dir_confs) = find_configs_in_dir(default_conf_dir) {
-            configs.extend(dir_confs)
-        }
-    }
-
-    // default instance (no configs specified or found in default location)
-    if configs.is_empty() {
-        let default_conf = dirs.config_dir().join("config.toml");
-        configs.push(default_conf);
-    }
+    add_default_configs(&mut configs);
 
     // threaded instances
     let threads: Vec<_> = configs
@@ -138,7 +124,32 @@ fn main() {
     }
 }
 
-fn get_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
+/// Add configurations from default sources.
+///
+/// - valid configuration files under the default search path.
+/// - the configuration at the default config path (to be created if
+///   non-existing).
+fn add_default_configs(configs: &mut Vec<PathBuf>) {
+    let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
+    let default_conf_dir = dirs.config_dir();
+
+    if configs.is_empty() {
+        if let Ok(dir_confs) = find_configs_in_dir(&default_conf_dir) {
+            configs.extend(dir_confs)
+        }
+    }
+
+    if configs.is_empty() {
+        let default_conf = default_conf_dir.join("config.toml");
+        configs.push(default_conf);
+    }
+}
+
+/// Combine sources of user-specified configuration file locations
+///
+/// Get all configurations specified with `--conf`, and all configs found in
+/// search paths specified with `--conf-dir`
+fn get_cli_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
     let dir_configs = args.flag_conf_dir
         .iter()
         .try_fold(vec![], |mut result, dir| -> Result<_, Error> {
@@ -150,6 +161,7 @@ fn get_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
     Ok([&dir_configs[..], &args.flag_conf[..]].concat())
 }
 
+/// Run an instance, handling restart if configured.
 fn run_instance(conf: &PathBuf) -> Result<(), Error> {
     let rtd: Rtd = Rtd::new()
         .conf(conf)
@@ -181,6 +193,7 @@ fn run_instance(conf: &PathBuf) -> Result<(), Error> {
     }
 }
 
+/// Connect to a server and handle IRC messages.
 fn connect_instance(rtd: &Rtd) -> Result<(), Error> {
     let mut rtd = rtd.clone();
     let net = &rtd.conf.network.name;
@@ -222,7 +235,7 @@ mod tests {
     use url_bot_rs::config::Conf;
 
     #[test]
-    fn test_get_configs() {
+    fn test_get_cli_configs() {
         let tmp_dir = tempdir().unwrap();
         let cfg_dir = tmp_dir.path();
 
@@ -230,31 +243,31 @@ mod tests {
         args.flag_conf_dir = vec![cfg_dir.to_path_buf()];
 
         // dir is empty
-        assert_eq!(get_configs(&args).unwrap().len(), 0);
+        assert_eq!(get_cli_configs(&args).unwrap().len(), 0);
 
         // add configs to --conf-dir directory
         for i in 1..=10 {
             Conf::default().write(cfg_dir.join(i.to_string() + ".cf")).unwrap();
-            assert_eq!(get_configs(&args).unwrap().len(), i);
+            assert_eq!(get_cli_configs(&args).unwrap().len(), i);
         }
 
         // add --conf option
         args.flag_conf.extend(vec![cfg_dir.join("c1.conf")]);
-        assert_eq!(get_configs(&args).unwrap().len(), 11);
+        assert_eq!(get_cli_configs(&args).unwrap().len(), 11);
 
         // add more --conf options
         for i in 12..=20 {
             args.flag_conf.extend(vec![cfg_dir.join(i.to_string() + ".toml")]);
-            assert_eq!(get_configs(&args).unwrap().len(), i);
+            assert_eq!(get_cli_configs(&args).unwrap().len(), i);
         }
     }
 
     #[test]
-    fn test_get_configs_failures() {
+    fn test_get_cli_configs_failures() {
         // dir doesn't exist
         let mut args = Args::default();
         args.flag_conf_dir = vec![PathBuf::from("/surely/no/way/this/exists")];
-        assert!(get_configs(&args).is_err());
+        assert!(get_cli_configs(&args).is_err());
     }
 
 }
