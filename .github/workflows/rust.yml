@@ -1,6 +1,6 @@
 name: Rust
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -9,6 +9,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Deps
+      run: sudo apt-get install libsqlite3-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
