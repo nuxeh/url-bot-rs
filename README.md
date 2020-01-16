@@ -1,6 +1,7 @@
 ![url-bot-rs](./logo.svg "url-bot-rs")
 
 [![build status](https://api.travis-ci.org/nuxeh/url-bot-rs.png?branch=master)](https://travis-ci.org/nuxeh/url-bot-rs)
+![build status](https://github.com/nuxeh/url-bot-rs/workflows/build/badge.svg)
 [![codecov](https://codecov.io/gh/nuxeh/url-bot-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/nuxeh/url-bot-rs)
 [![crates.io](https://img.shields.io/crates/v/url-bot-rs)](https://crates.io/crates/url-bot-rs)
 
