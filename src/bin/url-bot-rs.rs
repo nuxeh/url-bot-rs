@@ -329,6 +329,7 @@ mod tests {
 
         println!("{:?}", configs);
         assert_eq!(configs.len(), 2);
-        assert_eq!(configs, vec![conf_b, conf_a]);
+        assert!(configs.contains(&conf_a));
+        assert!(configs.contains(&conf_b));
     }
 }
