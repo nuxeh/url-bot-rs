@@ -233,6 +233,7 @@ mod tests {
     use super::*;
     use std::fs;
     use std::env;
+    use std::path::Path;
     use self::tempfile::tempdir;
     use url_bot_rs::config::Conf;
 
@@ -272,16 +273,33 @@ mod tests {
         assert!(get_cli_configs(&args).is_err());
     }
 
-    /// no cli configs provided, no configs in default search path
-    /// => default configuration (config.toml)
     #[test]
-    fn test_add_default_configs_default() {
-        let mut configs = vec![];
+    fn test_add_default_configs() {
         let tmp_dir = tempdir().unwrap();
         let cfg_home = tmp_dir.path();
         let cfg_dir = cfg_home.join("url-bot-rs");
 
+        fs::create_dir(&cfg_dir).unwrap();
         env::set_var("XDG_CONFIG_HOME", &cfg_home.as_os_str());
+
+        test_add_default_configs_default(&cfg_dir);
+        test_add_default_configs_dir(&cfg_dir);
+        empty_dir(&cfg_dir);
+        test_add_default_configs_dir_many(&cfg_dir);
+    }
+
+    fn empty_dir(dir: &Path) {
+        fs::read_dir(dir)
+            .unwrap()
+            .flatten()
+            .map(|e| e.path())
+            .for_each(|e| fs::remove_file(e).unwrap());
+    }
+
+    /// no cli configs provided, no configs in default search path
+    /// => default configuration (config.toml)
+    fn test_add_default_configs_default(cfg_dir: &Path) {
+        let mut configs = vec![];
 
         add_default_configs(&mut configs);
 
@@ -291,15 +309,8 @@ mod tests {
     }
 
     /// no cli configs, config in default search path
-    #[test]
-    fn test_add_default_configs_dir() {
+    fn test_add_default_configs_dir(cfg_dir: &Path) {
         let mut configs = vec![];
-        let tmp_dir = tempdir().unwrap();
-        let cfg_home = tmp_dir.path();
-        let cfg_dir = cfg_home.join("url-bot-rs");
-
-        fs::create_dir(&cfg_dir).unwrap();
-        env::set_var("XDG_CONFIG_HOME", &cfg_home.as_os_str());
 
         let conf = cfg_dir.join("a.conf");
         Conf::default().write(&conf).unwrap();
@@ -311,18 +322,11 @@ mod tests {
     }
 
     /// no cli configs, multiple configs in default search path
-    #[test]
-    fn test_add_default_configs_dir_many() {
+    fn test_add_default_configs_dir_many(cfg_dir: &Path) {
         let mut configs = vec![];
-        let tmp_dir = tempdir().unwrap();
-        let cfg_home = tmp_dir.path();
-        let cfg_dir = cfg_home.join("url-bot-rs");
 
-        fs::create_dir(&cfg_dir).unwrap();
-        env::set_var("XDG_CONFIG_HOME", &cfg_home.as_os_str());
-
-        let conf_a = cfg_dir.join("a.conf");
-        let conf_b = cfg_dir.join("b.conf");
+        let conf_a = cfg_dir.join("b.conf");
+        let conf_b = cfg_dir.join("c.conf");
         Conf::default().write(&conf_a).unwrap();
         Conf::default().write(&conf_b).unwrap();
         add_default_configs(&mut configs);
