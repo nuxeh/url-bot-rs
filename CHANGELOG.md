@@ -1,3 +1,4 @@
+- Add Github workflow for CI
 - Upgrade dependencies
 - Remove chrono dependency
 
