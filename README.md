@@ -32,7 +32,7 @@ e.g. on a Unix-like OS:
 
 ### Run tests
 
-    cargo test -- --test-threads=1
+    cargo test
 
 ## Configuration
 
