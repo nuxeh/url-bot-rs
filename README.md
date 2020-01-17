@@ -15,6 +15,14 @@ For example:
     <user> http://rust-lang.org/
     <url-bot-rs> ⤷ The Rust Programming Language
 
+## Quick install
+
+    cargo install url-bot-rs
+
+To get started quickly with a working configuration, run `url-bot-rs` with no
+parameters, and edit the file located at
+`$HOME/.config/url-bot-rs/config.toml`.
+
 ## Build
 
 ### Get Rust
@@ -24,14 +32,6 @@ For example:
 e.g. on a Unix-like OS:
 
     curl https://sh.rustup.rs -sSf | sh
-
-### Quick install
-
-    cargo install url-bot-rs
-
-To get started quickly with a working configuration, run `url-bot-rs` with no
-parameters, and edit the file located at
-`$HOME/.config/url-bot-rs/config.toml`.
 
 ### Build
 
