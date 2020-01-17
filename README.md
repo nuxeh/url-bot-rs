@@ -25,6 +25,14 @@ e.g. on a Unix-like OS:
 
     curl https://sh.rustup.rs -sSf | sh
 
+### Quick install
+
+    cargo install url-bot-rs
+
+To get started quickly with a working configuration, run `url-bot-rs` with no
+parameters, and edit the file located at
+`$HOME/.config/url-bot-rs/config.toml`.
+
 ### Build
 
     git clone https://github.com/nuxeh/url-bot-rs
@@ -116,9 +124,10 @@ The `[database]` section contains options for the database, as follows:
 - `type` (string) is the type of database to use, e.g. `sqlite`.
 - `path` (string) is the path to a database file (for `sqlite`).
 
-If no configuration file exists at the expected location, a default-valued
-configuration file will be created. An example configuration is provided as
-`example.config.toml` in this repository.
+If no configuration file exists at the location specified with the `--conf`
+command line option, a default-valued configuration file will be created.
+
+An example configuration is provided as `example.config.toml` in this repository.
 
 ## Database
 
