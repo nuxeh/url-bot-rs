@@ -43,7 +43,7 @@ e.g. on a Unix-like OS:
 
 ### Run tests
 
-    cargo test
+    cargo test -- --test-threads=1
 
 ## Configuration
 

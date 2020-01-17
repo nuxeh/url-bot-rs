@@ -6,7 +6,7 @@ matrix:
   - name: stable
     rust: stable
     script:
-    - cargo test --verbose
+    - cargo test --verbose -- --test-threads=1
   - name: clippy
     rust: stable
     install:
