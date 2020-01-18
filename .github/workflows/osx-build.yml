@@ -9,13 +9,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - env:
-        PATH: $PATH:$HOME/.cargo/bin
     - name: Install dependencies
       run: brew install sqlite3
     - name: Install Rust
       run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     - name: Build
+      env:
+        PATH: $PATH:$HOME/.cargo/bin
       run: cargo build --verbose
     - name: Run tests
+      env:
+        PATH: $PATH:$HOME/.cargo/bin
       run: cargo test --verbose -- --test-threads=1
