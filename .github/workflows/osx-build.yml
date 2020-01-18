@@ -9,6 +9,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - env:
+        PATH: $PATH:$HOME/.cargo/bin
     - name: Install dependencies
       run: brew install sqlite3
     - name: Install Rust
