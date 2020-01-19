@@ -14,7 +14,7 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-        components: clippy, tarpaulin
+        components: clippy
         override: true
     - name: Install dependencies
       run: sudo apt-get install -y libsqlite3-dev
@@ -25,7 +25,9 @@ jobs:
     - name: Clippy
       run: cargo clippy -- -D warnings
     - name: Coverage
-      run: cargo tarpaulin --out Xml
+      run: |
+        cargo install cargo-tarpaulin
+        cargo tarpaulin --out Xml
     - name: Push to coveralls.io
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
