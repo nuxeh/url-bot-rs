@@ -20,7 +20,7 @@ jobs:
     - name: Coverage
       run: |
         cargo install cargo-tarpaulin
-        cargo tarpaulin
+        cargo tarpaulin --out Xml
     - name: Push to codecov.io
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
