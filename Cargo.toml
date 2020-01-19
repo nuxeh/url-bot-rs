@@ -67,5 +67,6 @@ assets = [
 ]
 
 [badges]
+coveralls = { repository = "nuxeh/url-bot-rs", branch = "master", service = "github" }
 codecov = { repository = "nuxeh/url-bot-rs", branch = "master" }
 travis-ci = { repository = "nuxeh/url-bot-rs", branch = "master" }

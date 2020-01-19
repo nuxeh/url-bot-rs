@@ -21,6 +21,10 @@ jobs:
       run: |
         cargo install cargo-tarpaulin
         cargo tarpaulin --out Xml
+    - name: Push to coveralls.io
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: cargo tarpaulin --ciserver github-ci --coveralls $COVERALLS_REPO_TOKEN
     - name: Push to codecov.io
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
