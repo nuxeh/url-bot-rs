@@ -11,24 +11,47 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
+
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: stable
         components: clippy
         override: true
+
     - name: Install dependencies
       run: sudo apt-get install -y libsqlite3-dev
+
     - name: Install Tarpaulin
-      run: |
-        cargo install cargo-tarpaulin
+      run: cargo install cargo-tarpaulin
+
     - name: Push Tarpaulin results to Coveralls.io
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       run: cargo tarpaulin --ciserver tarpaulin --coveralls $COVERALLS_REPO_TOKEN
+
     - name: Push Tarpaulin results to Codecov.io
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: |
         cargo tarpaulin --out Xml
         bash <(curl -s https://codecov.io/bash) -X gcov -t $CODECOV_TOKEN
+
+    - name: Install grcov
+      run: cargo install grcov
+
+    - name: Run grcov
+      env:
+        PROJECT_NAME: "url-bot-rs"
+        RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
+      run: |
+        cargo build
+        cargo test
+        zip -0 ccov.zip `find . \( -name "$PROJECT_NAME*.gc*" \) -print`
+        grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
+
+    - name: Push grcov results to Coveralls via GitHub Action
+      uses: coverallsapp/github-action@v1.0.1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: "lcov.info"
