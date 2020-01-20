@@ -25,15 +25,3 @@ jobs:
       run: cargo test --verbose -- --test-threads=1
     - name: Clippy
       run: cargo clippy -- -D warnings
-    - name: Coverage
-      run: |
-        cargo install cargo-tarpaulin
-        cargo tarpaulin --out Xml
-    - name: Push to coveralls.io
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-      run: cargo tarpaulin --ciserver github --coveralls $COVERALLS_REPO_TOKEN
-    - name: Push to codecov.io
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      run: bash <(curl -s https://codecov.io/bash) -X gcov -t $CODECOV_TOKEN
