@@ -106,6 +106,12 @@ fn main() {
 
     add_default_configs(&mut configs);
 
+    let foo = true;
+    match foo {
+        true => println!("it's true!"),
+        false => println!("it's not true!"),
+    };
+
     // threaded instances
     let threads: Vec<_> = configs
         .into_iter()
