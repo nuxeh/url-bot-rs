@@ -112,6 +112,8 @@ fn main() {
         false => println!("it's not true!"),
     };
 
+    let bar: u32;
+
     // threaded instances
     let threads: Vec<_> = configs
         .into_iter()
