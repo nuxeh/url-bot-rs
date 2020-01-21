@@ -24,10 +24,10 @@ jobs:
     - name: Install Tarpaulin
       run: cargo install cargo-tarpaulin
 
-    - name: Push Tarpaulin results to Coveralls.io
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-      run: cargo tarpaulin --ciserver tarpaulin --coveralls $COVERALLS_REPO_TOKEN
+#    - name: Push Tarpaulin results to Coveralls.io
+#      env:
+#        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+#      run: cargo tarpaulin --ciserver tarpaulin --coveralls $COVERALLS_REPO_TOKEN
 
     - name: Push Tarpaulin results to Codecov.io
       env:
