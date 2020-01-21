@@ -43,6 +43,7 @@ jobs:
       env:
         PROJECT_NAME: "url-bot-rs"
         RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
+        CARGO_INCREMENTAL: 0
       run: |
         cargo build --verbose
         cargo test --verbose
