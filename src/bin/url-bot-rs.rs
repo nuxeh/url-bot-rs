@@ -281,6 +281,8 @@ mod tests {
         let tmp_dir = tempdir().unwrap();
         let cfg_home = tmp_dir.path();
 
+        // get configuration directory - temp directory on linux, real config
+        // directory on other platforms
         let cfg_dir = if cfg!(target_os = "linux") {
             env::set_var("XDG_CONFIG_HOME", &cfg_home.as_os_str());
             cfg_home.join("url-bot-rs")
@@ -288,7 +290,18 @@ mod tests {
             PathBuf::from(default_conf_dir)
         };
 
-        fs::create_dir(&cfg_dir).ok();
+        println!("configuration directory: {}", &cfg_dir.display());
+
+        fs::create_dir_all(&cfg_dir).ok();
+
+        let files_in_dir = fs::read_dir(&cfg_dir)
+            .unwrap()
+            .flatten()
+            .count();
+
+        if files_in_dir > 0 {
+            panic!("configuration directory contains files, can't run test");
+        }
 
         test_add_default_configs_default(&cfg_dir);
         test_add_default_configs_dir(&cfg_dir);
