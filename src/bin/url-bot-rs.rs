@@ -275,12 +275,20 @@ mod tests {
 
     #[test]
     fn test_add_default_configs() {
+        let dirs = ProjectDirs::from("org", "", "url-bot-rs").unwrap();
+        let default_conf_dir = dirs.config_dir();
+
         let tmp_dir = tempdir().unwrap();
         let cfg_home = tmp_dir.path();
-        let cfg_dir = cfg_home.join("url-bot-rs");
 
-        fs::create_dir(&cfg_dir).unwrap();
-        env::set_var("XDG_CONFIG_HOME", &cfg_home.as_os_str());
+        let cfg_dir = if cfg!(target_os = "linux") {
+            env::set_var("XDG_CONFIG_HOME", &cfg_home.as_os_str());
+            cfg_home.join("url-bot-rs")
+        } else {
+            PathBuf::from(default_conf_dir)
+        };
+
+        fs::create_dir(&cfg_dir).ok();
 
         test_add_default_configs_default(&cfg_dir);
         test_add_default_configs_dir(&cfg_dir);
