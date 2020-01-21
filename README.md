@@ -2,6 +2,8 @@
 
 [![build](https://img.shields.io/travis/nuxeh/url-bot-rs/master)](https://travis-ci.org/nuxeh/url-bot-rs)
 ![build](https://github.com/nuxeh/url-bot-rs/workflows/build/badge.svg)
+![test](https://github.com/nuxeh/url-bot-rs/workflows/tests/badge.svg)
+![clippy](https://github.com/nuxeh/url-bot-rs/workflows/clippy/badge.svg)
 ![macOS](https://github.com/nuxeh/url-bot-rs/workflows/macOS/badge.svg)
 [![codecov](https://codecov.io/gh/nuxeh/url-bot-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/nuxeh/url-bot-rs)
 [![coveralls](https://coveralls.io/repos/github/nuxeh/url-bot-rs/badge.svg?branch=master)](https://coveralls.io/github/nuxeh/url-bot-rs?branch=master)
