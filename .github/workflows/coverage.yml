@@ -47,8 +47,8 @@ jobs:
       run: |
         cargo build --verbose
         cargo test --verbose
-        zip -0 /tmp/test.zip $(find . -name "$PROJECT_NAME*.gc*")
-        grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
+        zip -0 cov.zip $(find . -name "$PROJECT_NAME*.gc*" -print)
+        grcov cov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
 
     - name: Push grcov results to Coveralls via GitHub Action
       uses: coverallsapp/github-action@v1.0.1
