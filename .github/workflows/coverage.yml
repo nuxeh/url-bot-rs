@@ -44,8 +44,8 @@ jobs:
         PROJECT_NAME: "url-bot-rs"
         RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
       run: |
-        cargo build
-        cargo test
+        cargo build --verbose
+        cargo test --verbose
         zip -0 ccov.zip `find . \( -name "$PROJECT_NAME*.gc*" \) -print`
         grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
 
