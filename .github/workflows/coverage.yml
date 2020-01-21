@@ -41,7 +41,7 @@ jobs:
 
     - name: Run grcov
       env:
-        PROJECT_NAME: "url-bot-rs"
+        PROJECT_NAME: "url_bot_rs"
         RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
         CARGO_INCREMENTAL: 0
       run: |
