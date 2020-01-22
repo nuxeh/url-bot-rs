@@ -1,4 +1,5 @@
-- Add Github workflow for CI
+- Resolve #249, relative HTTP redirection paths
+- Add Github workflows for CI
 - Upgrade dependencies
 - Remove chrono dependency
 - Search in default search path for configurations if no configurations are
