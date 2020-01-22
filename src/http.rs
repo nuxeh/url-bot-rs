@@ -573,7 +573,9 @@ mod tests {
             }
         });
 
-        thread::sleep(Duration::from_millis(100));
+        // wait for server thread to be ready
+        thread::sleep(Duration::from_millis(50));
+
         resolve_url(&url, &Rtd::default(), &db).unwrap();
         server_thread.join().unwrap();
     }
