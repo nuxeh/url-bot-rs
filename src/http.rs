@@ -457,4 +457,50 @@ mod tests {
         server_thread.join().unwrap();
         res
     }
+
+    fn headers_contains(header: &Header, headers: &[Header]) -> bool {
+        headers
+            .iter()
+            .filter(|h| h.field == header.field && h.value == header.value)
+            .count() > 0
+    }
+
+    #[test]
+    fn redirect_with_cookie() {
+        let bind = "0.0.0.0:28286";
+        let url = format!("http://{}/rcookie", bind);
+        let url_bytes = url.clone().into_bytes();
+        let h_loc = Header::from_bytes("location", url_bytes.clone()).unwrap();
+        let h_setc = Header::from_bytes("set-cookie", "c00k13=data").unwrap();
+        let cookie = Header::from_bytes("cookie", "c00k13=data").unwrap();
+        let db = Database::open_in_memory().unwrap();
+
+        let server_thread = thread::spawn(move || {
+            let server = tiny_http::Server::http(bind).unwrap();
+            for r in 0..2 {
+                let rq = server.recv().unwrap();
+                if rq.url() == "/rcookie" {
+                    if r == 0 {
+                        let resp = Response::from_string("")
+                            .with_status_code(301)
+                            .with_header(h_setc.clone())
+                            .with_header(h_loc.clone());
+                        rq.respond(resp).unwrap();
+                    } else if headers_contains(&cookie, rq.headers()) {
+                        let resp = Response::from_string("<title>hello<title>")
+                            .with_status_code(200);
+                        rq.respond(resp).unwrap();
+                    } else {
+                        let resp = Response::from_string("")
+                            .with_status_code(404);
+                        rq.respond(resp).unwrap();
+                    }
+                }
+            }
+        });
+
+        thread::sleep(Duration::from_millis(100));
+        resolve_url(&url, &Rtd::default(), &db).unwrap();
+        server_thread.join().unwrap();
+    }
 }
