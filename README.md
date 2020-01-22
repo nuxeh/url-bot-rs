@@ -1,10 +1,10 @@
 ![url-bot-rs](./logo.svg "url-bot-rs")
 
-[![build](https://img.shields.io/travis/nuxeh/url-bot-rs/master)](https://travis-ci.org/nuxeh/url-bot-rs)
 [![build](https://github.com/nuxeh/url-bot-rs/workflows/build/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Abuild)
 [![test](https://github.com/nuxeh/url-bot-rs/workflows/tests/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Atests)
 [![clippy](https://github.com/nuxeh/url-bot-rs/workflows/clippy/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Aclippy)
 [![macOS](https://github.com/nuxeh/url-bot-rs/workflows/macOS/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3AmacOS)
+[![build](https://img.shields.io/travis/nuxeh/url-bot-rs/master)](https://travis-ci.org/nuxeh/url-bot-rs)
 [![codecov](https://codecov.io/gh/nuxeh/url-bot-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/nuxeh/url-bot-rs)
 [![coveralls](https://coveralls.io/repos/github/nuxeh/url-bot-rs/badge.svg?branch=master)](https://coveralls.io/github/nuxeh/url-bot-rs?branch=master)
 [![crates.io](https://img.shields.io/crates/v/url-bot-rs)](https://crates.io/crates/url-bot-rs)
