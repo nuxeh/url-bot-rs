@@ -265,6 +265,27 @@ pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, E
     bail!(format!("{}: failed to parse title", resp.url()));
 }
 
+/// HTTP tests
+///
+/// In these tests, local HTTP servers are run on threads to serve content to
+/// "main" test threads, in known ways seen in the wild, e.g. expecting
+/// redirection, and redirection after setting a cookie.
+///
+/// In some cases, made only more hairy by the fact that Rust tests run
+/// concurrently on their own threads anyway, the result is a lot of threads
+/// sending and receiving data to eachother, in close proximity, on localhost,
+/// simultaneuously, and accepting no failures. At the very least this has the
+/// potential to hammer IO in tight request loops, and enough to cause
+/// failures.
+///
+/// For this reason, the tests are peppered with delays to throttle responses
+/// from requests slightly (10ms is a fast response from an internet server in
+/// any case), throtting between test runs, and delays to allow server threads
+/// to spawn. It looks hacky, but seems to work for now.
+///
+/// In the future a better way to choose an inconspicuous, unused port for
+/// each test could be advantageous, too.
+
 #[cfg(test)]
 mod tests {
     extern crate tiny_http;
@@ -351,11 +372,14 @@ mod tests {
                             value: get_ctype(&path).parse().unwrap(),
                         }
                     );
+                thread::sleep(Duration::from_millis(10));
                 rq.respond(resp).unwrap();
             }
         });
 
-        thread::sleep(Duration::from_millis(100));
+        // wait for server thread to be ready
+        thread::sleep(Duration::from_millis(50));
+
         let db = Database::open_in_memory().unwrap();
         let res = resolve_url("http://0.0.0.0:28482/test", &rtd, &db);
         server_thread.join().unwrap();
@@ -392,11 +416,14 @@ mod tests {
                 // respond with some content
                 let path = Path::new("./test/html/basic.html");
                 let resp = Response::from_file(File::open(path).unwrap());
+                thread::sleep(Duration::from_millis(10));
                 rq.respond(resp).unwrap();
             }
         });
 
-        thread::sleep(Duration::from_millis(100));
+        // wait for server thread to be ready
+        thread::sleep(Duration::from_millis(50));
+
         let db = Database::open_in_memory().unwrap();
         resolve_url("http://0.0.0.0:28282/test", &Rtd::default(), &db).unwrap();
         let request_headers = rx.recv().unwrap();
@@ -429,12 +456,15 @@ mod tests {
     }
 
     fn redirect_limit_n(n: u8, status: u16) -> Result<String, Error> {
-        let bind = "0.0.0.0:28284";
+        let bind = "0.0.0.0:28270";
         let url = format!("http://{}/rlim", bind);
         let url_bytes = url.clone().into_bytes();
         let header = Header::from_bytes("location", url_bytes.clone()).unwrap();
         let db = Database::open_in_memory().unwrap();
         let timeout = Duration::from_millis(200);
+
+        // throttle between runs
+        thread::sleep(Duration::from_millis(50));
 
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http(bind).unwrap();
@@ -446,6 +476,7 @@ mod tests {
                     let resp = Response::from_string("")
                         .with_status_code(status)
                         .with_header(header.clone());
+                    thread::sleep(Duration::from_millis(10));
                     rq.respond(resp).unwrap();
                 }
             }
@@ -455,11 +486,14 @@ mod tests {
             if let Ok(Some(rq)) = server.recv_timeout(timeout) {
                 let resp = Response::from_string("<title>hello<title>")
                     .with_status_code(200);
+                thread::sleep(Duration::from_millis(10));
                 rq.respond(resp).unwrap();
             }
         });
 
-        thread::sleep(Duration::from_millis(100));
+        // wait for server thread to be ready
+        thread::sleep(Duration::from_millis(50));
+
         let res = resolve_url(&url, &Rtd::default(), &db);
         server_thread.join().unwrap();
         res
@@ -485,11 +519,13 @@ mod tests {
                         let resp = Response::from_string("")
                             .with_status_code(301)
                             .with_header(h_loc.clone());
+                        thread::sleep(Duration::from_millis(10));
                         rq.respond(resp).unwrap();
                     },
                     // response
                     "/r_abs_r" => {
                         let resp = Response::from_string("<title>hello</title>");
+                        thread::sleep(Duration::from_millis(10));
                         rq.respond(resp).unwrap();
                     },
                     _ => (),
@@ -497,7 +533,9 @@ mod tests {
             }
         });
 
-        thread::sleep(Duration::from_millis(100));
+        // wait for server thread to be ready
+        thread::sleep(Duration::from_millis(50));
+
         resolve_url(&url, &Rtd::default(), &db).unwrap();
         server_thread.join().unwrap();
     }
@@ -520,11 +558,13 @@ mod tests {
                         let resp = Response::from_string("")
                             .with_status_code(301)
                             .with_header(h_loc.clone());
+                        thread::sleep(Duration::from_millis(10));
                         rq.respond(resp).unwrap();
                     },
                     // response
                     "/r_rel_r" => {
                         let resp = Response::from_string("<title>hello</title>");
+                        thread::sleep(Duration::from_millis(10));
                         rq.respond(resp).unwrap();
                     },
                     _ => (),
@@ -549,11 +589,14 @@ mod tests {
             if rq.url() == "/rerr" {
                 let resp = Response::from_string("<title>hello</title>")
                     .with_status_code(301);
+                thread::sleep(Duration::from_millis(10));
                 rq.respond(resp).unwrap();
             }
         });
 
-        thread::sleep(Duration::from_millis(100));
+        // wait for server thread to be ready
+        thread::sleep(Duration::from_millis(50));
+
         assert!(resolve_url(&url, &Rtd::default(), &db).is_err());
         server_thread.join().unwrap();
     }
@@ -585,17 +628,21 @@ mod tests {
                             .with_status_code(301)
                             .with_header(h_setc.clone())
                             .with_header(h_loc.clone());
+                        thread::sleep(Duration::from_millis(10));
                         rq.respond(resp).unwrap();
                     } else if headers_contains(&cookie, rq.headers()) {
                         let resp = Response::from_string("<title>hello<title>")
                             .with_status_code(200);
+                        thread::sleep(Duration::from_millis(10));
                         rq.respond(resp).unwrap();
                     }
                 }
             }
         });
 
-        thread::sleep(Duration::from_millis(100));
+        // wait for server thread to be ready
+        thread::sleep(Duration::from_millis(50));
+
         resolve_url(&url, &Rtd::default(), &db).unwrap();
         server_thread.join().unwrap();
     }
