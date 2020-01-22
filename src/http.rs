@@ -459,6 +459,43 @@ mod tests {
     }
 
     #[test]
+    fn redirect_absolute_location() {
+        let bind = "0.0.0.0:28280";
+        let url = format!("http://{}/r_abs", bind);
+        let url2 = format!("http://{}/r_abs_r", bind);
+        let url2_bytes = url2.clone().into_bytes();
+        let h_loc = Header::from_bytes("location", url2_bytes.clone()).unwrap();
+        let db = Database::open_in_memory().unwrap();
+
+        let server_thread = thread::spawn(move || {
+            let server = tiny_http::Server::http(bind).unwrap();
+            for _ in 0..2 {
+                let rq = server.recv().unwrap();
+
+                match rq.url() {
+                    // redirection
+                    "/r_abs" => {
+                        let resp = Response::from_string("")
+                            .with_status_code(301)
+                            .with_header(h_loc.clone());
+                        rq.respond(resp).unwrap();
+                    },
+                    // response
+                    "/r_abs_r" => {
+                        let resp = Response::from_string("<title>hello</title>");
+                        rq.respond(resp).unwrap();
+                    },
+                    _ => (),
+                }
+            }
+        });
+
+        thread::sleep(Duration::from_millis(100));
+        resolve_url(&url, &Rtd::default(), &db).unwrap();
+        server_thread.join().unwrap();
+    }
+
+    #[test]
     fn redirect_no_redirection_location_provided() {
         let bind = "0.0.0.0:28288";
         let url = format!("http://{}/rerr", bind);
