@@ -1,7 +1,7 @@
 use std::time::Duration;
 use itertools::Itertools;
 use failure::Error;
-use reqwest::{Client, header, RedirectPolicy, Response};
+use reqwest::{Client, header, RedirectPolicy, Response, Url};
 use cookie::Cookie;
 use std::io::Read;
 use mime::{Mime, IMAGE, TEXT, HTML};
@@ -127,10 +127,22 @@ impl Session {
                 // get redirection location
                 let redirected_url = resp.headers().get(header::LOCATION)
                     .and_then(|u| u.to_str().ok())
+                    .and_then(|u| u.parse::<Url>().ok());
+
+                let redirected_string = resp.headers().get(header::LOCATION)
+                    .and_then(|u| u.to_str().ok())
                     .and_then(|u| u.parse::<String>().ok());
 
-                match redirected_url {
-                    Some(url) => self.url = url,
+                let current_url = self.url.parse::<Url>().ok();
+
+                let r = match (redirected_url, redirected_string, current_url) {
+                    (None, Some(s), Some(u)) => u.join(&s).ok(),
+                    (Some(u), _, _) => Some(u),
+                    _ => None,
+                };
+
+                match r {
+                    Some(url) => self.url = url.as_str().to_string(),
                     None => bail!("Can't get redirection URL"),
                 };
 
