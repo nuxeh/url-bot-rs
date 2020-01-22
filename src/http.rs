@@ -407,4 +407,54 @@ mod tests {
         assert!(headers_match);
         server_thread.join().unwrap();
     }
+
+    #[test]
+    fn redirect_limit() {
+        redirect_limit_with_status(301); // 301 Moved Permanently https://http.cat/301
+        redirect_limit_with_status(302); // 302 Found https://http.cat/302
+        redirect_limit_with_status(307); // 307 Temporary Redirect https://http.cat/307
+    }
+
+    fn redirect_limit_with_status(status: u16) {
+        redirect_limit_n(1, status).unwrap();
+        redirect_limit_n(10, status).unwrap();
+        assert!(redirect_limit_n(11, status).is_err());
+    }
+
+    fn redirect_limit_n(n: u8, status: u16) -> Result<String, Error> {
+        let bind = "0.0.0.0:28284";
+        let url = format!("http://{}/rlim", bind);
+        let url_bytes = url.clone().into_bytes();
+        let header = Header::from_bytes("location", url_bytes.clone()).unwrap();
+        let db = Database::open_in_memory().unwrap();
+        let timeout = Duration::from_millis(200);
+
+        let server_thread = thread::spawn(move || {
+            let server = tiny_http::Server::http(bind).unwrap();
+
+            // send redirections
+            for _ in 0..n {
+                let rq = server.recv().unwrap();
+                if rq.url() == "/rlim" {
+                    let resp = Response::from_string("")
+                        .with_status_code(status)
+                        .with_header(header.clone());
+                    rq.respond(resp).unwrap();
+                }
+            }
+
+            // send success. if the resolve function errors, it will send no
+            // more requests, so time out
+            if let Ok(Some(rq)) = server.recv_timeout(timeout) {
+                let resp = Response::from_string("<title>hello<title>")
+                    .with_status_code(200);
+                rq.respond(resp).unwrap();
+            }
+        });
+
+        thread::sleep(Duration::from_millis(100));
+        let res = resolve_url(&url, &Rtd::default(), &db);
+        server_thread.join().unwrap();
+        res
+    }
 }
