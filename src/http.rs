@@ -458,6 +458,27 @@ mod tests {
         res
     }
 
+    #[test]
+    fn redirect_no_redirection_location_provided() {
+        let bind = "0.0.0.0:28288";
+        let url = format!("http://{}/rerr", bind);
+        let db = Database::open_in_memory().unwrap();
+
+        let server_thread = thread::spawn(move || {
+            let server = tiny_http::Server::http(bind).unwrap();
+            let rq = server.recv().unwrap();
+            if rq.url() == "/rerr" {
+                let resp = Response::from_string("<title>hello</title>")
+                    .with_status_code(301);
+                rq.respond(resp).unwrap();
+            }
+        });
+
+        thread::sleep(Duration::from_millis(100));
+        assert!(resolve_url(&url, &Rtd::default(), &db).is_err());
+        server_thread.join().unwrap();
+    }
+
     fn headers_contains(header: &Header, headers: &[Header]) -> bool {
         headers
             .iter()
