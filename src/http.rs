@@ -342,19 +342,16 @@ mod tests {
     fn serve_resolve(path: PathBuf, rtd: &Rtd) -> Result<String, Error> {
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http("0.0.0.0:28482").unwrap();
-            loop {
-                let rq = server.recv().unwrap();
-                if rq.url() == "/test" {
-                    let resp = Response::from_file(File::open(&path).unwrap())
-                        .with_header(
-                            tiny_http::Header {
-                                field: "Content-Type".parse().unwrap(),
-                                value: get_ctype(&path).parse().unwrap(),
-                            }
-                        );
-                    rq.respond(resp).unwrap();
-                    break;
-                }
+            let rq = server.recv().unwrap();
+            if rq.url() == "/test" {
+                let resp = Response::from_file(File::open(&path).unwrap())
+                    .with_header(
+                        tiny_http::Header {
+                            field: "Content-Type".parse().unwrap(),
+                            value: get_ctype(&path).parse().unwrap(),
+                        }
+                    );
+                rq.respond(resp).unwrap();
             }
         });
 
@@ -387,17 +384,15 @@ mod tests {
         let (tx, rx) = mpsc::channel();
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http("0.0.0.0:28282").unwrap();
-            loop {
-                let rq = server.recv().unwrap();
-                if rq.url() == "/test" {
-                    // send headers through mpsc channel
-                    tx.send(rq.headers().to_owned()).unwrap();
-                    // respond with some content
-                    let path = Path::new("./test/html/basic.html");
-                    let resp = Response::from_file(File::open(path).unwrap());
-                    rq.respond(resp).unwrap();
-                    break;
-                }
+            let rq = server.recv().unwrap();
+            if rq.url() == "/test" {
+                // send headers through mpsc channel
+                tx.send(rq.headers().to_owned()).unwrap();
+
+                // respond with some content
+                let path = Path::new("./test/html/basic.html");
+                let resp = Response::from_file(File::open(path).unwrap());
+                rq.respond(resp).unwrap();
             }
         });
 
