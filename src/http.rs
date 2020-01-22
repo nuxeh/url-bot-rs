@@ -40,6 +40,7 @@ impl Default for RequestParams {
     }
 }
 
+// TODO: reimplement this with upstream reqwest, which now supports cookies
 #[derive(Default)]
 pub struct Session {
     pub url: String,
