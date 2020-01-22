@@ -595,10 +595,6 @@ mod tests {
                         let resp = Response::from_string("<title>hello<title>")
                             .with_status_code(200);
                         rq.respond(resp).unwrap();
-                    } else {
-                        let resp = Response::from_string("")
-                            .with_status_code(404);
-                        rq.respond(resp).unwrap();
                     }
                 }
             }
