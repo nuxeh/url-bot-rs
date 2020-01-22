@@ -24,10 +24,12 @@ For example:
     cargo install url-bot-rs
 
 To get started quickly with a working configuration, run `url-bot-rs` with no
-parameters, and edit the file located at:
+parameters, and edit the file as shown below.
 
-* Linux: `~/.config/url-bot-rs/config.toml`.
-* OSX: `~/Library/Preferences/org.url-bot-rs/config.toml`
+| Platform | Configuration path                                 |
+|----------|----------------------------------------------------|
+| Linux    | `~/.config/url-bot-rs/config.toml`                 |
+| OSX      | `~/Library/Preferences/org.url-bot-rs/config.toml` |
 
 ## Build
 
