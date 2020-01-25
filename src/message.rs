@@ -331,7 +331,7 @@ fn utf8_truncate(s: &str, n: usize) -> String {
 /// if a token has a recognised TLD, but no scheme, add one
 pub fn add_scheme_for_tld(token: &str) -> Option<String> {
     if token.parse::<Url>().is_err() {
-        if token.starts_with('@') {
+        if token.starts_with(|s: char| !s.is_alphabetic()) {
             return None;
         }
 
@@ -659,5 +659,9 @@ mod tests {
         // don't resolve tokens beinning with @
         assert!(add_scheme_for_tld("@gmail.com").is_none());
         assert!(add_scheme_for_tld("@endless.horse").is_none());
+
+        // don't resolve tokens beinning with '.'
+        assert!(add_scheme_for_tld(".net").is_none());
+        assert!(add_scheme_for_tld(".zip").is_none());
     }
 }
