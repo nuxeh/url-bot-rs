@@ -659,4 +659,61 @@ mod tests {
         resolve_url(&url, &Rtd::default(), &db).unwrap();
         server_thread.join().unwrap();
     }
+
+    #[test]
+    fn test_retry_server_errors() {
+        // 500 Internal Server Error https://http.cat/500
+        test_retry_server_errors_n_status(1, 500).unwrap();
+        test_retry_server_errors_n_status(10, 500).unwrap();
+
+        // 503 Service Unavailable https://http.cat/503
+        test_retry_server_errors_n_status(1, 503).unwrap();
+        test_retry_server_errors_n_status(10, 503).unwrap();
+
+        // 504 Gateway Timeout https://http.cat/504
+        test_retry_server_errors_n_status(1, 504).unwrap();
+        test_retry_server_errors_n_status(10, 504).unwrap();
+    }
+
+    fn test_retry_server_errors_n_status(n: usize, status: u16) -> Result<String, Error> {
+        let bind = "0.0.0.0:28268";
+        let url = format!("http://{}/serr", bind);
+        let db = Database::open_in_memory().unwrap();
+        let timeout = Duration::from_millis(200);
+
+        // throttle between runs
+        thread::sleep(Duration::from_millis(50));
+
+        let server_thread = thread::spawn(move || {
+            let server = tiny_http::Server::http(bind).unwrap();
+
+            // return server errors
+            // TODO: test that the client uses a delay before repeat requests
+            for _ in 0..n {
+                let rq = server.recv().unwrap();
+                if rq.url() == "/serr" {
+                    let resp = Response::from_string("")
+                        .with_status_code(status);
+                    thread::sleep(Duration::from_millis(10));
+                    rq.respond(resp).unwrap();
+                }
+            }
+
+            // send success. if the resolve function errors, it will send no
+            // more requests, so time out
+            if let Ok(Some(rq)) = server.recv_timeout(timeout) {
+                let resp = Response::from_string("<title>hello<title>")
+                    .with_status_code(200);
+                thread::sleep(Duration::from_millis(10));
+                rq.respond(resp).unwrap();
+            }
+        });
+
+        // wait for server thread to be ready
+        thread::sleep(Duration::from_millis(50));
+
+        let res = resolve_url(&url, &Rtd::default(), &db);
+        server_thread.join().unwrap();
+        res
+    }
 }
