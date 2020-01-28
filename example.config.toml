@@ -24,6 +24,10 @@ status_channels = []
 nick_response_str = ""
 reconnect_timeout = 10
 
+[http]
+timeout = 10
+max_redirections = 10
+
 [database]
 type = "in-memory"
 

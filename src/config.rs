@@ -71,6 +71,7 @@ pub struct Database {
 #[serde(default)]
 pub struct Parameters {
     pub url_limit: u8,
+    // accept_lang should be in Http, but left here for existing configs
     pub accept_lang: String,
     pub status_channels: Vec<String>,
     pub nick_response_str: String,
@@ -90,6 +91,22 @@ impl Default for Parameters {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
+pub struct Http {
+    pub timeout: u8,
+    pub max_redirections: u8,
+}
+
+impl Default for Http {
+    fn default() -> Self {
+        Self {
+            timeout: 10,
+            max_redirections: 10,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Conf {
     #[serde(default)]
     pub network: Network,
@@ -97,6 +114,8 @@ pub struct Conf {
     pub features: Features,
     #[serde(default, rename = "parameters")]
     pub params: Parameters,
+    #[serde(default)]
+    pub http: Http,
     #[serde(default)]
     pub database: Database,
     #[serde(rename = "connection")]
@@ -143,6 +162,7 @@ impl Default for Conf {
             network: Network::default(),
             features: Features::default(),
             params: Parameters::default(),
+            http: Http::default(),
             database: Database::default(),
             client: IrcConfig {
                 nickname: Some("url-bot-rs".to_string()),
