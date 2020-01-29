@@ -208,6 +208,7 @@ impl Default for Conf {
     }
 }
 
+/// Run-time configuration data.
 #[derive(Default, Clone)]
 pub struct Rtd {
     /// paths
@@ -227,6 +228,7 @@ impl Rtd {
         Rtd::default()
     }
 
+    /// Set the configuration file path.
     pub fn conf(&mut self, path: &PathBuf) -> &mut Self {
         self.paths.conf = expand_tilde(path);
         self
@@ -237,6 +239,7 @@ impl Rtd {
         self
     }
 
+    /// Load the configuration file and return an Rtd.
     pub fn load(&mut self) -> Result<Self, Error> {
         ensure_parent_dir(&self.paths.conf)?;
 
