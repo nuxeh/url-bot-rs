@@ -668,4 +668,22 @@ mod tests {
             .load()
             .unwrap();
     }
+
+    #[test]
+    fn test_features_get() {
+        let c = Conf::default();
+        c.features.get("report_metadata").unwrap();
+        c.features.get("report_mime").unwrap();
+        c.features.get("mask_highlights").unwrap();
+        c.features.get("send_notice").unwrap();
+        c.features.get("history").unwrap();
+        c.features.get("invite").unwrap();
+        c.features.get("autosave").unwrap();
+        c.features.get("send_errors_to_poster").unwrap();
+        c.features.get("reply_with_errors").unwrap();
+        c.features.get("partial_urls").unwrap();
+        c.features.get("nick_response").unwrap();
+        c.features.get("reconnect").unwrap();
+        assert!(c.features.get("flying_pigs").is_err());
+    }
 }
