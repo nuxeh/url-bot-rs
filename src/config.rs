@@ -46,6 +46,28 @@ pub struct Features {
     pub reconnect: bool,
 }
 
+/// Get a feature enabled value from a str
+/// TODO: implement with serde/syn, or a macro, to avoid replication
+impl Features {
+    fn get(&self, name: &str) -> Result<bool, Error> {
+        match name {
+            "report_metadata" => Ok(self.report_metadata),
+            "report_mime" => Ok(self.report_mime),
+            "mask_highlights" => Ok(self.mask_highlights),
+            "send_notice" => Ok(self.send_notice),
+            "history" => Ok(self.history),
+            "invite" => Ok(self.invite),
+            "autosave" => Ok(self.autosave),
+            "send_errors_to_poster" => Ok(self.send_errors_to_poster),
+            "reply_with_errors" => Ok(self.reply_with_errors),
+            "partial_urls" => Ok(self.partial_urls),
+            "nick_response" => Ok(self.nick_response),
+            "reconnect" => Ok(self.reconnect),
+            _ => bail!("unknown feature: {}", name),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum DbType {
@@ -95,6 +117,8 @@ impl Default for Parameters {
 pub struct Http {
     pub timeout: u8,
     pub max_redirections: u8,
+    pub server_error_retries: u8,
+    pub retry_delay_s: u8,
 }
 
 impl Default for Http {
@@ -102,6 +126,8 @@ impl Default for Http {
         Self {
             timeout: 10,
             max_redirections: 10,
+            server_error_retries: 3,
+            retry_delay_s: 5,
         }
     }
 }
