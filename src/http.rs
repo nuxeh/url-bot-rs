@@ -171,7 +171,7 @@ impl Session {
 }
 
 fn log_error(rtd: &Rtd, db: &Database, url: &str, err: &Error, resp: &Response) {
-    if !rtd.conf.features.history { return; };
+    if !rtd.feat("history") { return; };
 
     let mut e = ErrorInfo::default();
     e.error = format!("{:?}", err);
