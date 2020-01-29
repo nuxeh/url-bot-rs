@@ -30,7 +30,7 @@ pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: 
 }
 
 fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
-    if !rtd.conf.features.autosave {
+    if !rtd.feat("autosave") {
         return;
     }
 
@@ -47,7 +47,7 @@ fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
 }
 
 fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
-    if !rtd.conf.features.invite {
+    if !rtd.feat("invite") {
         return;
     }
 
@@ -62,7 +62,7 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
     } else {
         info!("joined {}", chan);
 
-        if rtd.conf.features.autosave {
+        if rtd.feat("autosave") {
             rtd.conf.add_channel(chan.to_string());
             rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
                 error!("error writing config: {}", err);
@@ -141,7 +141,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         }
 
         // get a full URL for tokens without a scheme
-        let maybe_token = if rtd.conf.features.partial_urls {
+        let maybe_token = if rtd.feat("partial_urls") {
             add_scheme_for_tld(token)
         } else {
             None
@@ -188,7 +188,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         };
 
         // check for pre-post
-        let pre_post = if rtd.conf.features.history {
+        let pre_post = if rtd.feat("history") {
             db.check_prepost(token)
         } else {
             Ok(None)
@@ -217,7 +217,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         // generate response string
         let mut msg = match pre_post {
             Ok(Some(previous_post)) => {
-                let user = if rtd.conf.features.mask_highlights {
+                let user = if rtd.feat("mask_highlights") {
                     create_non_highlighting_name(&previous_post.user)
                 } else {
                     previous_post.user
@@ -231,7 +231,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
             },
             Ok(None) => {
                 // add new log entry to database, if posted in a channel
-                if rtd.conf.features.history && !pre_post_found && msg.is_chanmsg {
+                if rtd.feat("history") && !pre_post_found && msg.is_chanmsg {
                     if let Err(err) = db.add_log(&entry) {
                         error!("SQL error: {}", err);
                     }
@@ -268,7 +268,7 @@ fn respond<S>(client: &IrcClient, rtd: &Rtd, msg: &Msg, text: S)
 where
     S: ToString + std::fmt::Display,
 {
-    let result = if rtd.conf.features.send_notice && msg.is_chanmsg {
+    let result = if rtd.feat("send_notice") && msg.is_chanmsg {
         client.send_notice(&msg.target, &text)
     } else {
         client.send_privmsg(&msg.target, &text)
@@ -285,14 +285,14 @@ where
 {
     // reply with error, if message was sent in a channel
     // always reply with errors in queries
-    if !msg.is_chanmsg || rtd.conf.features.reply_with_errors {
+    if !msg.is_chanmsg || rtd.feat("reply_with_errors") {
         respond(client, rtd, &msg, &text);
     };
 
     // send errors to poster by query
     // do not send if link was already sent in a query, since this
     // duplicates messages
-    if msg.is_chanmsg && rtd.conf.features.send_errors_to_poster {
+    if msg.is_chanmsg && rtd.feat("send_errors_to_poster") {
         client.send_privmsg(&msg.sender, &text).unwrap();
     };
 
