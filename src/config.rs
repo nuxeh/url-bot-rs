@@ -264,6 +264,13 @@ impl Rtd {
         Ok(self.clone())
     }
 
+    /// Get a feature's enabled status from the configuration.
+    ///
+    /// Panics if the feature is not found.
+    pub fn feat(&self, name: &str) -> bool {
+        self.conf.features.get(name).unwrap()
+    }
+
     fn get_db_path(&mut self) -> Option<PathBuf> {
         if self.conf.features.history {
             match self.conf.database.db_type {
