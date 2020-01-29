@@ -187,7 +187,7 @@ dependencies = [
 
 [[package]]
 name = "cookie"
-version = "0.13.1"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "time 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2278,7 +2278,7 @@ version = "0.2.3"
 dependencies = [
  "atty 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "built 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "cookie 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cookie 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "diff 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "docopt 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2437,7 +2437,7 @@ dependencies = [
 "checksum color_quant 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0dbbb57365263e881e805dc77d94697c9118fd94d8da011240555aa7b23445bd"
 "checksum constant_time_eq 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 "checksum cookie 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)" = "888604f00b3db336d2af898ec3c1d5d0ddf5e6d462220f2ededc33a87ac4bbd5"
-"checksum cookie 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)" = "28443b78daa2d2591888a01fa235c03e25ad8c6ada5b6ff78a819776e20df8cc"
+"checksum cookie 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9767b0ac42ec8164681434369716d2f3a5b1f83039701e4ec98b430f18174c69"
 "checksum cookie_store 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "46750b3f362965f197996c4448e4a0935e791bf7d6631bfce9ee0af3d24c919c"
 "checksum core-foundation 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)" = "25b9e03f145fd4f2bf705e07b900cd41fc636598fe5dc452fd0db1441c3f496d"
 "checksum core-foundation-sys 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e7ca8a5221364ef15ce201e8ed2f609fc312682a8f4e0e3d4aa5879764e0fa3b"
