@@ -170,7 +170,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         info!("[{}] RESOLVE <{}>", rtd.conf.network.name, token);
 
         // try to get the title from the url
-        let title = match resolve_url(token, rtd, db) {
+        let title = match resolve_url(token, rtd) {
             Ok(title) => title,
             Err(err) => {
                 error!("{:?}", err);

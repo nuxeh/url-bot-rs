@@ -6,11 +6,9 @@ use cookie::Cookie;
 use std::io::Read;
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
-use toml;
 
 use super::config::Rtd;
 use super::buildinfo;
-use super::sqlite::{Database, UrlError, ErrorInfo};
 use super::title::{parse_title, get_mime, get_image_metadata};
 
 const CHUNK_BYTES: u64 = 100 * 1024; // 100kB
@@ -170,41 +168,12 @@ impl Session {
     }
 }
 
-fn log_error(rtd: &Rtd, db: &Database, url: &str, err: &Error, resp: &Response) {
-    if !rtd.feat("history") { return; };
-
-    let mut e = ErrorInfo::default();
-    e.error = format!("{:?}", err);
-    e.status = resp.status().as_u16();
-    e.reason = resp.status().canonical_reason().unwrap_or("UNKNOWN");
-    for (k, v) in resp.headers().iter() {
-        e.headers.insert(k.as_str(), v.to_str().unwrap_or("ERROR"));
-    };
-
-    let err = UrlError {
-        url,
-        error_info: &toml::ser::to_string(&e).unwrap(),
-    };
-
-    info!("adding error record to database");
-
-    db.log_error(&err).unwrap_or_else(|e| {
-        error!("database error: {}", e);
-    });
-}
-
-pub fn resolve_url(url: &str, rtd: &Rtd, db: &Database) -> Result<String, Error> {
+pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
     let mut resp = Session::new()
         .accept_lang(&rtd.conf.params.accept_lang)
         .request(url)?;
 
-    match get_title(&mut resp, rtd, false) {
-        Ok(title) => Ok(title),
-        Err(err) => {
-            log_error(&rtd, &db, url, &err, &resp);
-            Err(err)
-        },
-    }
+    get_title(&mut resp, rtd, false)
 }
 
 pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, Error> {
@@ -302,9 +271,8 @@ mod tests {
     #[ignore]
     fn resolve_urls() {
         let rtd: Rtd = Rtd::default();
-        let db = Database::open_in_memory().unwrap();
-        resolve_url("https://youtube.com",  &rtd, &db).unwrap();
-        resolve_url("https://google.co.uk", &rtd, &db).unwrap();
+        resolve_url("https://youtube.com",  &rtd).unwrap();
+        resolve_url("https://google.co.uk", &rtd).unwrap();
     }
 
     #[test]
@@ -391,8 +359,7 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        let db = Database::open_in_memory().unwrap();
-        let res = resolve_url("http://127.0.0.1:28482/test", &rtd, &db);
+        let res = resolve_url("http://127.0.0.1:28482/test", &rtd);
         server_thread.join().unwrap();
         res
     }
@@ -435,8 +402,7 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        let db = Database::open_in_memory().unwrap();
-        resolve_url("http://127.0.0.1:28282/test", &Rtd::default(), &db).unwrap();
+        resolve_url("http://127.0.0.1:28282/test", &Rtd::default()).unwrap();
         let request_headers = rx.recv().unwrap();
 
         println!("Headers in request:\n{:?}", request_headers);
@@ -471,7 +437,6 @@ mod tests {
         let url = format!("http://{}/rlim", bind);
         let url_bytes = url.clone().into_bytes();
         let header = Header::from_bytes("location", url_bytes.clone()).unwrap();
-        let db = Database::open_in_memory().unwrap();
         let timeout = Duration::from_millis(200);
 
         // throttle between runs
@@ -505,7 +470,7 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        let res = resolve_url(&url, &Rtd::default(), &db);
+        let res = resolve_url(&url, &Rtd::default());
         server_thread.join().unwrap();
         res
     }
@@ -517,7 +482,6 @@ mod tests {
         let url2 = format!("http://{}/r_abs_r", bind);
         let url2_bytes = url2.clone().into_bytes();
         let h_loc = Header::from_bytes("location", url2_bytes.clone()).unwrap();
-        let db = Database::open_in_memory().unwrap();
 
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http(bind).unwrap();
@@ -547,7 +511,7 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        resolve_url(&url, &Rtd::default(), &db).unwrap();
+        resolve_url(&url, &Rtd::default()).unwrap();
         server_thread.join().unwrap();
     }
 
@@ -556,7 +520,6 @@ mod tests {
         let bind = "127.0.0.1:28278";
         let url = format!("http://{}/r_rel", bind);
         let h_loc = Header::from_bytes("location", "/r_rel_r").unwrap();
-        let db = Database::open_in_memory().unwrap();
 
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http(bind).unwrap();
@@ -586,7 +549,7 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        resolve_url(&url, &Rtd::default(), &db).unwrap();
+        resolve_url(&url, &Rtd::default()).unwrap();
         server_thread.join().unwrap();
     }
 
@@ -594,7 +557,6 @@ mod tests {
     fn redirect_no_redirection_location_provided() {
         let bind = "127.0.0.1:28288";
         let url = format!("http://{}/rerr", bind);
-        let db = Database::open_in_memory().unwrap();
 
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http(bind).unwrap();
@@ -610,7 +572,7 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        assert!(resolve_url(&url, &Rtd::default(), &db).is_err());
+        assert!(resolve_url(&url, &Rtd::default()).is_err());
         server_thread.join().unwrap();
     }
 
@@ -629,7 +591,6 @@ mod tests {
         let h_loc = Header::from_bytes("location", url_bytes.clone()).unwrap();
         let h_setc = Header::from_bytes("set-cookie", "c00k13=data").unwrap();
         let cookie = Header::from_bytes("cookie", "c00k13=data").unwrap();
-        let db = Database::open_in_memory().unwrap();
 
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http(bind).unwrap();
@@ -656,7 +617,7 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        resolve_url(&url, &Rtd::default(), &db).unwrap();
+        resolve_url(&url, &Rtd::default()).unwrap();
         server_thread.join().unwrap();
     }
 
@@ -678,7 +639,6 @@ mod tests {
     fn test_retry_server_errors_n_status(n: usize, status: u16) -> Result<String, Error> {
         let bind = "0.0.0.0:28268";
         let url = format!("http://{}/serr", bind);
-        let db = Database::open_in_memory().unwrap();
         let timeout = Duration::from_millis(200);
 
         // throttle between runs
@@ -712,7 +672,7 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        let res = resolve_url(&url, &Rtd::default(), &db);
+        let res = resolve_url(&url, &Rtd::default());
         server_thread.join().unwrap();
         res
     }
