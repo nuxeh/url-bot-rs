@@ -670,6 +670,23 @@ mod tests {
     }
 
     #[test]
+    fn test_rtd_feat() {
+        let d = Rtd::default();
+        assert_eq!(false, d.feat("report_metadata"));
+        assert_eq!(false, d.feat("report_mime"));
+        assert_eq!(false, d.feat("mask_highlights"));
+        assert_eq!(false, d.feat("send_notice"));
+        assert_eq!(false, d.feat("history"));
+        assert_eq!(false, d.feat("invite"));
+        assert_eq!(false, d.feat("autosave"));
+        assert_eq!(false, d.feat("send_errors_to_poster"));
+        assert_eq!(false, d.feat("reply_with_errors"));
+        assert_eq!(false, d.feat("partial_urls"));
+        assert_eq!(false, d.feat("nick_response"));
+        assert_eq!(false, d.feat("reconnect"));
+    }
+
+    #[test]
     fn test_features_get() {
         let c = Conf::default();
         c.features.get("report_metadata").unwrap();
