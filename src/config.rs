@@ -112,6 +112,13 @@ impl Default for Parameters {
     }
 }
 
+#[macro_export]
+macro_rules! param {
+    ($rtd:ident, $name:ident) => {
+        $rtd.conf.params.$name
+    };
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct Http {
@@ -702,5 +709,14 @@ mod tests {
         c.features.get("nick_response").unwrap();
         c.features.get("reconnect").unwrap();
         assert!(c.features.get("flying_pigs").is_err());
+    }
+
+    #[test]
+    fn test_param_macro() {
+        let mut rtd = Rtd::default();
+        assert_eq!(10, param!(rtd, url_limit));
+
+        rtd.conf.params.url_limit = 100;
+        assert_eq!(100, param!(rtd, url_limit));
     }
 }
