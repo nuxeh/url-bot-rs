@@ -4,6 +4,7 @@ use failure::Error;
 use reqwest::{Client, header, RedirectPolicy, Response, Url};
 use cookie::Cookie;
 use std::io::Read;
+use std::thread;
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
 
@@ -27,6 +28,7 @@ pub struct Session {
     pub url: String,
     pub cookies: Vec<String>,
     pub request_count: u8,
+    pub retry_count: u8,
     pub rtd: Rtd,
 }
 
@@ -138,6 +140,20 @@ impl Session {
                     bail!("Too many redirects, max {}",
                         http!(self.rtd, max_redirections));
                 }
+            }
+
+            else if resp.status().is_server_error() {
+                // limit the number of retries
+                self.retry_count += 1;
+                if self.retry_count > http!(self.rtd, max_retries) {
+                    let r = resp.error_for_status()?;
+                    bail!("Unhandled request status: {}", r.status());
+                }
+
+                let timeout = http!(self.rtd, retry_delay_s);
+                debug!("received server error ({}), retrying in {}s",
+                    resp.status(), timeout);
+                thread::sleep(Duration::from_secs(timeout));
             }
 
             else if resp.status().is_success() {

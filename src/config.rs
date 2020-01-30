@@ -122,7 +122,7 @@ pub struct Http {
     pub timeout_s: u64,
     pub max_redirections: u8,
     pub max_retries: u8,
-    pub retry_delay_s: u8,
+    pub retry_delay_s: u64,
     pub accept_lang: String,
     pub user_agent: Option<String>,
 }
