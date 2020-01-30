@@ -184,7 +184,7 @@ fn run_instance(conf: &PathBuf) -> Result<(), Error> {
             Err(e) => error!("[{}] disconnected: {}", net, e),
         };
 
-        if !rtd.conf.features.reconnect {
+        if !feat!(rtd, reconnect) {
             break Ok(());
         }
 
@@ -205,7 +205,7 @@ fn connect_instance(rtd: &Rtd) -> Result<(), Error> {
         Database::open_in_memory()?
     };
 
-    if rtd.conf.features.history && rtd.paths.db.is_none() {
+    if feat!(rtd, history) && rtd.paths.db.is_none() {
         info!("[{}] using in-memory database", net);
     }
 

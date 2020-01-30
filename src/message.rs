@@ -5,7 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use reqwest::Url;
 use regex::Regex;
 
-use super::param;
+use super::{feat, param};
 use super::http::resolve_url;
 use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;
@@ -31,7 +31,7 @@ pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: 
 }
 
 fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
-    if !rtd.feat("autosave") {
+    if !feat!(rtd, autosave) {
         return;
     }
 
@@ -48,7 +48,7 @@ fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
 }
 
 fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
-    if !rtd.feat("invite") {
+    if !feat!(rtd, invite) {
         return;
     }
 
@@ -63,7 +63,7 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
     } else {
         info!("joined {}", chan);
 
-        if rtd.feat("autosave") {
+        if feat!(rtd, autosave) {
             rtd.conf.add_channel(chan.to_string());
             rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
                 error!("error writing config: {}", err);
@@ -142,7 +142,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         }
 
         // get a full URL for tokens without a scheme
-        let maybe_token = if rtd.feat("partial_urls") {
+        let maybe_token = if feat!(rtd, partial_urls) {
             add_scheme_for_tld(token)
         } else {
             None
@@ -189,7 +189,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         };
 
         // check for pre-post
-        let pre_post = if rtd.feat("history") {
+        let pre_post = if feat!(rtd, history) {
             db.check_prepost(token)
         } else {
             Ok(None)
@@ -202,7 +202,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         };
 
         // limit pre-post to same channel if required by configuration
-        let pre_post = if rtd.conf.features.cross_channel_history {
+        let pre_post = if feat!(rtd, cross_channel_history) {
             pre_post
         } else {
             pre_post
@@ -218,7 +218,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         // generate response string
         let mut msg = match pre_post {
             Ok(Some(previous_post)) => {
-                let user = if rtd.feat("mask_highlights") {
+                let user = if feat!(rtd, mask_highlights) {
                     create_non_highlighting_name(&previous_post.user)
                 } else {
                     previous_post.user
@@ -232,7 +232,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
             },
             Ok(None) => {
                 // add new log entry to database, if posted in a channel
-                if rtd.feat("history") && !pre_post_found && msg.is_chanmsg {
+                if feat!(rtd, history) && !pre_post_found && msg.is_chanmsg {
                     if let Err(err) = db.add_log(&entry) {
                         error!("SQL error: {}", err);
                     }
@@ -269,7 +269,7 @@ fn respond<S>(client: &IrcClient, rtd: &Rtd, msg: &Msg, text: S)
 where
     S: ToString + std::fmt::Display,
 {
-    let result = if rtd.feat("send_notice") && msg.is_chanmsg {
+    let result = if feat!(rtd, send_notice) && msg.is_chanmsg {
         client.send_notice(&msg.target, &text)
     } else {
         client.send_privmsg(&msg.target, &text)
@@ -286,14 +286,14 @@ where
 {
     // reply with error, if message was sent in a channel
     // always reply with errors in queries
-    if !msg.is_chanmsg || rtd.feat("reply_with_errors") {
+    if !msg.is_chanmsg || feat!(rtd, reply_with_errors) {
         respond(client, rtd, &msg, &text);
     };
 
     // send errors to poster by query
     // do not send if link was already sent in a query, since this
     // duplicates messages
-    if msg.is_chanmsg && rtd.feat("send_errors_to_poster") {
+    if msg.is_chanmsg && feat!(rtd, send_errors_to_poster) {
         client.send_privmsg(&msg.sender, &text).unwrap();
     };
 
@@ -486,8 +486,8 @@ mod tests {
     #[test]
     fn test_process_titles_repost() {
         let mut rtd = Rtd::default();
-        rtd.conf.features.history = true;
-        rtd.conf.features.cross_channel_history = false;
+        feat!(rtd, history) = true;
+        feat!(rtd, cross_channel_history) = false;
 
         let msg = Msg::new(&rtd, "testnick", "#test", "http://127.0.0.1:8084/");
         let db = Database::open_in_memory().unwrap();
@@ -519,7 +519,7 @@ mod tests {
             });
 
         // pre-post with masked highlights enabled
-        rtd.conf.features.mask_highlights = true;
+        feat!(rtd, mask_highlights) = true;
 
         let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
         assert_eq!(1, res.len());
@@ -535,7 +535,7 @@ mod tests {
                 }
             });
 
-        rtd.conf.features.mask_highlights = false;
+        feat!(rtd, mask_highlights) = false;
 
         let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://127.0.0.1:8084/");
 
@@ -548,7 +548,7 @@ mod tests {
             .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), *v));
 
         // cross-posted history is enabled
-        rtd.conf.features.cross_channel_history = true;
+        feat!(rtd, cross_channel_history) = true;
 
         let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
         assert_eq!(1, res.len());
@@ -596,7 +596,7 @@ mod tests {
     #[ignore]
     fn test_process_titles_partial() {
         let mut rtd = Rtd::default();
-        rtd.conf.features.partial_urls = true;
+        feat!(rtd, partial_urls) = true;
 
         let db = Database::open_in_memory().unwrap();
 

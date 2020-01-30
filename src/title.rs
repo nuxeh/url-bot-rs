@@ -5,11 +5,12 @@ use mime::Mime;
 use scraper::{Html, Selector};
 use std::io::Cursor;
 
+use super::feat;
 use super::config::Rtd;
 
 /// Format a mime string
 pub fn get_mime(rtd: &Rtd, mime: &Mime, size: &str) -> Option<String> {
-    if rtd.conf.features.report_mime {
+    if feat!(rtd, report_mime) {
         Some(format!("{} {}", mime, size.replace(" ", "")))
     } else {
         None
@@ -32,7 +33,7 @@ fn get_image_mime(format: ImageFormat) -> Option<Mime> {
 
 /// Attempt to get metadata from an image
 pub fn get_image_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
-    if !rtd.conf.features.report_metadata {
+    if !feat!(rtd, report_metadata) {
         return None;
     }
 
@@ -176,13 +177,13 @@ mod tests {
         let f = File::open(file).unwrap();
         f.take(100 * 1024).read_to_end(&mut body).unwrap();
 
-        rtd.conf.features.report_metadata = true;
+        feat!(rtd, report_metadata) = true;
         assert_eq!(
             Some(String::from(result)),
             get_image_metadata(&rtd, &body)
         );
 
-        rtd.conf.features.report_metadata = false;
+        feat!(rtd, report_metadata) = false;
         assert_eq!(
             None,
             get_image_metadata(&rtd, &body)
@@ -192,7 +193,7 @@ mod tests {
     #[test]
     fn empty_no_metadata() {
         let mut rtd: Rtd = Rtd::default();
-        rtd.conf.features.report_metadata = true;
+        feat!(rtd, report_metadata) = true;
         let nothing = [0; 100 * 1024];
         assert_eq!(None, get_image_metadata(&rtd, &nothing));
     }

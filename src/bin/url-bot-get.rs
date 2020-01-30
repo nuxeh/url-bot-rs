@@ -35,7 +35,7 @@ pub struct Args {
     flag_curl: bool,
 }
 
-extern crate url_bot_rs;
+#[macro_use] extern crate url_bot_rs;
 
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
@@ -96,8 +96,8 @@ fn main() {
 
     // create configuration
     let mut rtd: Rtd = Rtd::default();
-    rtd.conf.features.report_metadata = args.flag_metadata;
-    rtd.conf.features.report_mime = args.flag_mime;
+    feat!(rtd, report_metadata) = args.flag_metadata;
+    feat!(rtd, report_mime) = args.flag_mime;
 
     // set session properties for the request
     let mut session = Session::new(&rtd);

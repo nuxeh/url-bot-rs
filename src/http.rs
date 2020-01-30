@@ -280,8 +280,8 @@ mod tests {
         let mut rtd: Rtd = Rtd::default();
 
         // metadata and mime disabled
-        rtd.conf.features.report_metadata = false;
-        rtd.conf.features.report_mime = false;
+        feat!(rtd, report_metadata) = false;
+        feat!(rtd, report_mime) = false;
 
         let files = vec![
             "test/img/test.gif",
@@ -294,8 +294,8 @@ mod tests {
         }
 
         // metadata and mime enabled
-        rtd.conf.features.report_metadata = true;
-        rtd.conf.features.report_mime = true;
+        feat!(rtd, report_metadata) = true;
+        feat!(rtd, report_mime) = true;
 
         let mut files = vec![
             ("test/img/test.png", "image/png 800×400"),

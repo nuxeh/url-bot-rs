@@ -46,27 +46,13 @@ pub struct Features {
     pub reconnect: bool,
 }
 
-/// Get a feature enabled value from a str
-/// TODO: implement with serde/syn, or a macro, to avoid replication
-impl Features {
-    fn get(&self, name: &str) -> Result<bool, Error> {
-        match name {
-            "report_metadata" => Ok(self.report_metadata),
-            "report_mime" => Ok(self.report_mime),
-            "mask_highlights" => Ok(self.mask_highlights),
-            "send_notice" => Ok(self.send_notice),
-            "history" => Ok(self.history),
-            "invite" => Ok(self.invite),
-            "autosave" => Ok(self.autosave),
-            "send_errors_to_poster" => Ok(self.send_errors_to_poster),
-            "reply_with_errors" => Ok(self.reply_with_errors),
-            "partial_urls" => Ok(self.partial_urls),
-            "nick_response" => Ok(self.nick_response),
-            "reconnect" => Ok(self.reconnect),
-            _ => bail!("unknown feature: {}", name),
-        }
-    }
+#[macro_export]
+macro_rules! feat {
+    ($rtd:expr, $name:ident) => {
+        $rtd.conf.features.$name
+    };
 }
+
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "kebab-case")]
@@ -280,13 +266,6 @@ impl Rtd {
         self.conf.client.version = Some(VERSION.to_string());
 
         Ok(self.clone())
-    }
-
-    /// Get a feature's enabled status from the configuration.
-    ///
-    /// Panics if the feature is not found.
-    pub fn feat(&self, name: &str) -> bool {
-        self.conf.features.get(name).unwrap()
     }
 
     fn get_db_path(&mut self) -> Option<PathBuf> {
@@ -685,50 +664,19 @@ mod tests {
     }
 
     #[test]
-    fn test_rtd_feat() {
-        let d = Rtd::default();
-        assert_eq!(false, d.feat("report_metadata"));
-        assert_eq!(false, d.feat("report_mime"));
-        assert_eq!(false, d.feat("mask_highlights"));
-        assert_eq!(false, d.feat("send_notice"));
-        assert_eq!(false, d.feat("history"));
-        assert_eq!(false, d.feat("invite"));
-        assert_eq!(false, d.feat("autosave"));
-        assert_eq!(false, d.feat("send_errors_to_poster"));
-        assert_eq!(false, d.feat("reply_with_errors"));
-        assert_eq!(false, d.feat("partial_urls"));
-        assert_eq!(false, d.feat("nick_response"));
-        assert_eq!(false, d.feat("reconnect"));
-    }
-
-    #[test]
-    fn test_features_get() {
-        let c = Conf::default();
-        c.features.get("report_metadata").unwrap();
-        c.features.get("report_mime").unwrap();
-        c.features.get("mask_highlights").unwrap();
-        c.features.get("send_notice").unwrap();
-        c.features.get("history").unwrap();
-        c.features.get("invite").unwrap();
-        c.features.get("autosave").unwrap();
-        c.features.get("send_errors_to_poster").unwrap();
-        c.features.get("reply_with_errors").unwrap();
-        c.features.get("partial_urls").unwrap();
-        c.features.get("nick_response").unwrap();
-        c.features.get("reconnect").unwrap();
-        assert!(c.features.get("flying_pigs").is_err());
-    }
-
-    #[test]
     fn test_macros() {
         let mut rtd = Rtd::default();
         assert_eq!(10, param!(rtd, url_limit));
         assert_eq!(10, http!(rtd, max_redirections));
+        assert_eq!(!feat!(rtd, reconnect));
 
         rtd.conf.params.url_limit = 100;
         assert_eq!(100, param!(rtd, url_limit));
 
         rtd.conf.http_params.max_redirections = 100;
         assert_eq!(100, http!(rtd, max_redirections));
+
+        rtd.conf.features.reconnect = true;
+        assert_eq!(!feat!(rtd, reconnect));
     }
 }
