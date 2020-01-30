@@ -97,7 +97,7 @@ impl Default for Parameters {
 
 #[macro_export]
 macro_rules! param {
-    ($rtd:ident, $name:ident) => {
+    ($rtd:expr, $name:ident) => {
         $rtd.conf.params.$name
     };
 }
