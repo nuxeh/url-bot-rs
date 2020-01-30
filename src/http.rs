@@ -609,21 +609,27 @@ mod tests {
     fn test_retry_server_errors() {
         // 500 Internal Server Error https://http.cat/500
         test_retry_server_errors_n_status(1, 500).unwrap();
-        test_retry_server_errors_n_status(10, 500).unwrap();
+        test_retry_server_errors_n_status(2, 500).unwrap();
+        assert!(test_retry_server_errors_n_status(3, 500).is_err());
 
         // 503 Service Unavailable https://http.cat/503
         test_retry_server_errors_n_status(1, 503).unwrap();
-        test_retry_server_errors_n_status(10, 503).unwrap();
+        test_retry_server_errors_n_status(2, 503).unwrap();
+        assert!(test_retry_server_errors_n_status(3, 503).is_err());
 
         // 504 Gateway Timeout https://http.cat/504
         test_retry_server_errors_n_status(1, 504).unwrap();
-        test_retry_server_errors_n_status(10, 504).unwrap();
+        test_retry_server_errors_n_status(2, 504).unwrap();
+        assert!(test_retry_server_errors_n_status(3, 504).is_err());
     }
 
     fn test_retry_server_errors_n_status(n: usize, status: u16) -> Result<String, Error> {
         let bind = "0.0.0.0:28268";
         let url = format!("http://{}/serr", bind);
-        let timeout = Duration::from_millis(200);
+        let timeout = Duration::from_secs(2);
+        let mut rtd = Rtd::default();
+        http!(rtd, max_retries) = 2;
+        http!(rtd, retry_delay_s) = 1;
 
         // throttle between runs
         thread::sleep(Duration::from_millis(50));
@@ -635,12 +641,10 @@ mod tests {
             // TODO: test that the client uses a delay before repeat requests
             for _ in 0..n {
                 let rq = server.recv().unwrap();
-                if rq.url() == "/serr" {
-                    let resp = Response::from_string("")
-                        .with_status_code(status);
-                    thread::sleep(Duration::from_millis(10));
-                    rq.respond(resp).unwrap();
-                }
+                let resp = Response::from_string("")
+                    .with_status_code(status);
+                thread::sleep(Duration::from_millis(10));
+                rq.respond(resp).unwrap();
             }
 
             // send success. if the resolve function errors, it will send no
@@ -656,7 +660,7 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        let res = resolve_url(&url, &Rtd::default());
+        let res = resolve_url(&url, &rtd);
         server_thread.join().unwrap();
         res
     }
