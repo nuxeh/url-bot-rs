@@ -102,7 +102,7 @@ impl Msg {
 
 fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
     // ignore messages sent to status channels
-    if rtd.conf.params.status_channels.contains(&msg.target.to_string()) {
+    if param!(rtd, status_channels).contains(&msg.target.to_string()) {
         if msg.is_ping || contains_urls(&msg.text) {
             let m = format!("ignoring messages in channel {}", msg.target);
             client.send_privmsg(&msg.sender, m).unwrap();
@@ -121,7 +121,7 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
 
     // if we had no url message and got a ping send nick response
     if titles.is_empty() && msg.is_ping {
-        respond(client, rtd, &msg, &rtd.conf.params.nick_response_str);
+        respond(client, rtd, &msg, &param!(rtd, nick_response_str));
     }
 
 }
@@ -255,7 +255,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
 
         // limit the number of processed URLs
         num_processed += 1;
-        if num_processed == rtd.conf.params.url_limit {
+        if num_processed == param!(rtd, url_limit) {
             break;
         }
     };
@@ -385,17 +385,17 @@ pub fn msg_status_chans<S>(client: &IrcClient, rtd: &Rtd, msg: S)
 where
     S: ToString + std::fmt::Display,
 {
-    if rtd.conf.params.status_channels.is_empty() {
+    if param!(rtd, status_channels).is_empty() {
         return;
     };
 
-    rtd.conf.params.status_channels
+    param!(rtd, status_channels)
         .iter()
         .for_each(|c| client.send_join(c).unwrap_or_else(|err| {
             error!("Error joining status channel {}: {}", c, err)
         }));
 
-    rtd.conf.params.status_channels
+    param!(rtd, status_channels)
         .iter()
         .for_each(|c| client.send_privmsg(c, &msg).unwrap());
 }

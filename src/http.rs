@@ -170,7 +170,7 @@ impl Session {
 
 pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
     let mut resp = Session::new()
-        .accept_lang(&rtd.conf.params.accept_lang)
+        .accept_lang(&param!(rtd, accept_lang))
         .request(url)?;
 
     get_title(&mut resp, rtd, false)

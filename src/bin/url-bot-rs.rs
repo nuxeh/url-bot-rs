@@ -168,7 +168,7 @@ fn run_instance(conf: &PathBuf) -> Result<(), Error> {
         .load()?;
 
     let net = &rtd.conf.network.name;
-    let timeout = rtd.conf.params.reconnect_timeout;
+    let timeout = param!(rtd, reconnect_timeout);
     let sleep_dur = Duration::from_secs(timeout);
 
     if rtd.conf.network.enable {
