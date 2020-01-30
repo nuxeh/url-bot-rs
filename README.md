@@ -172,6 +172,17 @@ The `[parameters]` section includes a number of tunable parameters:
 - `nick_response_str` (string) the message to send for the nick response feature.
 - `reconnect_timeout` (u32) amount of time to wait before reconnecting.
 
+The `[http]` section contains options for HTTP requests used to obtain titles:
+
+- `timeout_s` (u64) the timeout for any given request.
+- `max_redirections` (u8) the maximum number of HTTP redirections to follow.
+- `max_retries` (u8) the maximum number of times to retry after receiving an
+  HTTP error response which may be temporary (e.g. `503 Service Unavailable`).
+- `retry_delay_s` (u64) the number of seconds to wait before retrying.
+- `accept_lang` (string) the `Accept-Lang` HTTP request header to send when
+  making a request.
+- `user_agent` (string) the user agent string to send in HTTP requests.
+
 The `[database]` section contains options for the database, as follows:
 
 - `type` (string) is the type of database to use, e.g. `sqlite`.
