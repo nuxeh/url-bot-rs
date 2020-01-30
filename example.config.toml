@@ -19,14 +19,16 @@ reconnect = false
 
 [parameters]
 url_limit = 10
-accept_lang = "en"
 status_channels = []
 nick_response_str = ""
 reconnect_timeout = 10
 
 [http]
-timeout = 10
+timeout_s = 10
 max_redirections = 10
+max_retries = 3
+retry_delay_s = 5
+accept_lang = "en"
 
 [database]
 type = "in-memory"

@@ -100,22 +100,22 @@ fn main() {
     rtd.conf.features.report_mime = args.flag_mime;
 
     // set session properties for the request
-    let mut session = Session::new();
+    let mut session = Session::new(&rtd);
     if let Some(v) = args.flag_timeout {
         info!("overriding timeout to {}s", v);
-        session.params.timeout_s = v;
+        rtd.conf.http_params.timeout_s = v;
     }
     if let Some(v) = args.flag_redirect {
         info!("overriding redirect limit to {}", v);
-        session.params.redirect_limit = v;
+        rtd.conf.http_params.max_redirections = v;
     }
     if let Some(v) = args.flag_user_agent {
         info!("overriding user-agent to \"{}\"", v);
-        session.params.user_agent = v;
+        rtd.conf.http_params.user_agent = Some(v);
     }
     if let Some(v) = args.flag_accept_lang {
         info!("overriding accept-lang to \"{}\"", v);
-        session.accept_lang(&v);
+        rtd.conf.http_params.accept_lang = v;
     }
 
     // get short url, if applicable

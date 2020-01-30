@@ -93,8 +93,6 @@ pub struct Database {
 #[serde(default)]
 pub struct Parameters {
     pub url_limit: u8,
-    // accept_lang should be in Http, but left here for existing configs
-    pub accept_lang: String,
     pub status_channels: Vec<String>,
     pub nick_response_str: String,
     pub reconnect_timeout: u64,
@@ -104,7 +102,6 @@ impl Default for Parameters {
     fn default() -> Self {
         Self {
             url_limit: 10,
-            accept_lang: "en".to_string(),
             status_channels: vec![],
             nick_response_str: "".to_string(),
             reconnect_timeout: 10,
@@ -122,21 +119,32 @@ macro_rules! param {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct Http {
-    pub timeout: u8,
+    pub timeout_s: u64,
     pub max_redirections: u8,
-    pub server_error_retries: u8,
+    pub max_retries: u8,
     pub retry_delay_s: u8,
+    pub accept_lang: String,
+    pub user_agent: Option<String>,
 }
 
 impl Default for Http {
     fn default() -> Self {
         Self {
-            timeout: 10,
+            timeout_s: 10,
             max_redirections: 10,
-            server_error_retries: 3,
+            max_retries: 3,
             retry_delay_s: 5,
+            accept_lang: "en".to_string(),
+            user_agent: None,
         }
     }
+}
+
+#[macro_export]
+macro_rules! http {
+    ($rtd:expr, $name:ident) => {
+        $rtd.conf.http_params.$name
+    };
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -147,8 +155,8 @@ pub struct Conf {
     pub features: Features,
     #[serde(default, rename = "parameters")]
     pub params: Parameters,
-    #[serde(default)]
-    pub http: Http,
+    #[serde(default, rename = "http")]
+    pub http_params: Http,
     #[serde(default)]
     pub database: Database,
     #[serde(rename = "connection")]
@@ -195,7 +203,7 @@ impl Default for Conf {
             network: Network::default(),
             features: Features::default(),
             params: Parameters::default(),
-            http: Http::default(),
+            http_params: Http::default(),
             database: Database::default(),
             client: IrcConfig {
                 nickname: Some("url-bot-rs".to_string()),
@@ -712,11 +720,15 @@ mod tests {
     }
 
     #[test]
-    fn test_param_macro() {
+    fn test_macros() {
         let mut rtd = Rtd::default();
         assert_eq!(10, param!(rtd, url_limit));
+        assert_eq!(10, http!(rtd, max_redirections));
 
         rtd.conf.params.url_limit = 100;
         assert_eq!(100, param!(rtd, url_limit));
+
+        rtd.conf.http_params.max_redirections = 100;
+        assert_eq!(100, http!(rtd, max_redirections));
     }
 }

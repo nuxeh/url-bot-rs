@@ -7,7 +7,7 @@ use std::io::Read;
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
 
-use super::param;
+use super::http;
 use super::config::Rtd;
 use super::buildinfo;
 use super::title::{parse_title, get_mime, get_image_metadata};
@@ -21,41 +21,21 @@ lazy_static! {
     );
 }
 
-pub struct RequestParams {
-    pub user_agent: String,
-    pub timeout_s: u64,
-    pub redirect_limit: u8,
-    pub accept_lang: String
-}
-
-impl Default for RequestParams {
-    fn default() -> RequestParams {
-        RequestParams {
-            user_agent: USER_AGENT.to_string(),
-            timeout_s: 10,
-            redirect_limit: 10,
-            accept_lang: "en".to_string(),
-        }
-    }
-}
-
 // TODO: reimplement this with upstream reqwest, which now supports cookies
 #[derive(Default)]
 pub struct Session {
     pub url: String,
     pub cookies: Vec<String>,
     pub request_count: u8,
-    pub params: RequestParams,
+    pub rtd: Rtd,
 }
 
 impl Session {
-    pub fn new() -> Session {
-        Session::default()
-    }
-
-    pub fn accept_lang(&mut self, accept_lang: &str) -> &mut Session {
-        self.params.accept_lang = accept_lang.to_string();
-        self
+    pub fn new(rtd: &Rtd) -> Session {
+        Session {
+            rtd: rtd.clone(),
+            ..Session::default()
+        }
     }
 
     /// Make a request attempting to conform to RFC 6265
@@ -73,7 +53,7 @@ impl Session {
         let client = Client::builder()
             .gzip(false)
             .redirect(redirect)
-            .timeout(Duration::from_secs(self.params.timeout_s))
+            .timeout(Duration::from_secs(http!(self.rtd, timeout_s)))
             .build()?;
 
         self.url = url.to_string();
@@ -88,11 +68,17 @@ impl Session {
                 .intersperse("; ".to_string())
                 .collect();
 
+            let user_agent = if let Some(u) = &http!(self.rtd, user_agent) {
+                u.clone()
+            } else {
+                USER_AGENT.to_string()
+            };
+
             // set request headers and make request
             let resp = client.get(&self.url)
                 .header(header::COOKIE, cookie_string)
-                .header(header::USER_AGENT, self.params.user_agent.as_str())
-                .header(header::ACCEPT_LANGUAGE, self.params.accept_lang.as_str())
+                .header(header::USER_AGENT, user_agent)
+                .header(header::ACCEPT_LANGUAGE, http!(self.rtd, accept_lang).as_str())
                 .header(header::ACCEPT_ENCODING, "identity")
                 .send()?;
 
@@ -148,9 +134,9 @@ impl Session {
 
                 // limit the number of redirections
                 self.request_count += 1;
-                if self.request_count > self.params.redirect_limit {
+                if self.request_count > http!(self.rtd, max_redirections) {
                     bail!("Too many redirects, max {}",
-                        self.params.redirect_limit);
+                        http!(self.rtd, max_redirections));
                 }
             }
 
@@ -170,10 +156,7 @@ impl Session {
 }
 
 pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
-    let mut resp = Session::new()
-        .accept_lang(&param!(rtd, accept_lang))
-        .request(url)?;
-
+    let mut resp = Session::new(rtd).request(url)?;
     get_title(&mut resp, rtd, false)
 }
 
