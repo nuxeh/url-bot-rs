@@ -4,7 +4,7 @@
  * URL parsing IRC bot
  *
  */
-extern crate url_bot_rs;
+#[macro_use] extern crate url_bot_rs;
 
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;

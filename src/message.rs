@@ -5,6 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use reqwest::Url;
 use regex::Regex;
 
+use super::param;
 use super::http::resolve_url;
 use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;

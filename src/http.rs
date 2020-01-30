@@ -7,6 +7,7 @@ use std::io::Read;
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
 
+use super::param;
 use super::config::Rtd;
 use super::buildinfo;
 use super::title::{parse_title, get_mime, get_image_metadata};
