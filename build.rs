@@ -19,8 +19,7 @@ fn get_assets_dir() -> PathBuf{
 
     let mut path = out_path
       .ancestors()
-      .skip(3)
-      .next()
+      .nth(4)
       .unwrap()
       .to_owned();
     path.push("assets");
