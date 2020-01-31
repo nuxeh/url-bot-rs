@@ -1,4 +1,5 @@
 - Retry HTTP requests on server errors.
+- Remove logging of errors to database
 - Refactor configuration for HTTP. `parameters.accept_lang` is now
   `http.accept_lang` in the configuration.
 - Add configuration feature to limit history to same channels
