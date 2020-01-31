@@ -4,6 +4,7 @@
 [![test](https://github.com/nuxeh/url-bot-rs/workflows/tests/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Atests)
 [![clippy](https://github.com/nuxeh/url-bot-rs/workflows/clippy/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Aclippy)
 [![macOS](https://github.com/nuxeh/url-bot-rs/workflows/macOS/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3AmacOS)
+[![windows](https://github.com/nuxeh/url-bot-rs/workflows/windows/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Awindows)
 [![build](https://img.shields.io/travis/nuxeh/url-bot-rs/master)](https://travis-ci.org/nuxeh/url-bot-rs)
 [![coveralls](https://img.shields.io/coveralls/github/nuxeh/url-bot-rs/master)](https://coveralls.io/github/nuxeh/url-bot-rs?branch=master)
 [![codecov](https://codecov.io/gh/nuxeh/url-bot-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/nuxeh/url-bot-rs)

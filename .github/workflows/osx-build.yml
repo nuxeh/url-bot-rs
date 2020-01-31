@@ -14,14 +14,13 @@ jobs:
       with:
         profile: minimal
         toolchain: stable
-        components: clippy
         override: true
 
     - name: Install dependencies
       run: brew install sqlite3
 
     - name: Build
-      run: PATH=$PATH:$HOME/.cargo/bin cargo build --verbose
+      run: cargo build --verbose
 
     - name: Build tests
       run: cargo test --verbose --no-run
