@@ -668,7 +668,7 @@ mod tests {
         let mut rtd = Rtd::default();
         assert_eq!(10, param!(rtd, url_limit));
         assert_eq!(10, http!(rtd, max_redirections));
-        assert_eq!(!feat!(rtd, reconnect));
+        assert!(!feat!(rtd, reconnect));
 
         rtd.conf.params.url_limit = 100;
         assert_eq!(100, param!(rtd, url_limit));
@@ -677,6 +677,6 @@ mod tests {
         assert_eq!(100, http!(rtd, max_redirections));
 
         rtd.conf.features.reconnect = true;
-        assert_eq!(!feat!(rtd, reconnect));
+        assert!(feat!(rtd, reconnect));
     }
 }

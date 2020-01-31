@@ -261,6 +261,7 @@ mod tests {
     extern crate tiny_http;
 
     use super::*;
+    use crate::feat;
     use std::fs::File;
     use std::path::{Path, PathBuf};
     use std::thread;
