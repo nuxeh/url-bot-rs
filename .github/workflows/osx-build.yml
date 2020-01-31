@@ -9,11 +9,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        components: clippy
+        override: true
+
     - name: Install dependencies
       run: brew install sqlite3
-    - name: Install Rust
-      run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
     - name: Build
       run: PATH=$PATH:$HOME/.cargo/bin cargo build --verbose
+
+    - name: Build tests
+      run: cargo test --verbose --no-run
+
     - name: Run tests
-      run: PATH=$PATH:$HOME/.cargo/bin cargo test --verbose -- --test-threads=1
+      run: cargo test --verbose
