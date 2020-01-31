@@ -1,0 +1,32 @@
+name: windows
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Install dependencies
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install sqlite
+
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        components: clippy
+        override: true
+
+    - name: Build
+      run: cargo build --verbose
+
+    - name: Build tests
+      run: cargo test --verbose --no-run
+
+    - name: Run tests
+      run: cargo test --verbose
