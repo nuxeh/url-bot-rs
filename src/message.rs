@@ -194,6 +194,20 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
             Ok(None)
         };
 
+        // limit pre-post to same channel if required by configuration
+        let pre_post = if rtd.conf.features.cross_channel_history {
+            pre_post
+        } else {
+            pre_post
+                .map(|p| p.and_then(|p| {
+                    if p.channel == msg.target {
+                        Some(p)
+                    } else {
+                        None
+                    }
+                }))
+        };
+
         // generate response string
         let mut msg = match pre_post {
             Ok(Some(previous_post)) => {

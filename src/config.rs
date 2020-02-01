@@ -36,6 +36,7 @@ pub struct Features {
     pub mask_highlights: bool,
     pub send_notice: bool,
     pub history: bool,
+    pub cross_channel_history: bool,
     pub invite: bool,
     pub autosave: bool,
     pub send_errors_to_poster: bool,
