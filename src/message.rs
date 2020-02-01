@@ -488,54 +488,72 @@ mod tests {
         let d = r#"( [[:alpha:]]{3}){2} [\s\d]{2} \d{2}:\d{2}:\d{2} \d{4}"#;
         let date = Regex::new(&d).unwrap();
 
-        process_titles(&rtd, &db, &msg)
-            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), v));
+        // no pre-post
+        let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
+        assert_eq!(1, res.len());
+        assert!(if let TITLE(_) = res[0] { true } else { false });
 
-        process_titles(&rtd, &db, &msg)
+        res.iter()
+            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), *v));
+
+        // pre-post
+        let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
+        assert_eq!(1, res.len());
+        assert!(if let TITLE(_) = res[0] { true } else { false });
+
+        res.iter()
             .for_each(|v| {
                 println!("{:?}", v);
                 if let TITLE(s) = v {
                     assert!(s.starts_with("⤷ |t| → "));
                     assert!(date.is_match(&s));
                     assert!(s.ends_with(" testnick (#test)"));
-                } else {
-                    assert!(false);
                 }
             });
 
+        // pre-post with masked highlights enabled
         rtd.conf.features.mask_highlights = true;
 
-        process_titles(&rtd, &db, &msg)
+        let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
+        assert_eq!(1, res.len());
+        assert!(if let TITLE(_) = res[0] { true } else { false });
+
+        res.iter()
             .for_each(|v| {
                 println!("{:?}", v);
                 if let TITLE(s) = v {
                     assert!(s.starts_with("⤷ |t| → "));
                     assert!(date.is_match(&s));
                     assert!(s.ends_with(" t\u{200c}estnick (#test)"));
-                } else {
-                    assert!(false);
                 }
             });
 
         rtd.conf.features.mask_highlights = false;
 
-        // no cross-posted history results if not enabled in configuration
         let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://0.0.0.0:8084/");
 
-        process_titles(&rtd, &db, &msg2)
-            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), v));
+        // cross-posted history is disabled
+        let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
+        assert_eq!(1, res.len());
+        assert!(if let TITLE(_) = res[0] { true } else { false });
 
+        res.iter()
+            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), *v));
+
+        // cross-posted history is enabled
         rtd.conf.features.cross_channel_history = true;
 
-        process_titles(&rtd, &db, &msg2)
+        let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
+        assert_eq!(1, res.len());
+        assert!(if let TITLE(_) = res[0] { true } else { false });
+
+        res.iter()
             .for_each(|v| {
                 println!("{:?}", v);
                 if let TITLE(s) = v {
                     assert!(s.starts_with("⤷ |t| → "));
                     assert!(date.is_match(&s));
                     assert!(s.ends_with(" testnick (#test)"));
-                } else {
-                    assert!(false);
                 }
             });
 
