@@ -480,6 +480,7 @@ mod tests {
     fn test_process_titles_repost() {
         let mut rtd = Rtd::default();
         rtd.conf.features.history = true;
+        rtd.conf.features.cross_channel_history = false;
 
         let msg = Msg::new(&rtd, "testnick", "#test", "http://127.0.0.1:8084/");
         let db = Database::open_in_memory().unwrap();
@@ -515,6 +516,29 @@ mod tests {
                     assert!(false);
                 }
             });
+
+        rtd.conf.features.mask_highlights = false;
+
+        // no cross-posted history results if not enabled in configuration
+        let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://0.0.0.0:8084/");
+
+        process_titles(&rtd, &db, &msg2)
+            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), v));
+
+        rtd.conf.features.cross_channel_history = true;
+
+        process_titles(&rtd, &db, &msg2)
+            .for_each(|v| {
+                println!("{:?}", v);
+                if let TITLE(s) = v {
+                    assert!(s.starts_with("⤷ |t| → "));
+                    assert!(date.is_match(&s));
+                    assert!(s.ends_with(" testnick (#test)"));
+                } else {
+                    assert!(false);
+                }
+            });
+
     }
 
     #[test]
