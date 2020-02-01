@@ -8,6 +8,7 @@ report_mime = false
 mask_highlights = false
 send_notice = false
 history = false
+cross_channel_history = false
 invite = false
 autosave = false
 send_errors_to_poster = false
