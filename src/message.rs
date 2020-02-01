@@ -470,7 +470,7 @@ mod tests {
         let msg = Msg::new(&rtd, "testnick", "#test", "http://0.0.0.0:8084/");
         let db = Database::open_in_memory().unwrap();
 
-        let d = r#"( [[:alpha:]]{3}){2} \d{2} \d{2}:\d{2}:\d{2} \d{4}"#;
+        let d = r#"( [[:alpha:]]{3}){2} [\s\d]{2} \d{2}:\d{2}:\d{2} \d{4}"#;
         let date = Regex::new(&d).unwrap();
 
         process_titles(&rtd, &db, &msg)
