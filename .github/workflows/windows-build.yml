@@ -12,7 +12,7 @@ jobs:
 
     - uses: crazy-max/ghaction-chocolatey@v1
       with:
-        args: install sqlite
+        args: install sqlite --debug --verbose
 
     - uses: actions-rs/toolchain@v1
       with:
@@ -21,7 +21,9 @@ jobs:
         override: true
 
     - name: Patch sqlite install
-      run: New-Item -ItemType SymbolicLink -Path c:\Shims\sqlite3.dll -Target C:\ProgramData\chocolatey\lib\SQLite\tools\sqlite3.dll
+      run: |
+        Get-Content -Path C:\ProgramData\chocolatey\logs\chocolatey.log
+        New-Item -ItemType SymbolicLink -Path c:\Shims\sqlite3.dll -Target C:\ProgramData\chocolatey\lib\SQLite\tools\sqlite3.dll
 
     - name: Build
       run: cargo build --verbose
