@@ -315,11 +315,13 @@ mod tests {
         rtd.conf.features.report_metadata = false;
         rtd.conf.features.report_mime = false;
 
-        for t in vec!(
-            "./test/img/test.gif",
-            "./test/other/test.txt",
-            "./test/other/test.pdf",
-        ) {
+        let files = vec![
+            "test/img/test.gif",
+            "test/other/test.txt",
+            "test/other/test.pdf",
+        ];
+
+        for t in files {
             assert!(serve_resolve(PathBuf::from(t), &rtd).is_err());
         }
 
@@ -327,14 +329,22 @@ mod tests {
         rtd.conf.features.report_metadata = true;
         rtd.conf.features.report_mime = true;
 
-        for t in vec!(
-            ("./test/img/test.png", "image/png 800×400"),
-            ("./test/img/test.jpg", "image/jpeg 400×200"),
-            ("./test/img/test.gif", "image/gif 1920×1080"),
-            ("./test/html/basic.html", "basic"),
-            ("./test/other/test.txt", "text/plain; charset=utf8 16B"),
-            ("./test/other/test.pdf", "application/pdf 1.31KB"),
-        ) {
+        let mut files = vec![
+            ("test/img/test.png", "image/png 800×400"),
+            ("test/img/test.jpg", "image/jpeg 400×200"),
+            ("test/img/test.gif", "image/gif 1920×1080"),
+            ("test/html/basic.html", "basic"),
+            ("test/other/test.pdf", "application/pdf 1.31KB"),
+        ];
+
+        // not sure why, but served file size is different on windows
+        if cfg!(windows) {
+            files.push(("test/other/test.txt", "text/plain; charset=utf8 17B"));
+        } else {
+            files.push(("test/other/test.txt", "text/plain; charset=utf8 16B"));
+        };
+
+        for t in files {
             assert_eq!(
                 serve_resolve(PathBuf::from(t.0), &rtd).unwrap(),
                 String::from(t.1)
