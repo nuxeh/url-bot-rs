@@ -20,7 +20,7 @@ jobs:
       run: cargo build --verbose --features "sqlite_bundled"
 
     - name: Build tests
-      run: cargo test --verbose --no-run
+      run: cargo test --verbose --no-run --features "sqlite_bundled"
 
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --verbose --features "sqlite_bundled"
