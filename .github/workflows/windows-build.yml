@@ -23,4 +23,4 @@ jobs:
       run: cargo test --verbose --no-run --features "sqlite_bundled"
 
     - name: Run tests
-      run: cargo test --verbose --features "sqlite_bundled"
+      run: cargo test --verbose --features "sqlite_bundled" -- --test-threads=1
