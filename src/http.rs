@@ -363,7 +363,7 @@ mod tests {
     // Spin up a local http server, and resolve the url served
     fn serve_resolve(path: PathBuf, rtd: &Rtd) -> Result<String, Error> {
         let server_thread = thread::spawn(move || {
-            let server = tiny_http::Server::http("0.0.0.0:28482").unwrap();
+            let server = tiny_http::Server::http("127.0.0.1:28482").unwrap();
             let rq = server.recv().unwrap();
             if rq.url() == "/test" {
                 let resp = Response::from_file(File::open(&path).unwrap())
@@ -382,7 +382,7 @@ mod tests {
         thread::sleep(Duration::from_millis(50));
 
         let db = Database::open_in_memory().unwrap();
-        let res = resolve_url("http://0.0.0.0:28482/test", &rtd, &db);
+        let res = resolve_url("http://127.0.0.1:28482/test", &rtd, &db);
         server_thread.join().unwrap();
         res
     }
@@ -403,12 +403,12 @@ mod tests {
             Header::from_bytes("accept-language", "en").unwrap(),
             Header::from_bytes("accept-encoding", "identity").unwrap(),
             Header::from_bytes("accept", "*/*").unwrap(),
-            Header::from_bytes("host", "0.0.0.0:28282").unwrap(),
+            Header::from_bytes("host", "127.0.0.1:28282").unwrap(),
         ];
 
         let (tx, rx) = mpsc::channel();
         let server_thread = thread::spawn(move || {
-            let server = tiny_http::Server::http("0.0.0.0:28282").unwrap();
+            let server = tiny_http::Server::http("127.0.0.1:28282").unwrap();
             let rq = server.recv().unwrap();
             if rq.url() == "/test" {
                 // send headers through mpsc channel
@@ -426,7 +426,7 @@ mod tests {
         thread::sleep(Duration::from_millis(50));
 
         let db = Database::open_in_memory().unwrap();
-        resolve_url("http://0.0.0.0:28282/test", &Rtd::default(), &db).unwrap();
+        resolve_url("http://127.0.0.1:28282/test", &Rtd::default(), &db).unwrap();
         let request_headers = rx.recv().unwrap();
 
         println!("Headers in request:\n{:?}", request_headers);
@@ -457,7 +457,7 @@ mod tests {
     }
 
     fn redirect_limit_n(n: u8, status: u16) -> Result<String, Error> {
-        let bind = "0.0.0.0:28270";
+        let bind = "127.0.0.1:28270";
         let url = format!("http://{}/rlim", bind);
         let url_bytes = url.clone().into_bytes();
         let header = Header::from_bytes("location", url_bytes.clone()).unwrap();
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn redirect_absolute_location() {
-        let bind = "0.0.0.0:28280";
+        let bind = "127.0.0.1:28280";
         let url = format!("http://{}/r_abs", bind);
         let url2 = format!("http://{}/r_abs_r", bind);
         let url2_bytes = url2.clone().into_bytes();
@@ -543,7 +543,7 @@ mod tests {
 
     #[test]
     fn redirect_relative_location() {
-        let bind = "0.0.0.0:28278";
+        let bind = "127.0.0.1:28278";
         let url = format!("http://{}/r_rel", bind);
         let h_loc = Header::from_bytes("location", "/r_rel_r").unwrap();
         let db = Database::open_in_memory().unwrap();
@@ -582,7 +582,7 @@ mod tests {
 
     #[test]
     fn redirect_no_redirection_location_provided() {
-        let bind = "0.0.0.0:28288";
+        let bind = "127.0.0.1:28288";
         let url = format!("http://{}/rerr", bind);
         let db = Database::open_in_memory().unwrap();
 
@@ -613,7 +613,7 @@ mod tests {
 
     #[test]
     fn redirect_with_cookie() {
-        let bind = "0.0.0.0:28286";
+        let bind = "127.0.0.1:28286";
         let url = format!("http://{}/rcookie", bind);
         let url_bytes = url.clone().into_bytes();
         let h_loc = Header::from_bytes("location", url_bytes.clone()).unwrap();
