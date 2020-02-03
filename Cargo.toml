@@ -57,6 +57,10 @@ version = "0.22.3"
 default-features = false
 features = ["gif_codec", "jpeg", "png_codec", "pnm", "tiff", "bmp"]
 
+[features]
+default = []
+sqlite_bundled = ["rusqlite/bundled"]
+
 [package.metadata.deb]
 extended-description = """\
 Standalone IRC bot; for resolving URLs posted, retrieving, and posting page
