@@ -314,7 +314,10 @@ mod tests {
 
         let example = fs::read_to_string("example.config.toml").unwrap();
         let written = fs::read_to_string(cfg_path).unwrap();
-        assert_eq!(example, written);
+
+        example.lines()
+            .zip(written.lines())
+            .for_each(|(a, b)| assert_eq!(a, b));
     }
 
     #[test]
@@ -501,7 +504,9 @@ mod tests {
             }
         }
 
-        assert_eq!(default, example);
+        default.lines()
+            .zip(example.lines())
+            .for_each(|(a, b)| assert_eq!(a, b));
     }
 
     #[test]
