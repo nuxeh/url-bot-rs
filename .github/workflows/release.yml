@@ -3,11 +3,11 @@ on:
     tags:
     - 'v[0-9]+.[0-9]+.[0-9]+'
 
-name: Make release
+name: release
 
 jobs:
   build:
-    name: Release
+    name: release
 
     runs-on: ubuntu-latest
 
@@ -61,4 +61,4 @@ jobs:
           CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
         run: |
           cargo login ${CRATES_IO_TOKEN}
-          cargo publish --dry-run
+          cargo publish
