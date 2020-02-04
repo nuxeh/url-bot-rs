@@ -1,3 +1,5 @@
+- Add configuration feature to limit history to same channels
+
 # v0.2.4
 
 - Allow build with bundled, statically linked, SQLite
