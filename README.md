@@ -20,6 +20,24 @@ For example:
     <user> http://rust-lang.org/
     <url-bot-rs> ⤷ The Rust Programming Language
 
+## Dependencies
+
+Currently, SQLite is a required dependency.
+
+On Linux or OSX, you can install SQLite as follows:
+
+| Platform | Configuration path                                 |
+|----------|----------------------------------------------------|
+| Debian   | `apt install sqlite3-dev`                          |
+| OSX      | `brew install sqlite3`                             |
+
+On Windows, or if preferred, also for Linux or OSX, bundled SQLite can also be
+used, where it is built and linked statically, by building with the
+"bundled_sqlite" feature enabled:
+
+    cargo build --features "sqlite_bundled"
+    cargo install url-bot-rs --features "sqlite_bundled"
+
 ## Quick install
 
     cargo install url-bot-rs
@@ -27,10 +45,11 @@ For example:
 To get started quickly with a working configuration, run `url-bot-rs` with no
 parameters, and edit the file as shown below.
 
-| Platform | Configuration path                                 |
-|----------|----------------------------------------------------|
-| Linux    | `~/.config/url-bot-rs/config.toml`                 |
-| OSX      | `~/Library/Preferences/org.url-bot-rs/config.toml` |
+| Platform | Configuration path                                              |
+|----------|-----------------------------------------------------------------|
+| Linux    | `~/.config/url-bot-rs/config.toml`                              |
+| OSX      | `~/Library/Preferences/org.url-bot-rs/config.toml`              |
+| Windows  | `C:\Users\<user>\AppData\Roaming\url-bot-rs\config\config.toml` |
 
 ## Build
 
