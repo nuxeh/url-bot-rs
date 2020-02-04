@@ -45,7 +45,7 @@ jobs:
 
       - name: Publish to crates.io
         env:
-          CRATES_IO_TOKEN: {{ secrets.CRATES_IO_TOKEN }}
+          CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
         run: |
           cargo login ${CRATES_IO_TOKEN}
           cargo publish --dry-run
