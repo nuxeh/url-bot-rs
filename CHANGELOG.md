@@ -1,3 +1,5 @@
+# v0.2.4
+
 - Allow build with bundled, statically linked, SQLite
 - Refactor image dimension extraction, and support a couple more formats.
 - Resolve #249, relative HTTP redirection paths
