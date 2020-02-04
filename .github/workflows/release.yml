@@ -1,0 +1,51 @@
+on:
+  push:
+    tags:
+    - 'v[0-9]+.[0-9]+.[0-9]+'
+
+name: Make release
+
+jobs:
+  build:
+    name: Release
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/ciheckout@v1
+
+      - name: Build and test
+        run: |
+          cargo test --verbose
+          cargo clippy --verbose --all-features -- -D warnings
+          cargo build --verbose --release
+
+      - name: Build Debian package
+        run: cargo deb
+
+      - name: Create Github release
+        id: make-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: true
+          prerelease: false
+
+      - name: Upload assets to Github
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.make-release.outputs.upload_url }}
+          asset_path: 'target/debian/url-bot-rs*.deb'
+
+      - name: Publish to crates.io
+        env:
+          CRATES_IO_TOKEN: {{ secrets.CRATES_IO_TOKEN }}
+        run: |
+          cargo login ${CRATES_IO_TOKEN}
+          cargo publish --dry-run
