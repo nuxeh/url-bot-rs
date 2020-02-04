@@ -25,7 +25,9 @@ jobs:
           cargo build --verbose --release
 
       - name: Build Debian package
-        run: cargo deb
+        run: |
+          cargo install cargo-deb
+          cargo deb
 
       - name: Create Github release
         id: make-release
