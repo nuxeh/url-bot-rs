@@ -33,10 +33,12 @@ On Linux or OSX, you can install SQLite as follows:
 
 On Windows, or if preferred, also for Linux or OSX, bundled SQLite can also be
 used, where it is built and linked statically without external dependencies, by
-specifying the "sqlite_bundled" feature when building with Cargo, e.g.:
+specifying the `sqlite_bundled` feature when building with Cargo, e.g.:
 
     cargo build --features "sqlite_bundled"
     cargo install url-bot-rs --features "sqlite_bundled"
+
+When using bundled SQLite, no external dependencies are required.
 
 ## Quick install
 
@@ -54,6 +56,11 @@ parameters, and edit the file as shown below.
 | Linux    | `~/.config/url-bot-rs/config.toml`                              |
 | OSX      | `~/Library/Preferences/org.url-bot-rs/config.toml`              |
 | Windows  | `C:\Users\<user>\AppData\Roaming\url-bot-rs\config\config.toml` |
+
+## Packages
+
+Debian packages for releases are available [on
+Github](https://github.com/nuxeh/url-bot-rs/releases).
 
 ## Build
 
