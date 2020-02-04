@@ -52,6 +52,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.make_release.outputs.upload_url }}
+          asset_content_type: application/vnd.debian.binary-package
           asset_path: target/debian/url-bot-rs_${{ steps.get_version.outputs.VERSION }}_amd64.deb
           asset_name: url-bot-rs_${{ steps.get_version.outputs.VERSION }}_amd64.deb
 
