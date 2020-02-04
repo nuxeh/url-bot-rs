@@ -28,7 +28,7 @@ On Linux or OSX, you can install SQLite as follows:
 
 | Platform | Installation command                               |
 |----------|----------------------------------------------------|
-| Debian   | `apt install sqlite3-dev`                          |
+| Debian   | `apt install libsqlite3-dev`                       |
 | OSX      | `brew install sqlite3`                             |
 
 On Windows, or if preferred, also for Linux or OSX, bundled SQLite can also be
