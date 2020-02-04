@@ -26,14 +26,14 @@ Currently, SQLite is a required dependency.
 
 On Linux or OSX, you can install SQLite as follows:
 
-| Platform | Configuration path                                 |
+| Platform | Installation command                               |
 |----------|----------------------------------------------------|
 | Debian   | `apt install sqlite3-dev`                          |
 | OSX      | `brew install sqlite3`                             |
 
 On Windows, or if preferred, also for Linux or OSX, bundled SQLite can also be
-used, where it is built and linked statically, by building with the
-"bundled_sqlite" feature enabled:
+used, where it is built and linked statically without external dependencies, by
+specifying the "sqlite_bundled" feature when building with Cargo, e.g.:
 
     cargo build --features "sqlite_bundled"
     cargo install url-bot-rs --features "sqlite_bundled"
@@ -41,6 +41,10 @@ used, where it is built and linked statically, by building with the
 ## Quick install
 
     cargo install url-bot-rs
+
+Or, with bundled SQLite:
+
+    cargo install url-bot-rs --features "sqlite_bundled"
 
 To get started quickly with a working configuration, run `url-bot-rs` with no
 parameters, and edit the file as shown below.
