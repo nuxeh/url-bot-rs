@@ -17,6 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
+
       - name: Install dependencies
         run: sudo apt-get install -y libsqlite3-dev
 
@@ -32,7 +36,7 @@ jobs:
           cargo deb
 
       - name: Create Github release
-        id: make-release
+        id: make_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,8 +51,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.make-release.outputs.upload_url }}
-          asset_path: 'target/debian/url-bot-rs*.deb'
+          upload_url: ${{ steps.make_release.outputs.upload_url }}
+          asset_path: target/debian/url-bot-rs_${{ steps.get_version.outputs.VERSION }}_amd64.deb
+          asset_name: url-bot-rs_${{ steps.get_version.outputs.VERSION }}_amd64.deb
 
       - name: Publish to crates.io
         env:
