@@ -194,6 +194,12 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
             Ok(None)
         };
 
+        let pre_post_found = if let Ok(Some(_)) = pre_post {
+            true
+        } else {
+            false
+        };
+
         // limit pre-post to same channel if required by configuration
         let pre_post = if rtd.conf.features.cross_channel_history {
             pre_post
@@ -225,7 +231,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
             },
             Ok(None) => {
                 // add new log entry to database, if posted in a channel
-                if rtd.conf.features.history && msg.is_chanmsg {
+                if rtd.conf.features.history && !pre_post_found && msg.is_chanmsg {
                     if let Err(err) = db.add_log(&entry) {
                         error!("SQL error: {}", err);
                     }
@@ -530,7 +536,7 @@ mod tests {
 
         rtd.conf.features.mask_highlights = false;
 
-        let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://0.0.0.0:8084/");
+        let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://127.0.0.1:8084/");
 
         // cross-posted history is disabled
         let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
