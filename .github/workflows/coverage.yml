@@ -42,6 +42,11 @@ jobs:
       with:
         fetch-depth: 0
 
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
 
     - name: Install grcov
       run: cargo install grcov
