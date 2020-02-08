@@ -641,7 +641,7 @@ mod tests {
     }
 
     fn test_retry_server_errors_n_status(n: usize, status: u16) -> Result<String, Error> {
-        let bind = "0.0.0.0:28268";
+        let bind = "127.0.0.1:28268";
         let url = format!("http://{}/serr", bind);
         let timeout = Duration::from_secs(2);
         let mut rtd = Rtd::default();
