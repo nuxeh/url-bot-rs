@@ -1,13 +1,11 @@
 name: coverage
-
 on: [push, pull_request]
 
 jobs:
-  build:
-
+  codecov:
     runs-on: ubuntu-latest
-
     steps:
+
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
@@ -35,6 +33,10 @@ jobs:
       run: |
         cargo tarpaulin --out Xml
         bash <(curl -s https://codecov.io/bash) -X gcov -t $CODECOV_TOKEN
+
+  coveralls:
+    runs-on: ubuntu-latest
+    steps:
 
     - name: Install grcov
       run: cargo install grcov
