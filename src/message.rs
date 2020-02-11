@@ -501,7 +501,8 @@ mod tests {
 
             $res.iter()
                 .for_each(|v| {
-                    println!("{:?}", v);
+                    println!("got: {:?}", v);
+                    println!("expected chan: \"{}\" nick: \"{}\"", $channel, $nick);
                     if let TITLE(s) = v {
                         assert!(s.starts_with("⤷ |t| → "));
                         assert!(date.is_match(&s));
@@ -511,47 +512,53 @@ mod tests {
         };
     }
 
+    macro_rules! post_link {
+        ($rtd:expr, $db:expr, $chan:expr) => {
+            {
+                let msg = Msg::new($rtd, "testnick", $chan, "http://127.0.0.1:8084/");
+                process_titles($rtd, $db, &msg).collect()
+            }
+        };
+    }
+
     #[test]
     fn test_process_titles_repost() {
         let mut rtd = Rtd::default();
         let db = Database::open_in_memory().unwrap();
-        let msg = Msg::new(&rtd, "testnick", "#test", "http://127.0.0.1:8084/");
-        let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://127.0.0.1:8084/");
-        let msg3 = Msg::new(&rtd, "testnick", "#test3", "http://127.0.0.1:8084/");
 
         feat!(rtd, history) = true;
         feat!(rtd, cross_channel_history) = false;
 
         // no pre-post
-        let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
+        let res: Vec<_> = post_link!(&rtd, &db, "#test");
         verify_post!(res);
 
         // pre-post
-        let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
+        let res: Vec<_> = post_link!(&rtd, &db, "#test");
         verify_repost!(res, "testnick", "#test");
 
         // pre-post with masked highlights enabled
         feat!(rtd, mask_highlights) = true;
 
-        let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
+        let res: Vec<_> = post_link!(&rtd, &db, "#test");
         verify_repost!(res, "t\u{200c}estnick", "#test");
 
         feat!(rtd, mask_highlights) = false;
 
         // cross-posted history is disabled
-        let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
+        let res: Vec<_> = post_link!(&rtd, &db, "#test2");
         verify_post!(res);
 
         // cross-posted history is enabled
         feat!(rtd, cross_channel_history) = true;
 
-        let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
+        let res: Vec<_> = post_link!(&rtd, &db, "#test2");
         verify_repost!(res, "testnick", "#test");
 
         // cross-posted history is enabled, history is preserved in the same channel
         feat!(rtd, cross_channel_history) = true;
 
-        let res: Vec<_> = process_titles(&rtd, &db, &msg3).collect();
+        let res: Vec<_> = post_link!(&rtd, &db, "#test3");
         verify_repost!(res, "testnick", "#test");
     }
 
