@@ -529,36 +529,38 @@ mod tests {
         feat!(rtd, history) = true;
         feat!(rtd, cross_channel_history) = false;
 
-        // no pre-post
-        let res: Vec<_> = post_link!(&rtd, &db, "#test");
+        let mut res: Vec<_>;
+
+        // first post
+        res = post_link!(&rtd, &db, "#test");
         verify_post!(res);
 
-        // pre-post
-        let res: Vec<_> = post_link!(&rtd, &db, "#test");
+        // re-post
+        res = post_link!(&rtd, &db, "#test");
         verify_repost!(res, "testnick", "#test");
 
-        // pre-post with masked highlights enabled
+        // re-post with masked highlights enabled
         feat!(rtd, mask_highlights) = true;
 
-        let res: Vec<_> = post_link!(&rtd, &db, "#test");
+        res = post_link!(&rtd, &db, "#test");
         verify_repost!(res, "t\u{200c}estnick", "#test");
 
         feat!(rtd, mask_highlights) = false;
 
         // cross-posted history is disabled
-        let res: Vec<_> = post_link!(&rtd, &db, "#test2");
+        res = post_link!(&rtd, &db, "#test2");
         verify_post!(res);
 
-        // cross-posted history is enabled
+        // cross-posted history enabled
         feat!(rtd, cross_channel_history) = true;
 
-        let res: Vec<_> = post_link!(&rtd, &db, "#test2");
+        res = post_link!(&rtd, &db, "#test2");
         verify_repost!(res, "testnick", "#test");
 
-        // cross-posted history is enabled, history is preserved in the same channel
+        // history is preserved in the same channel
         feat!(rtd, cross_channel_history) = true;
 
-        let res: Vec<_> = post_link!(&rtd, &db, "#test3");
+        res = post_link!(&rtd, &db, "#test3");
         verify_repost!(res, "testnick", "#test");
     }
 
