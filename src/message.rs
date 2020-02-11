@@ -483,87 +483,76 @@ mod tests {
             .for_each(|v| assert_eq!(&TITLE("⤷ |t|".to_string()), v));
     }
 
+    macro_rules! verify_post {
+        ($res:ident) => {
+            assert_eq!(1, $res.len());
+            assert!(if let TITLE(_) = $res[0] { true } else { false });
+            $res.iter().for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), *v));
+        };
+    }
+
+    macro_rules! verify_repost {
+        ($res:ident, $nick:expr, $channel:expr) => {
+            let d = r#"( [[:alpha:]]{3}){2} [\s\d]{2} \d{2}:\d{2}:\d{2} \d{4}"#;
+            let date = Regex::new(&d).unwrap();
+
+            assert_eq!(1, $res.len());
+            assert!(if let TITLE(_) = $res[0] { true } else { false });
+
+            $res.iter()
+                .for_each(|v| {
+                    println!("{:?}", v);
+                    if let TITLE(s) = v {
+                        assert!(s.starts_with("⤷ |t| → "));
+                        assert!(date.is_match(&s));
+                        assert!(s.ends_with(concat!(" ", $nick, " (", $channel, ")")));
+                    }
+                });
+        };
+    }
+
     #[test]
     fn test_process_titles_repost() {
         let mut rtd = Rtd::default();
+        let db = Database::open_in_memory().unwrap();
+        let msg = Msg::new(&rtd, "testnick", "#test", "http://127.0.0.1:8084/");
+        let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://127.0.0.1:8084/");
+        let msg3 = Msg::new(&rtd, "testnick", "#test3", "http://127.0.0.1:8084/");
+
         feat!(rtd, history) = true;
         feat!(rtd, cross_channel_history) = false;
 
-        let msg = Msg::new(&rtd, "testnick", "#test", "http://127.0.0.1:8084/");
-        let db = Database::open_in_memory().unwrap();
-
-        let d = r#"( [[:alpha:]]{3}){2} [\s\d]{2} \d{2}:\d{2}:\d{2} \d{4}"#;
-        let date = Regex::new(&d).unwrap();
-
         // no pre-post
         let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
-        assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
-
-        res.iter()
-            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), *v));
+        verify_post!(res);
 
         // pre-post
         let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
-        assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
-
-        res.iter()
-            .for_each(|v| {
-                println!("{:?}", v);
-                if let TITLE(s) = v {
-                    assert!(s.starts_with("⤷ |t| → "));
-                    assert!(date.is_match(&s));
-                    assert!(s.ends_with(" testnick (#test)"));
-                }
-            });
+        verify_repost!(res, "testnick", "#test");
 
         // pre-post with masked highlights enabled
         feat!(rtd, mask_highlights) = true;
 
         let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
-        assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
-
-        res.iter()
-            .for_each(|v| {
-                println!("{:?}", v);
-                if let TITLE(s) = v {
-                    assert!(s.starts_with("⤷ |t| → "));
-                    assert!(date.is_match(&s));
-                    assert!(s.ends_with(" t\u{200c}estnick (#test)"));
-                }
-            });
+        verify_repost!(res, "t\u{200c}estnick", "#test");
 
         feat!(rtd, mask_highlights) = false;
 
-        let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://127.0.0.1:8084/");
-
         // cross-posted history is disabled
         let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
-        assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
-
-        res.iter()
-            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), *v));
+        verify_post!(res);
 
         // cross-posted history is enabled
         feat!(rtd, cross_channel_history) = true;
 
         let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
-        assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
+        verify_repost!(res, "testnick", "#test");
 
-        res.iter()
-            .for_each(|v| {
-                println!("{:?}", v);
-                if let TITLE(s) = v {
-                    assert!(s.starts_with("⤷ |t| → "));
-                    assert!(date.is_match(&s));
-                    assert!(s.ends_with(" testnick (#test)"));
-                }
-            });
+        // cross-posted history is enabled, history is preserved in the same channel
+        feat!(rtd, cross_channel_history) = true;
 
+        let res: Vec<_> = process_titles(&rtd, &db, &msg3).collect();
+        verify_repost!(res, "testnick", "#test");
     }
 
     #[test]
