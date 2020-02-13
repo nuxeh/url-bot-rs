@@ -42,7 +42,7 @@ impl Database {
     }
 
     pub fn add_log(&self, entry: &NewLogEntry) -> Result<(), Error> {
-        let time_created = Time::now().format("%c").to_string();
+        let time_created = Time::now().format("%a %b %-d %H:%M:%S %-Y");
         let params = to_params_named(entry).map_err(SyncFailure::new)?;
         let mut params = params.to_slice();
         params.push((":time_created", &time_created));
