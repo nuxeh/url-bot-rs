@@ -349,10 +349,18 @@ fn utf8_truncate(s: &str, n: usize) -> String {
         .collect()
 }
 
+lazy_static! {
+    static ref REPEATED_DOTS: Regex = Regex::new(r"\.\.+").unwrap();
+}
+
 /// if a token has a recognised TLD, but no scheme, add one
 pub fn add_scheme_for_tld(token: &str) -> Option<String> {
     if token.parse::<Url>().is_err() {
         if token.starts_with(|s: char| !s.is_alphabetic()) {
+            return None;
+        }
+
+        if REPEATED_DOTS.is_match(&token) {
             return None;
         }
 
@@ -723,8 +731,14 @@ mod tests {
         assert!(add_scheme_for_tld("@gmail.com").is_none());
         assert!(add_scheme_for_tld("@endless.horse").is_none());
 
-        // don't resolve tokens beinning with '.'
+        // don't resolve tokens beginning with '.'
         assert!(add_scheme_for_tld(".net").is_none());
         assert!(add_scheme_for_tld(".zip").is_none());
+        assert!(add_scheme_for_tld("...cool").is_none());
+
+        // don't resolve tokens containing repeated full-stops
+        assert_eq!(None, add_scheme_for_tld("wow...cool"));
+        assert_eq!(None, add_scheme_for_tld("something..wow"));
+        assert_eq!(None, add_scheme_for_tld("something.....boo"));
     }
 }
