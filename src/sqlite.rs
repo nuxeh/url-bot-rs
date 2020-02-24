@@ -2,7 +2,7 @@ use rusqlite::Connection;
 use failure::{Error, SyncFailure};
 use std::path::Path;
 use serde_rusqlite::{from_rows, to_params_named};
-use time::PrimitiveDateTime as Time;
+use time::OffsetDateTime as Time;
 
 pub struct Database {
     db: Connection,
