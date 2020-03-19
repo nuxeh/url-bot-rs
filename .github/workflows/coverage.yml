@@ -17,12 +17,7 @@ jobs:
         override: true
 
     - name: Install Tarpaulin
-      run: cargo install cargo-tarpaulin --features "sqlite_bundled"
-
-#    - name: Push Tarpaulin results to Coveralls.io
-#      env:
-#        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-#      run: cargo tarpaulin --ciserver tarpaulin --coveralls $COVERALLS_REPO_TOKEN --features "sqlite_bundled"
+      run: cargo install cargo-tarpaulin
 
     - name: Push Tarpaulin results to Codecov.io
       env:
@@ -46,7 +41,7 @@ jobs:
         override: true
 
     - name: Install grcov
-      run: cargo install grcov --features "sqlite_bundled"
+      run: cargo install grcov
 
     - name: Run grcov
       env:

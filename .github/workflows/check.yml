@@ -16,5 +16,5 @@ jobs:
 
     - name: Run cargo-check
       run: |
-        cargo install cargo-check --features "sqlite_bundled"
+        cargo install cargo-check
         cargo check --verbose --features "sqlite_bundled"
