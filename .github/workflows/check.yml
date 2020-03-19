@@ -14,10 +14,7 @@ jobs:
         components: clippy
         override: true
 
-    - name: Install dependencies
-      run: sudo apt-get install -y libsqlite3-dev
-
     - name: Run cargo-check
       run: |
-        cargo install cargo-check
-        cargo check --verbose
+        cargo install cargo-check --features "sqlite_bundled"
+        cargo check --verbose --features "sqlite_bundled"

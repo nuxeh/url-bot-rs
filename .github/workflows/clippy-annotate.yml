@@ -14,13 +14,10 @@ jobs:
         components: clippy
         override: true
 
-    - name: Install dependencies
-      run: sudo apt-get install -y libsqlite3-dev
-
     - uses: actions-rs/clippy-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         args: --all-features -- -D warnings
 
     - name: Run clippy
-      run: cargo clippy --all-features -- -D warnings
+      run: cargo clippy --all-features -- -D warnings --features "sqlite_bundled"

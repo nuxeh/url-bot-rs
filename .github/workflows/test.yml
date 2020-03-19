@@ -19,7 +19,7 @@ jobs:
       run: sudo apt-get install -y libsqlite3-dev
 
     - name: Build tests
-      run: cargo test --verbose --no-run
+      run: cargo test --verbose --no-run --features "sqlite_bundled"
 
     - name: Run tests
-      run: cargo test --verbose --no-fail-fast -- --test-threads=1
+      run: cargo test --verbose --no-fail-fast -- --test-threads=1 --features "sqlite_bundled"
