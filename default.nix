@@ -1,8 +1,11 @@
-let
-  pkgs = import <nixpkgs> {
-    config = {};
-    overlays = [
-      (import ./overlay.nix)
+with import <nixpkgs> {};
+
+stdenv.mkDerivation {
+    name = "url-bot-rs";
+
+    buildInputs = [
+      pkgconfig
+      openssl
+      sqlite
     ];
-  };
-in pkgs.url-bot-rs
+}
