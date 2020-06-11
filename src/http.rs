@@ -22,6 +22,14 @@ lazy_static! {
     );
 }
 
+// Some sites sometimes return a top-level title for the site, where on
+// retry, they produce a full title. If getting such a plain title, retry
+// and log details of the request. This is a bit of a hack for the moment,
+// until it becomes more clear what's going on here.
+const TITLE_BLACKLIST: &[&str] = &[
+  "YouTube",
+];
+
 // TODO: reimplement this with upstream reqwest, which now supports cookies
 #[derive(Default)]
 pub struct Session {
@@ -171,9 +179,33 @@ impl Session {
     }
 }
 
-pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
+/// Resolve URL for title
+#[allow(dead_code)]
+pub fn resolve_url_title(url: &str, rtd: &Rtd) -> Result<String, Error> {
     let mut resp = Session::new(rtd).request(url)?;
     get_title(&mut resp, rtd, false)
+}
+
+/// Resolve title for URL, retrying when receiving a blacklisted title
+pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
+    let mut resp = Session::new(rtd).request(url)?;
+    let mut title = get_title(&mut resp, rtd, false);
+
+    for _ in 0..http!(rtd, max_retries) {
+        match title {
+            Ok(t) if TITLE_BLACKLIST.contains(&t.as_str()) => {
+                let timeout = http!(rtd, retry_delay_s);
+                debug!("got blacklisted title \"{}\", retrying in {}s", t, timeout);
+                debug!("response: {:?}", resp);
+                thread::sleep(Duration::from_secs(timeout));
+                resp = Session::new(rtd).request(url)?;
+                title = get_title(&mut resp, rtd, false);
+            },
+            _ => return title,
+        }
+    }
+
+    title
 }
 
 pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, Error> {
