@@ -19,7 +19,9 @@ jobs:
         run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
 
       - name: Install dependencies
-        run: sudo apt-get install -y libsqlite3-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev
 
       - name: Build and test
         run: |
