@@ -27,7 +27,7 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-          components: clippy cargo-deb
+          components: clippy
           override: true
 
       - name: Build and test
@@ -37,7 +37,9 @@ jobs:
           cargo build --verbose --release
 
       - name: Build Debian package
-        run: cargo deb
+        run: |
+          cargo install cargo-deb
+          cargo deb
 
       - name: Create Github release
         id: make_release
