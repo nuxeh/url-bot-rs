@@ -4,6 +4,7 @@ on: [push, pull_request]
 jobs:
   codecov:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
 
     - uses: actions/checkout@v2
@@ -28,6 +29,7 @@ jobs:
 
   coveralls:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
 
     - uses: actions/checkout@v2
@@ -40,13 +42,22 @@ jobs:
         toolchain: nightly
         override: true
 
+    # This is to deal with an issue surrounding `cssparser` and `proc_macro2`
+    # https://github.com/servo/rust-cssparser/issues/273
+    # However, this still doesn't work.
+    - name: Override cargo profile
+      run: |
+        mkdir .cargo
+        printf "[profile.dev]\npanic = \"abort\"\n" > .cargo/config
+
     - name: Install grcov
       run: cargo install grcov
 
     - name: Run grcov
       env:
         PROJECT_NAME: "url_bot_rs"
-        RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
+        RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests"
+        CARGO_HOME: "./.cargo"
         CARGO_INCREMENTAL: 0
       run: |
         cargo build --verbose --features "sqlite_bundled"
