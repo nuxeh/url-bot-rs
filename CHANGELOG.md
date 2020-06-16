@@ -1,3 +1,5 @@
+# v0.3.0
+
 - Retry HTTP requests on server errors.
 - Remove logging of errors to database
 - Refactor configuration for HTTP. `parameters.accept_lang` is now

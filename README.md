@@ -165,7 +165,6 @@ operation, specified in the `[features]` section:
 The `[parameters]` section includes a number of tunable parameters:
 
 - `url_limit` (u8) max number of URLs to process for each message (default: 10).
-- `accept_lang` (string) language requested in http content requests (default: "en").
 - `status_channels` (list) channel(s) to create, join and message with any
   error messages produced from URL title retrieval.
 - `nick_response_str` (string) the message to send for the nick response feature.
@@ -179,7 +178,7 @@ The `[http]` section contains options for HTTP requests used to obtain titles:
   HTTP error response which may be temporary (e.g. `503 Service Unavailable`).
 - `retry_delay_s` (u64) the number of seconds to wait before retrying.
 - `accept_lang` (string) the `Accept-Lang` HTTP request header to send when
-  making a request.
+  making a request (default: "en").
 - `user_agent` (string) the user agent string to send in HTTP requests.
 
 The `[database]` section contains options for the database, as follows:
