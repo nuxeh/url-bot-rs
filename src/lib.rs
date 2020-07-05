@@ -9,7 +9,7 @@ extern crate regex;
 extern crate lazy_static;
 #[macro_use]
 extern crate failure;
-extern crate time;
+extern crate chrono;
 extern crate reqwest;
 extern crate cookie;
 extern crate image;

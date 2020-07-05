@@ -2,7 +2,7 @@ use rusqlite::Connection;
 use failure::{Error, SyncFailure};
 use std::path::Path;
 use serde_rusqlite::{from_rows, to_params_named};
-use time::OffsetDateTime as Time;
+use chrono::Utc;
 
 pub struct Database {
     db: Connection,
@@ -42,7 +42,7 @@ impl Database {
     }
 
     pub fn add_log(&self, entry: &NewLogEntry) -> Result<(), Error> {
-        let time_created = Time::now_utc().format("%a %b %-d %H:%M:%S %-Y");
+        let time_created = Utc::now().format("%a %b %-d %H:%M:%S %-Y").to_string();
         let params = to_params_named(entry).map_err(SyncFailure::new)?;
         let mut params = params.to_slice();
         params.push((":time_created", &time_created));
