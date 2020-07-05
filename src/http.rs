@@ -373,7 +373,7 @@ mod tests {
     // in `hyper`.
     #[test]
     fn verify_request_headers() {
-        let expected_headers = [
+        let expected: Vec<Header> = vec![
             Header::from_bytes("cookie", "").unwrap(),
             Header::from_bytes("user-agent",
                 format!("Mozilla/5.0 url-bot-rs/{}", buildinfo::PKG_VERSION)
@@ -406,14 +406,17 @@ mod tests {
         resolve_url("http://127.0.0.1:28282/test", &Rtd::default()).unwrap();
         let request_headers = rx.recv().unwrap();
 
-        println!("Headers in request:\n{:?}", request_headers);
-        println!("Headers expected:\n{:?}", expected_headers);
+        println!("Headers in request:\n{:#?}", request_headers);
+        println!("Headers expected:\n{:#?}", expected);
 
-        let headers_match = expected_headers
+        let headers_match = request_headers
             .iter()
-            .zip(request_headers.iter())
-            .all(|(a, b)| {
-                a.field == b.field && a.value == b.value
+            .all(|header| {
+                expected
+                    .iter()
+                    .fold(false, |acc, v| {
+                        acc || v.field == header.field && v.value == header.value
+                    })
             });
 
         assert!(headers_match);
