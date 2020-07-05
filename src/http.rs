@@ -376,7 +376,7 @@ mod tests {
             let server = tiny_http::Server::http(bind).unwrap();
 
             // send redirections
-            for _ in 0..n {
+            for _ in 1..n {
                 let rq = server.recv().unwrap();
                 if rq.url() == "/rlim" {
                     let resp = Response::from_string("")
