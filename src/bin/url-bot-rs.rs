@@ -16,7 +16,6 @@ extern crate docopt;
 extern crate itertools;
 extern crate regex;
 extern crate lazy_static;
-extern crate time;
 extern crate reqwest;
 extern crate cookie;
 extern crate image;
