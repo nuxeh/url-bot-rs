@@ -1,8 +1,10 @@
 use std::time::Duration;
-use itertools::Itertools;
 use failure::Error;
-use reqwest::{Client, header, RedirectPolicy, Response, Url};
-use cookie::Cookie;
+use reqwest::{
+    header,
+    redirect::Policy,
+    blocking::{Client, Response}
+};
 use std::io::Read;
 use std::thread;
 use mime::{Mime, IMAGE, TEXT, HTML};
@@ -10,169 +12,95 @@ use humansize::{FileSize, file_size_opts as options};
 
 use super::http;
 use super::config::Rtd;
-use super::buildinfo;
 use super::title::{parse_title, get_mime, get_image_metadata};
 
 const CHUNK_BYTES: u64 = 100 * 1024; // 100kB
 const CHUNKS_MAX: u64 = 10; // 1000kB
 
-lazy_static! {
-    static ref USER_AGENT: String = format!(
-        "Mozilla/5.0 url-bot-rs/{}", buildinfo::PKG_VERSION
-    );
+static DEFAULT_USER_AGENT: &str = concat!(
+    "Mozilla/5.0 url-bot-rs",
+    "/",
+    env!("CARGO_PKG_VERSION"),
+);
+
+pub struct Session<'a> {
+    client: Client,
+    rtd: &'a Rtd,
+    url: Option<&'a str>,
+    request_count: u8,
 }
 
-// TODO: reimplement this with upstream reqwest, which now supports cookies
-#[derive(Default)]
-pub struct Session {
-    pub url: String,
-    pub cookies: Vec<String>,
-    pub request_count: u8,
-    pub retry_count: u8,
-    pub rtd: Rtd,
-}
+impl<'a> Session<'a> {
+    pub fn new(rtd: &'a Rtd) -> Session<'a> {
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            header::ACCEPT_LANGUAGE,
+            header::HeaderValue::from_str(&http!(rtd, accept_lang)).unwrap()
+        );
+        headers.insert(header::ACCEPT_ENCODING, header::HeaderValue::from_static("identity"));
 
-impl Session {
-    pub fn new(rtd: &Rtd) -> Session {
+        let user_agent = match &http!(rtd, user_agent) {
+            Some(u) => u,
+            _ => DEFAULT_USER_AGENT,
+        };
+
+        let client = Client::builder()
+            .cookie_store(true)
+            .default_headers(headers)
+            .redirect(Policy::limited(http!(rtd, max_redirections).into()))
+            .timeout(Duration::from_secs(http!(rtd, timeout_s)))
+            .user_agent(user_agent)
+            .build()
+            .expect("Can't build reqwest client");
+
         Session {
-            rtd: rtd.clone(),
-            ..Session::default()
+            client,
+            rtd,
+            url: None,
+            request_count: 0,
         }
     }
 
-    /// Make a request attempting to conform to RFC 6265
-    /// https://tools.ietf.org/html/rfc6265
-    pub fn request(&mut self, url: &str) -> Result<Response, Error> {
-        // follow only one redirection
-        let redirect = RedirectPolicy::custom(|attempt| {
-            if attempt.previous().len() == 1 {
-                attempt.stop()
-            } else {
-                attempt.follow()
+    pub fn url(&mut self, url: &'a str) -> &mut Self {
+        self.url = Some(url);
+        self
+    }
+
+    pub fn request(&mut self) -> Result<Response, Error> {
+        self.request_count += 1;
+
+        let resp = match self.url {
+            Some(url) => {
+                self.client.get(url).send()?
             }
-        });
+            None => bail!("Missing URL"),
+        };
 
-        let client = Client::builder()
-            .gzip(false)
-            .redirect(redirect)
-            .timeout(Duration::from_secs(http!(self.rtd, timeout_s)))
-            .build()?;
-
-        self.url = url.to_string();
-
-        loop {
-            // generate cookie header
-            let cookie_string: String = self.cookies
-                .iter()
-                .map(|s| s.parse::<Cookie>().ok())
-                .flatten()
-                .map(|c| format!("{}={}", c.name(), c.value()))
-                .intersperse("; ".to_string())
-                .collect();
-
-            let user_agent = if let Some(u) = &http!(self.rtd, user_agent) {
-                u.clone()
-            } else {
-                USER_AGENT.to_string()
-            };
-
-            // set request headers and make request
-            let resp = client.get(&self.url)
-                .header(header::COOKIE, cookie_string)
-                .header(header::USER_AGENT, user_agent)
-                .header(header::ACCEPT_LANGUAGE, http!(self.rtd, accept_lang).as_str())
-                .header(header::ACCEPT_ENCODING, "identity")
-                .send()?;
-
-            debug!("[{}] <{}> → [{:?} {}]",
-                self.request_count, self.url, resp.version(), resp.status());
-
-            if resp.status().is_redirection() {
-                // get new cookies from response headers
-                let mut new_cookies: Vec<String> = resp.headers()
-                    .get_all(header::SET_COOKIE)
-                    .iter()
-                    .map(|c| c.to_str().ok().and_then(|s| s.parse().ok()))
-                    .flatten()
-                    .filter(|c| !self.cookies.contains(c))
-                    .take(32) // max 32 new cookies per request
-                    .collect();
-
-                // debug print cookie information
-                if !new_cookies.is_empty() {
-                    trace!("Received cookies:");
-                    new_cookies
-                        .iter()
-                        .map(|s| s.parse::<Cookie>().ok())
-                        .flatten()
-                        .for_each(|c| trace!("{} = {}", c.name(), c.value()));
-                    debug!("added {} cookies", new_cookies.len());
-                };
-
-                // add cookies to session
-                self.cookies.append(&mut new_cookies);
-
-                // get redirection location
-                let redirected_url = resp.headers().get(header::LOCATION)
-                    .and_then(|u| u.to_str().ok())
-                    .and_then(|u| u.parse::<Url>().ok());
-
-                let redirected_string = resp.headers().get(header::LOCATION)
-                    .and_then(|u| u.to_str().ok())
-                    .and_then(|u| u.parse::<String>().ok());
-
-                let current_url = self.url.parse::<Url>().ok();
-
-                let r = match (redirected_url, redirected_string, current_url) {
-                    (None, Some(s), Some(u)) => u.join(&s).ok(),
-                    (Some(u), _, _) => Some(u),
-                    _ => None,
-                };
-
-                match r {
-                    Some(url) => self.url = url.as_str().to_string(),
-                    None => bail!("Can't get redirection URL"),
-                };
-
-                // limit the number of redirections
-                self.request_count += 1;
-                if self.request_count > http!(self.rtd, max_redirections) {
-                    bail!("Too many redirects, max {}",
-                        http!(self.rtd, max_redirections));
-                }
-            }
-
-            else if resp.status().is_server_error() {
-                // limit the number of retries
-                self.retry_count += 1;
-                if self.retry_count > http!(self.rtd, max_retries) {
-                    let r = resp.error_for_status()?;
-                    bail!("Unhandled request status: {}", r.status());
-                }
-
-                let timeout = http!(self.rtd, retry_delay_s);
-                debug!("received server error ({}), retrying in {}s",
-                    resp.status(), timeout);
-                thread::sleep(Duration::from_secs(timeout));
-            }
-
-            else if resp.status().is_success() {
-                debug!("total redirections: {}, total cookies: {}",
-                    self.request_count,
-                    self.cookies.len());
-                return Ok(resp);
-            }
-
-            else {
-                let r = resp.error_for_status()?;
-                bail!("Unhandled request status: {}", r.status());
-            }
+        if self.request_count > http!(self.rtd, max_retries) {
+            return Ok(resp);
         }
+
+        let status = resp.status();
+
+        if status.is_success() {
+            debug!("total requests: {}", self.request_count);
+            return Ok(resp);
+        } else if status.is_server_error() {
+            let delay = http!(self.rtd, retry_delay_s);
+            debug!("server error ({}), retrying in {}s", resp.status(), delay);
+            thread::sleep(Duration::from_secs(delay));
+        } else {
+            let r = resp.error_for_status()?;
+            bail!("unhandled request status: {}", r.status());
+        };
+
+        // tail recurse any retries
+        self.request()
     }
 }
 
 pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
-    let mut resp = Session::new(rtd).request(url)?;
+    let mut resp = Session::new(rtd).url(url).request()?;
     get_title(&mut resp, rtd, false)
 }
 
@@ -375,9 +303,7 @@ mod tests {
     fn verify_request_headers() {
         let expected: Vec<Header> = vec![
             Header::from_bytes("cookie", "").unwrap(),
-            Header::from_bytes("user-agent",
-                format!("Mozilla/5.0 url-bot-rs/{}", buildinfo::PKG_VERSION)
-            ).unwrap(),
+            Header::from_bytes("user-agent", DEFAULT_USER_AGENT).unwrap(),
             Header::from_bytes("accept-language", "en").unwrap(),
             Header::from_bytes("accept-encoding", "identity").unwrap(),
             Header::from_bytes("accept", "*/*").unwrap(),
