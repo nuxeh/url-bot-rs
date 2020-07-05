@@ -100,7 +100,6 @@ fn main() {
     feat!(rtd, report_mime) = args.flag_mime;
 
     // set session properties for the request
-    let mut session = Session::new(&rtd);
     if let Some(v) = args.flag_timeout {
         info!("overriding timeout to {}s", v);
         rtd.conf.http_params.timeout_s = v;
@@ -122,8 +121,9 @@ fn main() {
     let token = add_scheme_for_tld(&args.arg_url).unwrap_or(args.arg_url);
 
     // make request
-    let mut resp = session
-        .request(&token)
+    let mut resp = Session::new(&rtd)
+        .url(&token)
+        .request()
         .unwrap_or_else(|err| {
             error!("Error making request: {}", err);
             process::exit(1);
