@@ -1,3 +1,6 @@
+- Update to upstream `reqwest`, refactoring HTTP request code significantly
+- Replace `time` with `chrono`
+
 # v0.3.0
 
 - Retry HTTP requests on server errors.
