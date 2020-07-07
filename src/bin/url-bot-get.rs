@@ -45,7 +45,6 @@ extern crate itertools;
 extern crate regex;
 extern crate failure;
 extern crate reqwest;
-extern crate cookie;
 extern crate image;
 extern crate mime;
 extern crate humansize;
