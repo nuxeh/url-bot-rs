@@ -1,3 +1,4 @@
+- Remove `cookie` dependency
 - Update to upstream `reqwest`, refactoring HTTP request code significantly
 - Replace `time` with `chrono`
 
