@@ -232,9 +232,9 @@ dependencies = [
 
 [[package]]
 name = "cookie"
-version = "0.13.3"
+version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c60ef6d0bbf56ad2674249b6bb74f2c6aeb98b98dd57b5d3e37cace33011d69"
+checksum = "ca761767cf3fa9068cc893ec8c247a22d0fd0535848e65640c0548bd1f8bbb36"
 dependencies = [
  "time 0.2.16",
 ]
@@ -2671,7 +2671,7 @@ dependencies = [
  "atty",
  "built",
  "chrono",
- "cookie 0.13.3",
+ "cookie 0.14.1",
  "diff",
  "directories",
  "docopt",
