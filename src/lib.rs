@@ -11,7 +11,6 @@ extern crate lazy_static;
 extern crate failure;
 extern crate chrono;
 extern crate reqwest;
-extern crate cookie;
 extern crate image;
 extern crate serde_rusqlite;
 extern crate mime;

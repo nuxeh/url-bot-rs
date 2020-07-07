@@ -17,7 +17,6 @@ extern crate itertools;
 extern crate regex;
 extern crate lazy_static;
 extern crate reqwest;
-extern crate cookie;
 extern crate image;
 extern crate serde_rusqlite;
 extern crate mime;
