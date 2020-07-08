@@ -143,7 +143,8 @@ fn get_cli_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
 fn run_instance(conf: &PathBuf) -> Result<(), Error> {
     let rtd: Rtd = Rtd::new()
         .conf(conf)
-        .load()?;
+        .load()?
+        .init_http_client()?;
 
     let net = &rtd.conf.network.name;
     let timeout = param!(rtd, reconnect_timeout);
