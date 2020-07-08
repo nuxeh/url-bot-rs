@@ -19,6 +19,7 @@ pub mod youtube;
 
 /// Plugin configuration structures
 #[derive(Serialize, Deserialize, Default, Clone)]
+#[serde(default)]
 pub struct PluginConfig {
     imgur: imgur::Config,
     youtube: youtube::Config,
