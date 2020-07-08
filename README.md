@@ -67,10 +67,6 @@ Github](https://github.com/nuxeh/url-bot-rs/releases).
 
 [https://www.rust-lang.org/en-US/install.html](https://www.rust-lang.org/en-US/install.html)
 
-e.g. on a Unix-like OS:
-
-    curl https://sh.rustup.rs -sSf | sh
-
 ### Build
 
     git clone https://github.com/nuxeh/url-bot-rs
@@ -190,6 +186,30 @@ If no configuration file exists at the location specified with the `--conf`
 command line option, a default-valued configuration file will be created.
 
 An example configuration is provided as `example.config.toml` in this repository.
+
+## Plugins
+
+A plugin system currently caters for using a number of JSON APIs to get better
+title results. These each require additional configuration to be added to your
+configuration file(s).
+
+- Imgur
+
+  ```
+  [plugins.imgur]
+  api_key = "your API key"
+  ```
+
+- Youtube
+
+  ```
+  [plugins.youtube]
+  api_key = "your API key"
+  ```
+
+In each case, once a valid API key is present in the configuration, the plugin
+will work automatically. For debugging, it may be helpful to use the
+`url-bot-get` tool, using the `--plugin` option.
 
 ## Database
 
