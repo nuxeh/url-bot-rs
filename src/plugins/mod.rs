@@ -15,16 +15,19 @@ pub trait TitlePlugin {
 
 /// Plugin includes
 pub mod imgur;
+pub mod youtube;
 
 /// Plugin configuration structures
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct PluginConfig {
     imgur: imgur::Config,
+    youtube: youtube::Config,
 }
 
 /// Plugin instantiations (as trait objects)
-pub const TITLE_PLUGINS: [&dyn TitlePlugin; 1] = [
+pub const TITLE_PLUGINS: [&dyn TitlePlugin; 2] = [
     &imgur::ImgurPlugin {},
+    &youtube::YouTubePlugin {},
 ];
 
 #[macro_export]
