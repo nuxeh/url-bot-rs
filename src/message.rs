@@ -193,17 +193,18 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
 
         info!("[{}] RESOLVE <{}>", rtd.conf.network.name, token);
 
-        let maybe_plugin_title = process_plugins(rtd, &url);
-        error!("{:?}", maybe_plugin_title);
-
         // try to get the title from the url
-        let title = match resolve_url(token, rtd) {
-            Ok(title) => title,
-            Err(err) => {
-                error!("{:?}", err);
-                responses.push(TitleResp::ERROR(err.to_string()));
-                continue;
-            },
+        let title = if let Some(title) = process_plugins(rtd, &url) {
+            title
+        } else {
+            match resolve_url(token, rtd) {
+                Ok(title) => title,
+                Err(err) => {
+                    error!("{:?}", err);
+                    responses.push(TitleResp::ERROR(err.to_string()));
+                    continue;
+                },
+            }
         };
 
         // create a log entry struct
