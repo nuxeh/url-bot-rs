@@ -1,6 +1,9 @@
 [plugins.imgur]
 api_key = ""
 
+[plugins.youtube]
+api_key = ""
+
 [network]
 name = "default"
 enable = true
