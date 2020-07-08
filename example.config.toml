@@ -1,3 +1,6 @@
+[plugins.imgur]
+api_key = ""
+
 [network]
 name = "default"
 enable = true
