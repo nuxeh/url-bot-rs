@@ -1,108 +1,185 @@
-use std::time::Duration;
+use std::{
+    time::Duration,
+    io::Read,
+    thread,
+};
 use failure::Error;
 use reqwest::{
-    header,
+    header::{self, HeaderMap},
     redirect::Policy,
     blocking::{Client, Response}
 };
-use std::io::Read;
-use std::thread;
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
 use log::{debug, trace};
 use failure::bail;
 
-use super::http;
-use super::config::Rtd;
-use super::title::{parse_title, get_mime, get_image_metadata};
+use crate::{
+    config::Rtd,
+    title::{parse_title, get_mime, get_image_metadata}
+};
 
 const CHUNK_BYTES: u64 = 100 * 1024; // 100kB
 const CHUNKS_MAX: u64 = 10; // 1000kB
 
-static DEFAULT_USER_AGENT: &str = concat!(
+pub static DEFAULT_USER_AGENT: &str = concat!(
     "Mozilla/5.0 url-bot-rs",
     "/",
     env!("CARGO_PKG_VERSION"),
 );
 
-pub struct Session<'a> {
-    client: Client,
-    rtd: &'a Rtd,
-    url: Option<&'a str>,
-    request_count: u8,
+#[derive(Default)]
+pub struct RetrieverBuilder<'a> {
+    timeout: Option<Duration>,
+    retry_limit: usize,
+    retry_delay: Option<Duration>,
+    user_agent: Option<&'a str>,
+    accept_lang: &'a str,
+    redirect_limit: Option<usize>,
 }
 
-impl<'a> Session<'a> {
-    pub fn new(rtd: &'a Rtd) -> Session<'a> {
+impl<'a> RetrieverBuilder<'a> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn timeout(mut self, timeout_secs: u64) -> Self {
+        self.timeout = Some(Duration::from_secs(timeout_secs));
+        self
+    }
+
+    pub fn retry(mut self, limit: usize, delay_s: u64) -> Self {
+        self.retry_limit = limit;
+        self.retry_delay = Some(Duration::from_secs(delay_s));
+        self
+    }
+    pub fn user_agent(mut self, user_agent: &'a str) -> Self {
+        self.user_agent = Some(user_agent);
+        self
+    }
+
+    pub fn accept_lang(mut self, accept_lang: &'a str) -> Self {
+        self.accept_lang = accept_lang;
+        self
+    }
+
+    pub fn redirect_limit(mut self, redirect_limit: usize) -> Self {
+        self.redirect_limit = Some(redirect_limit);
+        self
+    }
+
+    pub fn build(&self) -> Result<Retriever, Error> {
         let mut headers = header::HeaderMap::new();
+
         headers.insert(
             header::ACCEPT_LANGUAGE,
-            header::HeaderValue::from_str(&http!(rtd, accept_lang)).unwrap()
+            header::HeaderValue::from_str(self.accept_lang).unwrap()
         );
-        headers.insert(header::ACCEPT_ENCODING, header::HeaderValue::from_static("identity"));
+        headers.insert(
+            header::ACCEPT_ENCODING,
+            header::HeaderValue::from_static("identity")
+        );
 
-        let user_agent = match &http!(rtd, user_agent) {
+        let user_agent = match self.user_agent {
             Some(u) => u,
             _ => DEFAULT_USER_AGENT,
         };
 
-        let client = Client::builder()
+        let mut builder = Client::builder()
             .cookie_store(true)
-            .default_headers(headers)
-            .redirect(Policy::limited(http!(rtd, max_redirections).into()))
-            .timeout(Duration::from_secs(http!(rtd, timeout_s)))
             .user_agent(user_agent)
-            .build()
-            .expect("Can't build reqwest client");
+            .default_headers(headers);
 
-        Session {
-            client,
-            rtd,
-            url: None,
-            request_count: 0,
-        }
-    }
-
-    pub fn url(&mut self, url: &'a str) -> &mut Self {
-        self.url = Some(url);
-        self
-    }
-
-    pub fn request(&mut self) -> Result<Response, Error> {
-        self.request_count += 1;
-
-        let resp = match self.url {
-            Some(url) => {
-                self.client.get(url).send()?
-            }
-            None => bail!("Missing URL"),
+        if let Some(timeout) = self.timeout {
+            builder = builder.timeout(timeout)
         };
 
-        if self.request_count > http!(self.rtd, max_retries) {
+        if let Some(limit) = self.redirect_limit {
+            builder = builder.redirect(Policy::limited(limit))
+        };
+
+        let client = builder
+            .build()?;
+
+        let retriever = Retriever {
+            client,
+            retry_limit: self.retry_limit,
+            retry_delay: self.retry_delay,
+        };
+
+        Ok(retriever)
+    }
+}
+
+#[derive(Clone)]
+pub struct Retriever {
+    client: Client,
+    retry_limit: usize,
+    retry_delay: Option<Duration>,
+}
+
+impl Retriever {
+    /// Make a request.
+    pub fn request(&self, url: &str) -> Result<Response, Error> {
+        self.recurse(url, None, 0)
+    }
+
+    /// Make a request, providing a HeaderMap of required extra headers to send.
+    pub fn request_with_headers(
+        &self, url: &str, header_map: HeaderMap
+    ) -> Result<Response, Error> {
+        self.recurse(url, Some(header_map), 0)
+    }
+
+    fn recurse(
+        &self,
+        url: &str,
+        headers: Option<HeaderMap>,
+        count: usize
+    ) -> Result<Response, Error> {
+        let mut client = self.client
+            .get(url);
+
+        if let Some(ref header_map) = headers {
+            client = client.headers(header_map.clone())
+        };
+
+        let resp = client
+            .send()?;
+
+        if count >= self.retry_limit {
             return Ok(resp);
         }
 
-        let status = resp.status();
+        match (resp.status(), self.retry_delay) {
+            (s, _) if s.is_success() => {
+                debug!("total requests: {}", count);
+                return Ok(resp);
+            },
 
-        if status.is_success() {
-            debug!("total requests: {}", self.request_count);
-            return Ok(resp);
-        } else if status.is_server_error() {
-            let delay = http!(self.rtd, retry_delay_s);
-            debug!("server error ({}), retrying in {}s", resp.status(), delay);
-            thread::sleep(Duration::from_secs(delay));
-        } else {
-            let r = resp.error_for_status()?;
-            bail!("unhandled request status: {}", r.status());
+            (s, Some(delay)) if s.is_server_error() => {
+                debug!(
+                    "server error ({}), retrying in {}s",
+                    resp.status(),
+                    delay.as_secs()
+                );
+                thread::sleep(delay);
+            },
+
+            _ => {
+                let r = resp.error_for_status()?;
+                bail!("unhandled request status: {}", r.status());
+            },
         };
 
         // tail recurse any retries
-        self.request()
+        self.recurse(url, headers, count+1)
     }
 }
 
 pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
-    let mut resp = Session::new(rtd).url(url).request()?;
+    let client = rtd.get_client()?;
+    let mut resp = client.request(url)?;
     get_title(&mut resp, rtd, false)
 }
 
@@ -189,7 +266,7 @@ pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, E
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::feat;
+    use crate::{feat, http};
     use std::fs::File;
     use std::path::{Path, PathBuf};
     use std::thread;
@@ -199,14 +276,20 @@ mod tests {
     #[test]
     #[ignore]
     fn resolve_urls() {
-        let rtd: Rtd = Rtd::default();
+        let rtd: Rtd = Rtd::default()
+            .init_http_client()
+            .unwrap();
+
         resolve_url("https://youtube.com",  &rtd).unwrap();
         resolve_url("https://google.co.uk", &rtd).unwrap();
     }
 
     #[test]
+    #[ignore]
     fn resolve_locally_served_files() {
-        let mut rtd: Rtd = Rtd::default();
+        let mut rtd: Rtd = Rtd::new()
+            .init_http_client()
+            .unwrap();
 
         // metadata and mime disabled
         feat!(rtd, report_metadata) = false;
@@ -329,7 +412,11 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        resolve_url("http://127.0.0.1:28282/test", &Rtd::default()).unwrap();
+        resolve_url(
+            "http://127.0.0.1:28282/test",
+            &Rtd::new().init_http_client().unwrap()
+        ).unwrap();
+
         let request_headers = rx.recv().unwrap();
 
         println!("Headers in request:\n{:#?}", request_headers);
@@ -400,7 +487,10 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        let res = resolve_url(&url, &Rtd::default());
+        let res = resolve_url(
+            &url,
+            &Rtd::new().init_http_client().unwrap()
+        );
         server_thread.join().unwrap();
         res
     }
@@ -441,7 +531,11 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        resolve_url(&url, &Rtd::default()).unwrap();
+        resolve_url(
+            &url,
+            &Rtd::new().init_http_client().unwrap()
+        ).unwrap();
+
         server_thread.join().unwrap();
     }
 
@@ -479,7 +573,11 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        resolve_url(&url, &Rtd::default()).unwrap();
+        resolve_url(
+            &url,
+            &Rtd::new().init_http_client().unwrap()
+        ).unwrap();
+
         server_thread.join().unwrap();
     }
 
@@ -502,7 +600,13 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        assert!(resolve_url(&url, &Rtd::default()).is_err());
+        assert!(
+            resolve_url(
+                &url,
+                &Rtd::new().init_http_client().unwrap()
+            ).is_err()
+        );
+
         server_thread.join().unwrap();
     }
 
@@ -547,7 +651,11 @@ mod tests {
         // wait for server thread to be ready
         thread::sleep(Duration::from_millis(50));
 
-        resolve_url(&url, &Rtd::default()).unwrap();
+        resolve_url(
+            &url,
+            &Rtd::new().init_http_client().unwrap()
+        ).unwrap();
+
         server_thread.join().unwrap();
     }
 
@@ -573,9 +681,10 @@ mod tests {
         let bind = "127.0.0.1:28268";
         let url = format!("http://{}/serr", bind);
         let timeout = Duration::from_secs(2);
-        let mut rtd = Rtd::default();
+        let mut rtd = Rtd::new();
         http!(rtd, max_retries) = 2;
         http!(rtd, retry_delay_s) = 1;
+        rtd = rtd.init_http_client().unwrap();
 
         // throttle between runs
         thread::sleep(Duration::from_millis(50));

@@ -1,12 +1,16 @@
+use std::io::Cursor;
 use itertools::Itertools;
-use image::ImageFormat;
-use image::io::Reader;
+use image::{
+    ImageFormat,
+    io::Reader,
+};
 use mime::Mime;
 use scraper::{Html, Selector};
-use std::io::Cursor;
 
-use super::feat;
-use super::config::Rtd;
+use crate::{
+    feat,
+    config::Rtd,
+};
 
 /// Format a mime string
 pub fn get_mime(rtd: &Rtd, mime: &Mime, size: &str) -> Option<String> {
