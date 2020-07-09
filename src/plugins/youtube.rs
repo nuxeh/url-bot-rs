@@ -18,8 +18,8 @@ pub struct Config {
 pub struct YouTubePlugin {}
 
 impl TitlePlugin for YouTubePlugin {
-    fn name(&self) -> String {
-        "youtube".into()
+    fn name(&self) -> &'static str {
+        "youtube"
     }
 
     fn check(&self, config: &PluginConfig, url: &Url) -> bool {
@@ -56,16 +56,16 @@ impl TitlePlugin for YouTubePlugin {
             _ => bail!("Can't get http client"),
         };
 
-        let res = client
+        let mut res = client
             .request(&req_url.into_string())?
             .json::<Resp>()?;
 
-        let first_item = match res.items.get(0) {
+        let first_item = match res.items.pop() {
             Some(v) => v,
             None => bail!("No list items in response"),
         };
 
-        Ok(first_item.snippet.title.clone())
+        Ok(first_item.snippet.title)
     }
 }
 

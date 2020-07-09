@@ -6,7 +6,7 @@ use crate::config::Rtd;
 
 pub trait TitlePlugin {
     /// Get the name of the plugin
-    fn name(&self) -> String;
+    fn name(&self) -> &'static str;
     /// Check to see if the token is a viable candidate for running the plugin
     fn check(&self, config: &PluginConfig, url: &Url) -> bool;
     /// Run the plugin to get a title
