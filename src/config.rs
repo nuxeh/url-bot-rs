@@ -5,7 +5,6 @@
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use toml;
 use std::path::{Path, PathBuf};
 use irc::client::data::Config as IrcConfig;
 use failure::Error;
