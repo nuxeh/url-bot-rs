@@ -11,7 +11,7 @@ use super::sqlite::{Database, NewLogEntry};
 use super::config::Rtd;
 use super::tld::TLD;
 
-pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: &Database) {
+pub fn handle_message(client: &Client, message: &Message, rtd: &mut Rtd, db: &Database) {
     trace!("{:?}", message.command);
 
     let sender = message.source_nickname();
@@ -30,7 +30,7 @@ pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: 
     };
 }
 
-fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
+fn kick(client: &Client, rtd: &mut Rtd, chan: &str, nick: &str) {
     if !feat!(rtd, autosave) {
         return;
     }
@@ -47,7 +47,7 @@ fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
     });
 }
 
-fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
+fn invite(client: &Client, rtd: &mut Rtd, nick: &str, chan: &str) {
     if !feat!(rtd, invite) {
         return;
     }
@@ -101,7 +101,7 @@ impl Msg {
     }
 }
 
-fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
+fn privmsg(client: &Client, rtd: &Rtd, db: &Database, msg: &Msg) {
     // ignore messages sent to status channels
     if param!(rtd, status_channels).contains(&msg.target.to_string()) {
         if msg.is_ping || contains_urls(&msg.text) {
@@ -265,7 +265,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
 }
 
 /// send IRC response
-fn respond<S>(client: &IrcClient, rtd: &Rtd, msg: &Msg, text: S)
+fn respond<S>(client: &Client, rtd: &Rtd, msg: &Msg, text: S)
 where
     S: ToString + std::fmt::Display,
 {
@@ -280,7 +280,7 @@ where
     });
 }
 
-fn respond_error<S>(client: &IrcClient, rtd: &Rtd, msg: &Msg, text: S)
+fn respond_error<S>(client: &Client, rtd: &Rtd, msg: &Msg, text: S)
 where
     S: ToString + std::fmt::Display,
 {
@@ -390,7 +390,7 @@ pub fn add_scheme_for_tld(token: &str) -> Option<String> {
 }
 
 /// join any status channels not already joined and send a message to them
-pub fn msg_status_chans<S>(client: &IrcClient, rtd: &Rtd, msg: S)
+pub fn msg_status_chans<S>(client: &Client, rtd: &Rtd, msg: S)
 where
     S: ToString + std::fmt::Display,
 {

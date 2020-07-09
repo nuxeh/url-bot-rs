@@ -166,19 +166,15 @@ impl Conf {
 
     /// add an IRC channel to the list of channels in the configuration
     pub fn add_channel(&mut self, name: String) {
-        if let Some(ref mut c) = self.client.channels {
-            if !c.contains(&name) {
-                c.push(name);
-            }
+        if !self.client.channels.contains(&name) {
+            self.client.channels.push(name);
         }
     }
 
     /// remove an IRC channel from the list of channels in the configuration
     pub fn remove_channel(&mut self, name: &str) {
-        if let Some(ref mut c) = self.client.channels {
-            if let Some(index) = c.iter().position(|c| c == name) {
-                c.remove(index);
-            }
+        if let Some(index) = self.client.channels.iter().position(|c| c == name) {
+            self.client.channels.remove(index);
         }
     }
 }
@@ -193,15 +189,15 @@ impl Default for Conf {
             database: Database::default(),
             client: IrcConfig {
                 nickname: Some("url-bot-rs".to_string()),
-                alt_nicks: Some(vec!["url-bot-rs_".to_string()]),
+                alt_nicks: vec!["url-bot-rs_".to_string()],
                 nick_password: Some("".to_string()),
                 username: Some("url-bot-rs".to_string()),
                 realname: Some("url-bot-rs".to_string()),
                 server: Some("127.0.0.1".to_string()),
                 port: Some(6667),
                 password: Some("".to_string()),
-                use_ssl: Some(false),
-                channels: Some(vec!["#url-bot-rs".to_string()]),
+                use_tls: Some(false),
+                channels: vec!["#url-bot-rs".to_string()],
                 user_info: Some("Feed me URLs.".to_string()),
                 ..IrcConfig::default()
             }

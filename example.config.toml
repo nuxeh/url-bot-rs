@@ -42,6 +42,6 @@ realname = "url-bot-rs"
 server = "127.0.0.1"
 port = 6667
 password = ""
-use_ssl = false
+use_tls = false
 channels = ["#url-bot-rs"]
 user_info = "Feed me URLs."
