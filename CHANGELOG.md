@@ -1,3 +1,4 @@
+- Switch to Rust 2018 edition, remove all instances of `extern crate`
 - Remove `cookie` dependency
 - Update to upstream `reqwest`, refactoring HTTP request code significantly
 - Replace `time` with `chrono`
