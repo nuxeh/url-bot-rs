@@ -18,8 +18,8 @@ pub struct Config {
 pub struct ImgurPlugin {}
 
 impl TitlePlugin for ImgurPlugin {
-    fn name(&self) -> String {
-        "imgur".into()
+    fn name(&self) -> &'static str {
+        "imgur"
     }
 
     fn check(&self, config: &PluginConfig, url: &Url) -> bool {
