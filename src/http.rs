@@ -9,6 +9,8 @@ use std::io::Read;
 use std::thread;
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
+use log::{debug, trace};
+use failure::bail;
 
 use super::http;
 use super::config::Rtd;
@@ -186,14 +188,12 @@ pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, E
 
 #[cfg(test)]
 mod tests {
-    extern crate tiny_http;
-
     use super::*;
     use crate::feat;
     use std::fs::File;
     use std::path::{Path, PathBuf};
     use std::thread;
-    use self::tiny_http::{Response, Header};
+    use tiny_http::{Response, Header};
     use std::sync::mpsc;
 
     #[test]

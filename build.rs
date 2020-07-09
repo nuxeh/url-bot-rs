@@ -1,6 +1,3 @@
-extern crate built;
-extern crate man;
-
 use std::env;
 use std::fs::{File, create_dir};
 use std::io::Write;

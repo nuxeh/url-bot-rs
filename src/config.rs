@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 use irc::client::data::Config as IrcConfig;
 use failure::Error;
 use directories::{BaseDirs, ProjectDirs};
+use serde_derive::{Serialize, Deserialize};
+use log::{info, warn};
 
 use super::VERSION;
 
@@ -336,10 +338,8 @@ pub fn find_configs_in_dir(dir: &Path) -> Result<impl Iterator<Item = PathBuf>, 
 
 #[cfg(test)]
 mod tests {
-    extern crate tempfile;
-
     use super::*;
-    use self::tempfile::tempdir;
+    use tempfile::tempdir;
     use std::env;
     use std::iter;
     use std::panic;

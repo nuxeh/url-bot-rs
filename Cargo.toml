@@ -8,6 +8,7 @@ authors = ["Edward Cragg <drq.11235@gmail.com>"]
 license = "ISC"
 readme = "README.md"
 build = "build.rs"
+edition = "2018"
 include = [
   "src/**/*",
   "build.rs",

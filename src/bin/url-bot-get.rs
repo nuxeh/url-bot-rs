@@ -35,36 +35,18 @@ pub struct Args {
     flag_curl: bool,
 }
 
-#[macro_use] extern crate url_bot_rs;
-
-#[macro_use] extern crate log;
-#[macro_use] extern crate serde_derive;
-
-extern crate lazy_static;
-extern crate itertools;
-extern crate regex;
-extern crate failure;
-extern crate reqwest;
-extern crate image;
-extern crate mime;
-extern crate humansize;
-extern crate irc;
-extern crate directories;
-extern crate toml;
-extern crate docopt;
-extern crate atty;
-extern crate stderrlog;
-extern crate scraper;
-
 use url_bot_rs::VERSION;
 use url_bot_rs::config::Rtd;
 use url_bot_rs::http::{Session, get_title};
 use url_bot_rs::message::add_scheme_for_tld;
+use url_bot_rs::feat;
 
 use docopt::Docopt;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
 use std::process;
+use serde_derive::Deserialize;
+use log::{info, error};
 
 const MIN_VERBOSITY: usize = 2;
 
