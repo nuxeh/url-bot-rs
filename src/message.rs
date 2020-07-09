@@ -4,6 +4,8 @@ use std::collections::HashSet;
 use unicode_segmentation::UnicodeSegmentation;
 use reqwest::Url;
 use regex::Regex;
+use log::{info, error, trace};
+use lazy_static::lazy_static;
 
 use super::{feat, param};
 use super::http::resolve_url;
@@ -411,12 +413,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    extern crate tiny_http;
-
     use super::*;
     use std::thread;
     use std::time::Duration;
-    use self::tiny_http::Response;
+    use tiny_http::Response;
     use super::TitleResp::{TITLE, ERROR};
 
     fn serve_html() {
