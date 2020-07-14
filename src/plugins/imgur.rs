@@ -17,6 +17,9 @@ pub struct Config {
 /// Imgur title plugin
 pub struct ImgurPlugin {}
 
+#[cfg(not(test))]
+static REQUEST_URL: &str = "https://api.imgur.com/3/";
+
 impl TitlePlugin for ImgurPlugin {
     fn name(&self) -> &'static str {
         "imgur"
@@ -33,7 +36,7 @@ impl TitlePlugin for ImgurPlugin {
     fn evaluate(&self, rtd: &Rtd , url: &Url) -> Result<String, Error> {
         let mut headers = HeaderMap::new();
 
-        let req_url = Url::parse("https://api.imgur.com/3/")?
+        let req_url = Url::parse(REQUEST_URL)?
             .join(&url.path()[1..])? // remove leading /
             .into_string();
         let header_content = format!("Client-ID {}", &plugin_conf!(rtd, imgur).api_key);
@@ -63,4 +66,43 @@ struct Resp {
 #[derive(Debug, Deserialize)]
 struct Data {
     title: String,
+}
+
+// Tests
+
+#[cfg(test)]
+static REQUEST_URL: &str = "https://localhost:8266/test";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn name() {
+        let plugin = ImgurPlugin {};
+        assert_eq!(plugin.name(), "imgur");
+    }
+
+    #[test]
+    fn check() {
+        let plugin = ImgurPlugin {};
+        let mut config = PluginConfig::default();
+        let url = Url::parse("https://imgur.com/gallery/foo").unwrap();
+        let bad_url = Url::parse("https://i.imgur.com/foo").unwrap();
+
+        // No API key set
+        assert_eq!(plugin.check(&config, &url), false);
+        // Bad URL
+        assert_eq!(plugin.check(&config, &bad_url), false);
+
+        // API key is set
+        config.imgur.api_key = String::from("bar");
+        assert_eq!(plugin.check(&config, &url), true);
+        assert_eq!(plugin.check(&config, &bad_url), false);
+    }
+
+    #[test]
+    fn evaluate() {
+
+    }
 }
