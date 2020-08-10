@@ -1,3 +1,5 @@
+# v0.3.1
+
 - Add YouTube plugin
 - Add plugin system, and Imgur plugin
 - Refactor HTTP requests to use a persistent `reqwest` client, and hopefully
