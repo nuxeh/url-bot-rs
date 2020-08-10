@@ -53,6 +53,7 @@ impl<'a> RetrieverBuilder<'a> {
         self.retry_delay = Some(Duration::from_secs(delay_s));
         self
     }
+
     pub fn user_agent(mut self, user_agent: &'a str) -> Self {
         self.user_agent = Some(user_agent);
         self
