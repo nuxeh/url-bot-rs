@@ -30,6 +30,13 @@ On Linux or OSX, you can install SQLite as follows:
 | Debian   | `apt install libsqlite3-dev`                       |
 | OSX      | `brew install sqlite3`                             |
 
+Ubuntu also need additional dependencies for TLS.
+These can be satisfied with:
+
+| Platform | Installation command                               |
+|----------|----------------------------------------------------|
+| Ubuntu   | `apt install libssl-dev pkg-config`                       |
+
 On Windows, or if preferred, also for Linux or OSX, bundled SQLite can also be
 used, where it is built and linked statically without external dependencies, by
 specifying the `sqlite_bundled` feature when building with Cargo, e.g.:
