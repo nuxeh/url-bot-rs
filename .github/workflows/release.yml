@@ -41,6 +41,10 @@ jobs:
           cargo install cargo-deb
           cargo deb
 
+      - name: Build Snap package
+        run: |
+          snapcraft
+
       - name: Create Github release
         id: make_release
         uses: actions/create-release@v1
@@ -58,9 +62,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.make_release.outputs.upload_url }}
-          asset_content_type: application/vnd.debian.binary-package
-          asset_path: target/debian/url-bot-rs_${{ steps.get_version.outputs.VERSION }}_amd64.deb
-          asset_name: url-bot-rs_${{ steps.get_version.outputs.VERSION }}_amd64.deb
+          asset_path: target/snap/url-bot-rs_${{ steps.get_version.outputs.VERSION }}_multi.snap
+          asset_name: url-bot-rs_${{ steps.get_version.outputs.VERSION }}_multi.snap
 
       - name: Publish to crates.io
         env:

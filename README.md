@@ -68,6 +68,18 @@ parameters, and edit the file as shown below.
 Debian packages for releases are available [on
 Github](https://github.com/nuxeh/url-bot-rs/releases).
 
+Multiplatform packages available as a snap.
+Install by downloading the snap and run (depending on the release version):
+
+```sh
+sudo snap install url-bot-rs_0.3.1_multi.snap --devmode 
+```
+Uninstall the snap by:
+
+```sh
+sudo snap remove url-bot-rs_0.3.1_multi.snap 
+```
+
 ## Build
 
 ### Get Rust
