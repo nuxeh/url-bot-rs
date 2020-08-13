@@ -1,4 +1,4 @@
-use rusqlite::Connection;
+use rusqlite::{params, Connection};
 use failure::{Error, SyncFailure};
 use std::path::Path;
 use serde_rusqlite::{from_rows, to_params_named};
@@ -29,14 +29,14 @@ impl Database {
             channel         TEXT NOT NULL,
             time_created    TEXT NOT NULL
             )",
-            &[]
+            params![],
         )?;
         db.execute("CREATE TABLE IF NOT EXISTS errors (
             id              INTEGER PRIMARY KEY,
             url             TEXT NOT NULL,
             error_info      TEXT NOT NULL
             )",
-            &[]
+            params![],
         )?;
 
         Ok(Self { db })
