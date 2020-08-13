@@ -1,15 +1,22 @@
 use irc::client::prelude::*;
-use std::iter;
-use std::collections::HashSet;
+use std::{
+    iter,
+    collections::HashSet,
+};
 use unicode_segmentation::UnicodeSegmentation;
 use reqwest::Url;
 use regex::Regex;
+use log::{info, error, trace};
+use lazy_static::lazy_static;
 
-use super::{feat, param};
-use super::http::resolve_url;
-use super::sqlite::{Database, NewLogEntry};
-use super::config::Rtd;
-use super::tld::TLD;
+use crate::{
+    feat, param,
+    http::resolve_url,
+    sqlite::{Database, NewLogEntry},
+    config::Rtd,
+    tld::TLD,
+    plugins::TITLE_PLUGINS,
+};
 
 pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: &Database) {
     trace!("{:?}", message.command);
@@ -79,24 +86,24 @@ enum TitleResp {
 }
 
 #[derive(Debug)]
-struct Msg {
+struct Msg<'a> {
     is_chanmsg: bool,
     is_ping: bool,
-    target: String,
-    sender: String,
-    text: String,
+    target: &'a str,
+    sender: &'a str,
+    text: &'a str,
 }
 
-impl Msg {
-    fn new(rtd: &Rtd, sender: &str, target: &str, text: &str) -> Msg {
+impl<'a> Msg<'a> {
+    fn new(rtd: &Rtd, sender: &'a str, target: &'a str, text: &'a str) -> Msg<'a> {
         let our_nick = rtd.conf.client.nickname.as_ref().unwrap();
 
         Msg {
             is_chanmsg: target.starts_with('#'),
             is_ping: is_ping(&our_nick, text),
-            sender: sender.to_string(),
-            target: target.to_string(),
-            text: text.to_string(),
+            sender,
+            target,
+            text,
         }
     }
 }
@@ -125,6 +132,22 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
         respond(client, rtd, &msg, &param!(rtd, nick_response_str));
     }
 
+}
+
+/// Run available plugins on a single URL, return the first successful title.
+fn process_plugins(rtd: &Rtd, url: &Url) -> Option<String> {
+    let result: String = TITLE_PLUGINS
+        .iter()
+        .filter(|p| p.check(&rtd.conf.plugins, url))
+        .filter_map(|p| p.evaluate(&rtd, url).ok())
+        .take(1)
+        .collect();
+
+    if result.is_empty() {
+        None
+    } else {
+        Some(result)
+    }
 }
 
 /// find titles in a message and generate responses
@@ -171,13 +194,17 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         info!("[{}] RESOLVE <{}>", rtd.conf.network.name, token);
 
         // try to get the title from the url
-        let title = match resolve_url(token, rtd) {
-            Ok(title) => title,
-            Err(err) => {
-                error!("{:?}", err);
-                responses.push(TitleResp::ERROR(err.to_string()));
-                continue;
-            },
+        let title = if let Some(title) = process_plugins(rtd, &url) {
+            title
+        } else {
+            match resolve_url(token, rtd) {
+                Ok(title) => title,
+                Err(err) => {
+                    error!("{:?}", err);
+                    responses.push(TitleResp::ERROR(err.to_string()));
+                    continue;
+                },
+            }
         };
 
         // create a log entry struct
@@ -411,12 +438,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    extern crate tiny_http;
-
     use super::*;
     use std::thread;
     use std::time::Duration;
-    use self::tiny_http::Response;
+    use tiny_http::Response;
     use super::TitleResp::{TITLE, ERROR};
 
     fn serve_html() {
@@ -436,7 +461,7 @@ mod tests {
     }
 
     fn pt(m: &str) -> Vec<TitleResp> {
-        let rtd = Rtd::default();
+        let rtd = Rtd::new().init_http_client().unwrap();
         let msg = Msg::new(&rtd, "testnick", "#testchannel", m);
         let db = Database::open_in_memory().unwrap();
         let ret = process_titles(&rtd, &db, &msg).collect();
@@ -493,7 +518,7 @@ mod tests {
 
     #[test]
     fn test_process_titles_repost() {
-        let mut rtd = Rtd::default();
+        let mut rtd = Rtd::new().init_http_client().unwrap();
         feat!(rtd, history) = true;
         feat!(rtd, cross_channel_history) = false;
 
@@ -603,7 +628,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_process_titles_partial() {
-        let mut rtd = Rtd::default();
+        let mut rtd = Rtd::new().init_http_client().unwrap();
         feat!(rtd, partial_urls) = true;
 
         let db = Database::open_in_memory().unwrap();

@@ -4,35 +4,12 @@
  * URL parsing IRC bot
  *
  */
-#[macro_use] extern crate url_bot_rs;
-
-#[macro_use] extern crate log;
-#[macro_use] extern crate serde_derive;
-#[macro_use] extern crate failure;
-
-extern crate irc;
-extern crate rusqlite;
-extern crate docopt;
-extern crate itertools;
-extern crate regex;
-extern crate lazy_static;
-extern crate reqwest;
-extern crate cookie;
-extern crate image;
-extern crate serde_rusqlite;
-extern crate mime;
-extern crate humansize;
-extern crate unicode_segmentation;
-extern crate toml;
-extern crate directories;
-extern crate atty;
-extern crate stderrlog;
-extern crate scraper;
 
 use url_bot_rs::VERSION;
 use url_bot_rs::sqlite::Database;
 use url_bot_rs::config::{Rtd, find_configs_in_dir};
 use url_bot_rs::message::handle_message;
+use url_bot_rs::{feat, param};
 
 use docopt::Docopt;
 use failure::Error;
@@ -44,6 +21,8 @@ use std::path::PathBuf;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
 use directories::ProjectDirs;
+use serde_derive::Deserialize;
+use log::{info, warn, error};
 
 // docopt usage string
 const USAGE: &str = "
@@ -164,7 +143,8 @@ fn get_cli_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
 fn run_instance(conf: &PathBuf) -> Result<(), Error> {
     let rtd: Rtd = Rtd::new()
         .conf(conf)
-        .load()?;
+        .load()?
+        .init_http_client()?;
 
     let net = &rtd.conf.network.name;
     let timeout = param!(rtd, reconnect_timeout);
@@ -227,13 +207,11 @@ fn connect_instance(rtd: &Rtd) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
-    extern crate tempfile;
-
     use super::*;
     use std::fs;
     use std::env;
     use std::path::Path;
-    use self::tempfile::tempdir;
+    use tempfile::tempdir;
     use url_bot_rs::config::Conf;
 
     #[test]

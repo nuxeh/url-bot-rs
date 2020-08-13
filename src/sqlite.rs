@@ -3,6 +3,7 @@ use failure::{Error, SyncFailure};
 use std::path::Path;
 use serde_rusqlite::{from_rows, to_params_named};
 use chrono::Utc;
+use serde_derive::{Serialize, Deserialize};
 
 pub struct Database {
     db: Connection,

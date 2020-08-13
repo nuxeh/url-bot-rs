@@ -1,3 +1,14 @@
+# v0.3.1
+
+- Add YouTube plugin
+- Add plugin system, and Imgur plugin
+- Refactor HTTP requests to use a persistent `reqwest` client, and hopefully
+  its internal connection pool.
+- Switch to Rust 2018 edition, remove all instances of `extern crate`
+- Remove `cookie` dependency
+- Update to upstream `reqwest`, refactoring HTTP request code significantly
+- Replace `time` with `chrono`
+
 # v0.3.0
 
 - Retry HTTP requests on server errors.

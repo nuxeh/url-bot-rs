@@ -1,6 +1,6 @@
 [package]
 name = "url-bot-rs"
-version = "0.3.0"
+version = "0.3.1"
 description = "Minimal IRC URL bot in Rust"
 keywords = ["irc", "bot", "title"]
 repository = "https://github.com/nuxeh/url-bot-rs"
@@ -8,6 +8,7 @@ authors = ["Edward Cragg <drq.11235@gmail.com>"]
 license = "ISC"
 readme = "README.md"
 build = "build.rs"
+edition = "2018"
 include = [
   "src/**/*",
   "build.rs",
@@ -30,7 +31,7 @@ tempfile = "3.1.0"
 irc = "0.13.6"
 tokio-core = "0.1.17"
 rusqlite = "0.14.0"
-chrono = "0.4.12"
+chrono = "0.4.13"
 docopt = "1.1.0"
 serde = "1.0.114"
 serde_derive = "1.0.104"
@@ -38,15 +39,14 @@ itertools = "0.9.0"
 regex = "1.3.9"
 lazy_static = "1.4.0"
 failure = "0.1.8"
-reqwest = "0.9.10"
-cookie = "0.13.3"
+reqwest = { version = "0.10.6", features = ["blocking", "cookies", "json"] }
 serde_rusqlite = "0.14.0"
 mime = "0.3.16"
 humansize = "1.1.0"
 unicode-segmentation = "1.6.0"
 toml = "0.5.6"
-directories = "2.0.2"
-log = "0.4.8"
+directories = "3.0.1"
+log = "0.4.11"
 stderrlog = "0.4.3"
 atty = "0.2.11"
 scraper = { version = "0.12.0", default-features = false, features = [] }

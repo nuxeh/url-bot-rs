@@ -2,16 +2,22 @@
  * Application configuration
  *
  */
-use std::fs;
-use std::fs::File;
-use std::io::Write;
-use toml;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::{self, File},
+    io::Write,
+    path::{Path, PathBuf},
+};
 use irc::client::data::Config as IrcConfig;
-use failure::Error;
+use failure::{Error, bail};
 use directories::{BaseDirs, ProjectDirs};
+use serde_derive::{Serialize, Deserialize};
+use log::{info, warn};
 
-use super::VERSION;
+use crate::{
+    VERSION,
+    plugins::PluginConfig,
+    http::{Retriever, RetrieverBuilder},
+};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Network {
@@ -136,6 +142,8 @@ macro_rules! http {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Conf {
     #[serde(default)]
+    pub plugins: PluginConfig,
+    #[serde(default)]
     pub network: Network,
     #[serde(default)]
     pub features: Features,
@@ -186,6 +194,7 @@ impl Conf {
 impl Default for Conf {
     fn default() -> Self {
         Self {
+            plugins: PluginConfig::default(),
             network: Network::default(),
             features: Features::default(),
             params: Parameters::default(),
@@ -204,7 +213,7 @@ impl Default for Conf {
                 channels: Some(vec!["#url-bot-rs".to_string()]),
                 user_info: Some("Feed me URLs.".to_string()),
                 ..IrcConfig::default()
-            }
+            },
         }
     }
 }
@@ -216,6 +225,8 @@ pub struct Rtd {
     pub paths: Paths,
     /// configuration file data
     pub conf: Conf,
+    /// HTTP client
+    client: Option<Retriever>,
 }
 
 #[derive(Default, Clone)]
@@ -230,18 +241,45 @@ impl Rtd {
     }
 
     /// Set the configuration file path.
-    pub fn conf(&mut self, path: &PathBuf) -> &mut Self {
+    pub fn conf(mut self, path: &PathBuf) -> Self {
         self.paths.conf = expand_tilde(path);
         self
     }
 
-    pub fn db(&mut self, path: Option<&PathBuf>) -> &mut Self {
+    pub fn db(mut self, path: Option<&PathBuf>) -> Self {
         self.paths.db = path.map(|p| expand_tilde(p));
         self
     }
 
+    pub fn init_http_client(mut self) -> Result<Self, Error> {
+        let conf = &self.conf.http_params;
+
+        let mut builder = RetrieverBuilder::new()
+            .retry(conf.max_retries.into(), conf.retry_delay_s)
+            .timeout(conf.timeout_s)
+            .accept_lang(&conf.accept_lang)
+            .redirect_limit(conf.max_redirections.into());
+
+        if let Some(ref user_agent) = conf.user_agent {
+            builder = builder.user_agent(&user_agent);
+        };
+
+        self.client = Some(builder.build()?);
+
+        Ok(self)
+    }
+
+    pub fn get_client(&self) -> Result<&Retriever, Error> {
+        let client = match self.client.as_ref() {
+            None => bail!("HTTP client not initialised"),
+            Some(c) => c,
+        };
+
+        Ok(client)
+    }
+
     /// Load the configuration file and return an Rtd.
-    pub fn load(&mut self) -> Result<Self, Error> {
+    pub fn load(mut self) -> Result<Self, Error> {
         ensure_parent_dir(&self.paths.conf)?;
 
         // create a default-valued config if it doesn't exist
@@ -265,7 +303,7 @@ impl Rtd {
         // set url-bot-rs version number in the irc client configuration
         self.conf.client.version = Some(VERSION.to_string());
 
-        Ok(self.clone())
+        Ok(self)
     }
 
     fn get_db_path(&mut self) -> Option<PathBuf> {
@@ -336,10 +374,8 @@ pub fn find_configs_in_dir(dir: &Path) -> Result<impl Iterator<Item = PathBuf>, 
 
 #[cfg(test)]
 mod tests {
-    extern crate tempfile;
-
     use super::*;
-    use self::tempfile::tempdir;
+    use tempfile::tempdir;
     use std::env;
     use std::iter;
     use std::panic;

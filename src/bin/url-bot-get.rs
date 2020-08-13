@@ -1,11 +1,11 @@
 const USAGE: &str = "
 URL munching IRC bot, web page title fetching tool.
 
-Retrieve the title or some content from web addresses, a debugging
+Retrieve the title or some content from web addresses, primarily a debugging
 tool for `url-bot-rs`.
 
 Usage:
-    url-bot-rs [options] [-v...] [<url>]
+    url-bot-get [options] [-v...] [<url>]
 
 Options:
     -h --help                     Show this help message.
@@ -16,9 +16,20 @@ Options:
     -l=<val> --accept-lang=<val>  Specify accept-lang.
     -t=<val> --timeout=<val>      Specify request timeout.
     -r=<val> --redirect=<val>     Specify redirection limit.
+    -R=<val> --retries=<val>      Specify retry limit.
+    -T=<val> --retry-delay=<val>  Specify redirection limit.
     --metadata=<val>              Enable metadata [default: true].
     --mime=<val>                  Enable mime reporting [default: true].
     --curl                        Behave like curl, post page content to stdout.
+    --plugins                     List available plugins.
+    --conf=<path>                 Provide a plugin configuration file.
+    --generate                    Generate a template plugin configuration.
+    --plugin=<name>               Run named plugin.
+
+Examples:
+    url-bot-get https://google.com
+    url-bot-get --conf plugins.toml --generate
+    url-bot-get --conf plugins.toml --plugin imgur <url>
 ";
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -33,39 +44,36 @@ pub struct Args {
     flag_metadata: bool,
     flag_mime: bool,
     flag_curl: bool,
+    flag_plugins: bool,
+    flag_conf: Option<PathBuf>,
+    flag_generate: bool,
+    flag_plugin: Option<String>,
+    flag_retries: Option<u8>,
+    flag_retry_delay: Option<u64>,
 }
 
-#[macro_use] extern crate url_bot_rs;
-
-#[macro_use] extern crate log;
-#[macro_use] extern crate serde_derive;
-
-extern crate lazy_static;
-extern crate itertools;
-extern crate regex;
-extern crate failure;
-extern crate reqwest;
-extern crate cookie;
-extern crate image;
-extern crate mime;
-extern crate humansize;
-extern crate irc;
-extern crate directories;
-extern crate toml;
-extern crate docopt;
-extern crate atty;
-extern crate stderrlog;
-extern crate scraper;
-
-use url_bot_rs::VERSION;
-use url_bot_rs::config::Rtd;
-use url_bot_rs::http::{Session, get_title};
-use url_bot_rs::message::add_scheme_for_tld;
-
+use std::{
+    process,
+    fs,
+    fs::File,
+    io::Write,
+    path::PathBuf,
+};
 use docopt::Docopt;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
-use std::process;
+use serde_derive::Deserialize;
+use log::error;
+use failure::{Error, bail};
+use reqwest::Url;
+
+use url_bot_rs::{
+    VERSION, feat,
+    config::{Rtd, Http},
+    http::{RetrieverBuilder, get_title},
+    message::add_scheme_for_tld,
+    plugins::{TITLE_PLUGINS, PluginConfig},
+};
 
 const MIN_VERBOSITY: usize = 2;
 
@@ -94,42 +102,107 @@ fn main() {
         .init()
         .unwrap();
 
-    // create configuration
-    let mut rtd: Rtd = Rtd::default();
-    feat!(rtd, report_metadata) = args.flag_metadata;
-    feat!(rtd, report_mime) = args.flag_mime;
+    if let Err(e) = run(&args) {
+        error!("{}", e);
+    }
+}
 
-    // set session properties for the request
-    let mut session = Session::new(&rtd);
-    if let Some(v) = args.flag_timeout {
-        info!("overriding timeout to {}s", v);
-        rtd.conf.http_params.timeout_s = v;
-    }
-    if let Some(v) = args.flag_redirect {
-        info!("overriding redirect limit to {}", v);
-        rtd.conf.http_params.max_redirections = v;
-    }
-    if let Some(v) = args.flag_user_agent {
-        info!("overriding user-agent to \"{}\"", v);
-        rtd.conf.http_params.user_agent = Some(v);
-    }
-    if let Some(v) = args.flag_accept_lang {
-        info!("overriding accept-lang to \"{}\"", v);
-        rtd.conf.http_params.accept_lang = v;
+fn run(args: &Args) -> Result<(), Error> {
+    if args.flag_generate {
+        generate_plugin_config(args)?;
+    } else if let Some(p) = &args.flag_plugin {
+        run_plugin(args, p)?;
+    } else if args.flag_plugins {
+        list_plugins();
+    } else {
+        scrape_title(args)?;
     }
 
-    // get short url, if applicable
-    let token = add_scheme_for_tld(&args.arg_url).unwrap_or(args.arg_url);
+    Ok(())
+}
 
-    // make request
-    let mut resp = session
+/// Generate a default plugins configuration file
+///
+/// The contents depend on currently available plugins, but may include, for
+/// example, API keys.
+fn generate_plugin_config(args: &Args) -> Result<(), Error> {
+    if let Some(path) = &args.flag_conf {
+        let mut file = File::create(path)?;
+        file.write_all(toml::ser::to_string(&PluginConfig::default())?.as_bytes())?;
+        Ok(())
+    } else {
+        bail!("No configuration file path provided to write to")
+    }
+}
+
+/// List currently available plugins
+fn list_plugins() {
+    TITLE_PLUGINS
+        .iter()
+        .for_each(|p| println!("{}", p.name()));
+}
+
+/// Run a named title plugin
+fn run_plugin(args: &Args, name: &str) -> Result<(), Error> {
+    // Read plugin configuration from TOML
+    let path = match &args.flag_conf {
+        Some(p) => p,
+        _ => bail!("No plugin configuration file provided"),
+    };
+    let conf = fs::read_to_string(path)?;
+    let conf: PluginConfig = toml::de::from_str(&conf)?;
+
+    let url = args.arg_url.parse::<Url>()?;
+
+    let mut rtd = Rtd::new()
+        .init_http_client()?;
+
+    rtd.conf.plugins = conf.clone();
+
+    TITLE_PLUGINS
+        .iter()
+        .filter(|p| p.name() == name)
+        .for_each(|p| {
+            println!("plugin:   {}",   p.name());
+            println!("check:    {}",   p.check(&conf, &url));
+            println!("evaluate: {:?}", p.evaluate(&rtd, &url));
+        });
+
+    Ok(())
+}
+
+/// Scrape a web page for its title
+fn scrape_title(args: &Args) -> Result<(), Error> {
+    let conf = Http::default();
+    let token = add_scheme_for_tld(&args.arg_url).unwrap_or_else(|| args.arg_url.clone());
+    let user_agent = args.flag_user_agent.as_ref()
+        .or_else(|| conf.user_agent.as_ref());
+
+    let mut builder = RetrieverBuilder::new()
+        .retry(
+            args.flag_retries.unwrap_or(conf.max_retries).into(),
+            args.flag_retry_delay.unwrap_or(conf.retry_delay_s)
+        )
+        .timeout(args.flag_timeout.unwrap_or(conf.timeout_s))
+        .redirect_limit(args.flag_redirect.unwrap_or(conf.max_redirections).into())
+        .accept_lang(&args.flag_accept_lang.as_ref().unwrap_or(&conf.accept_lang));
+
+    if let Some(v) = user_agent {
+        builder = builder.user_agent(&v);
+    }
+
+    let mut resp = builder
+        .build()?
         .request(&token)
         .unwrap_or_else(|err| {
             error!("Error making request: {}", err);
             process::exit(1);
         });
 
-    // output
+    let mut rtd: Rtd = Rtd::default();
+    feat!(rtd, report_metadata) = args.flag_metadata;
+    feat!(rtd, report_mime) = args.flag_mime;
+
     let ret = match get_title(&mut resp, &rtd, args.flag_curl) {
         Ok(t) => {
             if !args.flag_curl { println!("{}", t) };
