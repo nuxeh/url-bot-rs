@@ -19,7 +19,7 @@ include = [
 ]
 
 [build-dependencies]
-built = { version = "0.4.2", features = ["git2"] }
+built = { version = "0.4.3", features = ["git2"] }
 man = "0.3.0"
 
 [dev-dependencies]
@@ -28,7 +28,7 @@ diff = "0.1.12"
 tempfile = "3.1.0"
 
 [dependencies]
-irc = "0.13.6" #Async API in 0.14 https://crates.io/crates/irc
+irc = "0.13.6"
 tokio-core = "0.1.17"
 rusqlite = "0.20.0"
 serde_rusqlite = "0.21.0"
@@ -48,12 +48,12 @@ toml = "0.5.6"
 directories = "3.0.1"
 log = "0.4.11"
 stderrlog = "0.4.3"
-atty = "0.2.11" #Locked by stderrlog: https://github.com/cardoe/stderrlog-rs/blob/master/Cargo.toml
+atty = "0.2.11"
 scraper = { version = "0.12.0", default-features = false, features = [] }
-phf = "0.7.24" #Version 0.8 compiles but throws a test error.
+phf = "0.7.24"
 
 [dependencies.image]
-version = "0.22.5"  #Major changes: https://docs.rs/crate/image/0.23.0/source/CHANGES.md
+version = "0.22.5"
 default-features = false
 features = ["gif_codec", "jpeg", "png_codec", "pnm", "tiff", "bmp"]
 

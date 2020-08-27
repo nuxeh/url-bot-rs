@@ -1,0 +1,4 @@
+phf = "0.8.0" #Version 0.8 compiles but throws a test error.
+atty = "0.2.11" #Locked by stderrlog: https://github.com/cardoe/stderrlog-rs/blob/master/Cargo.toml
+irc = "0.13.6" #Async API in 0.14 https://crates.io/crates/irc
+version = "0.22.5"  #Major changes: https://docs.rs/crate/image/0.23.0/source/CHANGES.md
