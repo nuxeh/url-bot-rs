@@ -30,7 +30,7 @@ On Linux or OSX, you can install SQLite as follows:
 | Debian   | `apt install libsqlite3-dev`                       |
 | OSX      | `brew install sqlite3`                             |
 
-Ubuntu also need additional dependencies for TLS.
+Ubuntu also needs additional dependencies for TLS.
 These can be satisfied with:
 
 | Platform | Installation command                               |
