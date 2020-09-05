@@ -1,5 +1,7 @@
 ![url-bot-rs](./logo.svg "url-bot-rs")
 
+----
+
 [![build](https://github.com/nuxeh/url-bot-rs/workflows/build/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Abuild)
 [![macOS](https://github.com/nuxeh/url-bot-rs/workflows/macOS/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3AmacOS)
 [![windows](https://github.com/nuxeh/url-bot-rs/workflows/windows/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Awindows)\
@@ -8,6 +10,8 @@
 [![coveralls](https://img.shields.io/coveralls/github/nuxeh/url-bot-rs/master)](https://coveralls.io/github/nuxeh/url-bot-rs?branch=master)
 [![codecov](https://codecov.io/gh/nuxeh/url-bot-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/nuxeh/url-bot-rs)\
 [![crates.io](https://img.shields.io/crates/v/url-bot-rs)](https://crates.io/crates/url-bot-rs)
+
+----
 
 URL title fetching bot for IRC in Rust. The bot monitors all messages sent to
 it in any IRC channels it's joined to, if any messages contain URLs, the bot
