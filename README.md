@@ -1,7 +1,5 @@
 ![url-bot-rs](./logo.svg "url-bot-rs")
 
-----
-
 [![build](https://github.com/nuxeh/url-bot-rs/workflows/build/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Abuild)
 [![macOS](https://github.com/nuxeh/url-bot-rs/workflows/macOS/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3AmacOS)
 [![windows](https://github.com/nuxeh/url-bot-rs/workflows/windows/badge.svg)](https://github.com/nuxeh/url-bot-rs/actions?query=branch%3Amaster+event%3Apush+workflow%3Awindows)\
