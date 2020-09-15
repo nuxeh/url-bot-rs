@@ -116,17 +116,20 @@ mod tests {
         let mut config = PluginConfig::default();
         let url = Url::parse("https://www.youtube.com/watch?v=abc123def78").unwrap();
         let url2 = Url::parse("https://youtu.be/abc123def78").unwrap();
+        let url3 = Url::parse("https://music.youtube.com/watch?v=abc123def78&feature=share").unwrap();
         let bad_url = Url::parse("https://google.com/").unwrap();
 
         // No API key set
         assert_eq!(plugin.check(&config, &url), false);
         assert_eq!(plugin.check(&config, &url2), false);
+        assert_eq!(plugin.check(&config, &url3), false);
         assert_eq!(plugin.check(&config, &bad_url), false);
 
         // API key is set
         config.youtube.api_key = String::from("bar");
         assert_eq!(plugin.check(&config, &url), true);
         assert_eq!(plugin.check(&config, &url2), true);
+        assert_eq!(plugin.check(&config, &url3), true);
         assert_eq!(plugin.check(&config, &bad_url), false);
     }
 
