@@ -32,13 +32,14 @@ impl TitlePlugin for YouTubePlugin {
             url.domain() == Some("youtube.com")
             || url.domain() == Some("www.youtube.com")
             || url.domain() == Some("youtu.be")
+            || url.domain() == Some("music.youtube.com")
         }
     }
 
     fn evaluate(&self, rtd: &Rtd , url: &Url) -> Result<String, Error> {
         let video_id = match url.domain() {
             Some("youtu.be") => url.path()[1..].to_string(),
-            Some("www.youtube.com") | Some("youtube.com") => {
+            Some("www.youtube.com") | Some("youtube.com") | Some("music.youtube.com") => {
                 url
                     .query_pairs()
                     .filter(|(k, _)| k == "v")
