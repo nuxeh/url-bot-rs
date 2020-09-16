@@ -15,9 +15,8 @@ lazy_static! {
     pub static ref VERSION: String = format!(
         "v{}{} (build: {})",
         buildinfo::PKG_VERSION,
-        buildinfo::GIT_VERSION.map_or_else(
-            || String::from(""),
-            |v| format!(" (git {})", v)),
+        buildinfo::GIT_VERSION
+            .map_or_else(|| String::from(""), |v| format!(" (git {})", v)),
         buildinfo::PROFILE
     );
 }
