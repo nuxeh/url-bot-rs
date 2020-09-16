@@ -109,7 +109,10 @@ mod tests {
     fn evaluate_no_client() {
         let plugin = ImgurPlugin {};
         let rtd = Rtd::new();
-        assert!(plugin.evaluate(&rtd, &REQUEST_URL.parse().unwrap()).is_err());
+        let url = "https://imgur.com/gallery/0pVuZq8";
+        let res = plugin.evaluate(&rtd, &url.parse().unwrap());
+        assert!(res.is_err());
+        if let Err(e) = res { assert_eq!(&format!("{}", e), "Can't get http client"); }
     }
 
     #[test]
