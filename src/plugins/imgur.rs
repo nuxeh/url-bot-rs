@@ -21,9 +21,7 @@ pub struct ImgurPlugin {}
 static REQUEST_URL: &str = "https://api.imgur.com/3/";
 
 impl TitlePlugin for ImgurPlugin {
-    fn name(&self) -> &'static str {
-        "imgur"
-    }
+    fn name(&self) -> &'static str { "imgur" }
 
     fn check(&self, config: &PluginConfig, url: &Url) -> bool {
         if config.imgur.api_key.is_empty() {
@@ -135,11 +133,9 @@ mod tests {
 
         thread::sleep(Duration::from_millis(1000));
 
-        assert_eq!(
-            plugin.evaluate(&rtd, &url.parse().unwrap()).unwrap(),
-            String::from("Ducks and Dog"),
-        );
-        server_thread.join().unwrap();
+        let res = plugin.evaluate(&rtd, &url.parse().unwrap()).unwrap();
+        assert_eq!(res, String::from("Ducks and Dog"));
 
+        server_thread.join().unwrap();
     }
 }
