@@ -268,7 +268,7 @@ mod tests {
     use super::*;
     use crate::{feat, http};
     use std::fs::File;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
     use std::thread;
     use tiny_http::{Response, Header};
     use std::sync::mpsc;
