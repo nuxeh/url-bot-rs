@@ -147,15 +147,22 @@ mod tests {
         let rtd = Rtd::new().init_http_client().unwrap();
         let bind = "127.0.0.1:28285";
         let url = "https://www.youtube.com/watch?v=abc123def78";
+        let response_no_list_items = r#"{"kind":"youtube#videoListResponse","etag":"123456","items":[],"pageInfo":{"totalResults":1,"resultsPerPage":1}}"#;
         let response = r#"{"kind":"youtube#videoListResponse","etag":"123456","items":[{"kind":"youtube#video","etag":"123456","id":"abc123def78","snippet":{"publishedAt":"2020-08-10T11:45:00Z","channelId":"123456789abcdefg","title":"Glorious YouTube video","description":"","thumbnails":{"default":{"url":"","width":120,"height":90},"medium":{"url":"","width":320,"height":180},"high":{"url":"","width":480,"height":360},"standard":{"url":"","width":640,"height":480},"maxres":{"url":"","width":1280,"height":720}},"channelTitle":"A channel name","tags":[],"categoryId":"10","liveBroadcastContent":"none","localized":{"title":"Glorious YouTube video","description":""}}}],"pageInfo":{"totalResults":1,"resultsPerPage":1}}"#;
 
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http(bind).unwrap();
+            for i in 0..2 {
             let rq = server.recv().unwrap();
-            if rq.url().to_string().starts_with("/v3/") {
-                    let resp = Response::from_string(response);
+                if rq.url().to_string().starts_with("/v3/") {
+                    let resp = if i == 0 {
+                        Response::from_string(response)
+                    } else {
+                        Response::from_string(response_no_list_items)
+                    };
                     thread::sleep(Duration::from_millis(10));
                     rq.respond(resp).unwrap();
+                }
             }
         });
 
@@ -163,6 +170,12 @@ mod tests {
 
         let res = plugin.evaluate(&rtd, &url.parse().unwrap()).unwrap();
         assert_eq!(res, String::from("Glorious YouTube video"));
+
+        thread::sleep(Duration::from_millis(1000));
+
+        let res = plugin.evaluate(&rtd, &url.parse().unwrap());
+        assert!(res.is_err());
+        if let Err(e) = res { assert_eq!(&format!("{}", e), "No list items in response"); }
 
         server_thread.join().unwrap();
     }
