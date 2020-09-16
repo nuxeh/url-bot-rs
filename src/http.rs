@@ -5,7 +5,13 @@ use std::{
 };
 use failure::Error;
 use reqwest::{
-    header::{self, HeaderMap},
+    header::{
+        HeaderMap,
+        HeaderValue,
+        ACCEPT_LANGUAGE,
+        ACCEPT_ENCODING,
+        CONTENT_TYPE,
+    },
     redirect::Policy,
     blocking::{Client, Response}
 };
@@ -70,16 +76,10 @@ impl<'a> RetrieverBuilder<'a> {
     }
 
     pub fn build(&self) -> Result<Retriever, Error> {
-        let mut headers = header::HeaderMap::new();
+        let mut headers = HeaderMap::new();
 
-        headers.insert(
-            header::ACCEPT_LANGUAGE,
-            header::HeaderValue::from_str(self.accept_lang).unwrap()
-        );
-        headers.insert(
-            header::ACCEPT_ENCODING,
-            header::HeaderValue::from_static("identity")
-        );
+        headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_str(self.accept_lang)?);
+        headers.insert(ACCEPT_ENCODING, HeaderValue::from_static("identity"));
 
         let user_agent = match self.user_agent {
             Some(u) => u,
@@ -138,8 +138,7 @@ impl Retriever {
         headers: Option<HeaderMap>,
         count: usize
     ) -> Result<Response, Error> {
-        let mut client = self.client
-            .get(url);
+        let mut client = self.client.get(url);
 
         if let Some(ref header_map) = headers {
             client = client.headers(header_map.clone())
@@ -186,7 +185,7 @@ pub fn resolve_url(url: &str, rtd: &Rtd) -> Result<String, Error> {
 
 pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, Error> {
     // get content type
-    let content_type = resp.headers().get(header::CONTENT_TYPE)
+    let content_type = resp.headers().get(CONTENT_TYPE)
         .and_then(|typ| typ.to_str().ok())
         .and_then(|typ| typ.parse::<Mime>().ok());
 
