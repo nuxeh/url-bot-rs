@@ -285,31 +285,14 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn resolve_locally_served_files() {
-        let mut rtd: Rtd = Rtd::new()
-            .init_http_client()
-            .unwrap();
-
-        // metadata and mime disabled
-        feat!(rtd, report_metadata) = false;
-        feat!(rtd, report_mime) = false;
-
-        let files = vec![
+        let files_no_meta = vec![
             "test/img/test.gif",
             "test/other/test.txt",
             "test/other/test.pdf",
         ];
 
-        for t in files {
-            assert!(serve_resolve(PathBuf::from(t), &rtd).is_err());
-        }
-
-        // metadata and mime enabled
-        feat!(rtd, report_metadata) = true;
-        feat!(rtd, report_mime) = true;
-
-        let mut files = vec![
+        let mut files_meta = vec![
             ("test/img/test.png", "image/png 800×400"),
             ("test/img/test.jpg", "image/jpeg 400×200"),
             ("test/img/test.gif", "image/gif 1920×1080"),
@@ -319,17 +302,59 @@ mod tests {
 
         // not sure why, but served file size is different on windows
         if cfg!(windows) {
-            files.push(("test/other/test.txt", "text/plain; charset=utf8 17B"));
+            files_meta.push(("test/other/test.txt", "text/plain; charset=utf8 17B"));
         } else {
-            files.push(("test/other/test.txt", "text/plain; charset=utf8 16B"));
+            files_meta.push(("test/other/test.txt", "text/plain; charset=utf8 16B"));
         };
 
-        for t in files {
+        let num_files = files_meta.len() + files_no_meta.len();
+
+        let server_thread = thread::spawn(move || {
+            let server = tiny_http::Server::http("127.0.0.1:28482").unwrap();
+            for _ in 0..num_files {
+                let rq = server.recv().unwrap();
+                let path = &rq.url()[1..];
+
+                let resp = Response::from_file(File::open(path).unwrap())
+                    .with_header(
+                        tiny_http::Header {
+                            field: "Content-Type".parse().unwrap(),
+                            value: get_ctype(&Path::new(path)).parse().unwrap(),
+                        }
+                    );
+
+                thread::sleep(Duration::from_millis(10));
+                rq.respond(resp).unwrap();
+            }
+        });
+
+        // wait for server thread to be ready
+        thread::sleep(Duration::from_millis(1000));
+
+        let mut rtd: Rtd = Rtd::new().init_http_client().unwrap();
+
+        // metadata and mime disabled
+        feat!(rtd, report_metadata) = false;
+        feat!(rtd, report_mime) = false;
+
+        for t in files_no_meta {
+            let url = format!("http://127.0.0.1:28482/{}", t);
+            assert!(resolve_url(&url, &rtd).is_err());
+        }
+
+        // metadata and mime enabled
+        feat!(rtd, report_metadata) = true;
+        feat!(rtd, report_mime) = true;
+
+        for t in files_meta {
+            let url = format!("http://127.0.0.1:28482/{}", t.0);
             assert_eq!(
-                serve_resolve(PathBuf::from(t.0), &rtd).unwrap(),
+                resolve_url(&url, &rtd).unwrap(),
                 String::from(t.1)
             )
         }
+
+        server_thread.join().unwrap();
     }
 
     fn get_ctype(path: &Path) -> &'static str {
@@ -348,32 +373,6 @@ mod tests {
             "txt" => "text/plain; charset=utf8",
             _ => "text/plain; charset=utf8"
         }
-    }
-
-    // Spin up a local http server, and resolve the url served
-    fn serve_resolve(path: PathBuf, rtd: &Rtd) -> Result<String, Error> {
-        let server_thread = thread::spawn(move || {
-            let server = tiny_http::Server::http("127.0.0.1:28482").unwrap();
-            let rq = server.recv().unwrap();
-            if rq.url() == "/test" {
-                let resp = Response::from_file(File::open(&path).unwrap())
-                    .with_header(
-                        tiny_http::Header {
-                            field: "Content-Type".parse().unwrap(),
-                            value: get_ctype(&path).parse().unwrap(),
-                        }
-                    );
-                thread::sleep(Duration::from_millis(10));
-                rq.respond(resp).unwrap();
-            }
-        });
-
-        // wait for server thread to be ready
-        thread::sleep(Duration::from_millis(50));
-
-        let res = resolve_url("http://127.0.0.1:28482/test", &rtd);
-        server_thread.join().unwrap();
-        res
     }
 
     // Spin up a local http server, extract and verify request headers in the
