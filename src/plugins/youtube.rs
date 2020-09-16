@@ -142,6 +142,16 @@ mod tests {
     }
 
     #[test]
+    fn evaluate_bad_domain() {
+        let plugin = YouTubePlugin {};
+        let rtd = Rtd::new().init_http_client().unwrap();
+        let url = "https://www.notyoutube.com/watch?v=abc123def78";
+        let res = plugin.evaluate(&rtd, &url.parse().unwrap());
+        assert!(res.is_err());
+        if let Err(e) = res { assert_eq!(&format!("{}", e), "Unknown domain"); }
+    }
+
+    #[test]
     fn evaluate() {
         let plugin = YouTubePlugin {};
         let rtd = Rtd::new().init_http_client().unwrap();
