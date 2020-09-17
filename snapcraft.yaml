@@ -1,0 +1,41 @@
+#https://snapcraft.io/docs/rust-applications
+name: url-bot-rs
+version: 0.3.1
+summary: Minimal IRC URL bot in Rust
+description: |
+  Standalone IRC bot;
+  for resolving URLs posted, retrieving,
+  and posting page titles to a configurable
+  IRC server and channels
+license: ISC
+
+base: core18
+grade: stable
+confinement: strict
+
+architectures:
+  #https://snapcraft.io/docs/architectures which architectures are supported by Rust?
+  - build-on: [amd64]
+    run-on: [armhf, arm64, amd64, i386]
+
+parts:
+  url-bot-rs:
+    plugin: rust
+    source-type: git
+    source: https://github.com/nuxeh/url-bot-rs
+    source-tag: v0.3.1
+    build-environment: 
+      - CARGO_TARGET_DIR: "$HOME/"  #Cache build stuff.
+
+    build-packages:
+      - make
+      - pkg-config
+      - libssl-dev 
+      - libsqlite3-dev
+      #  build-essential fakeroot libalgorithm-merge-perl manpages manpages-dev libfile-fcntllock-perl
+
+apps:
+  url-bot-rs:
+    command: bin/url-bot-rs
+  url-bot-get:
+    command: bin/url-bot-get
