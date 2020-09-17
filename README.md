@@ -68,6 +68,14 @@ parameters, and edit the file as shown below.
 Debian packages for releases are available [on
 Github](https://github.com/nuxeh/url-bot-rs/releases).
 
+Build and install local snap packages like so:
+
+```shell
+git clone https://github.com/nuxeh/url-bot-rs.git
+sudo snap install snapcraft
+sudo snap install url-bot-rs*.snap --dangerous
+```
+
 ## Build
 
 ### Get Rust
