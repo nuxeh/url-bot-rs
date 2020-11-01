@@ -160,7 +160,7 @@ checksum = "8504b63dd1249fd1745b7b4ef9b6f7b107ddeb3c95370043c7dbcc38653a2679"
 dependencies = [
  "semver",
  "serde",
- "toml 0.5.6",
+ "toml 0.5.7",
  "url",
 ]
 
@@ -2498,9 +2498,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.5.6"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffc92d160b1eef40665be3a05630d003936a3bc7da7421277846c2613e92c71a"
+checksum = "75cf45bb0bef80604d001caaec0d09da99611b3c0fd39d3080468875cdb65645"
 dependencies = [
  "serde",
 ]
@@ -2624,7 +2624,7 @@ dependencies = [
  "tempfile",
  "tiny_http",
  "tokio-core",
- "toml 0.5.6",
+ "toml 0.5.7",
  "unicode-segmentation",
 ]
 
