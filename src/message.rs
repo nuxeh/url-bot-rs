@@ -222,11 +222,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
             Ok(None)
         };
 
-        let pre_post_found = if let Ok(Some(_)) = pre_post {
-            true
-        } else {
-            false
-        };
+        let pre_post_found = matches!(pre_post, Ok(Some(_)));
 
         // limit pre-post to same channel if required by configuration
         let pre_post = if feat!(rtd, cross_channel_history) {
