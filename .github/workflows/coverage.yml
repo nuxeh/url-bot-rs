@@ -17,6 +17,14 @@ jobs:
         toolchain: nightly
         override: true
 
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
     - name: Install Tarpaulin
       run: cargo install cargo-tarpaulin
 
@@ -41,6 +49,14 @@ jobs:
         profile: minimal
         toolchain: nightly
         override: true
+
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     # This is to deal with an issue surrounding `cssparser` and `proc_macro2`
     # https://github.com/servo/rust-cssparser/issues/273
