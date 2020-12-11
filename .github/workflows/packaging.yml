@@ -1,0 +1,38 @@
+name: packaging
+on: [push, pull_request]
+
+jobs:
+  packaging:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy
+          override: true
+
+      - name: Build Debian package
+        run: |
+          cargo install cargo-deb
+          cargo deb
+
+      - name: Test Debian package service start
+        run: |
+          sudo dpkg -i target/debian/url-bot-rs_${{ steps.get_version.outputs.VERSION }}_amd64.deb
+          systemctl status url-bot-rs
