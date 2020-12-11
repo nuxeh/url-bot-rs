@@ -33,4 +33,5 @@ jobs:
       - name: Test Debian package service start
         run: |
           sudo dpkg -i ${{ steps.build_deb.outputs.DEB_PATH }}
+          sudo systemctl start url-bot-rs
           systemctl status url-bot-rs
