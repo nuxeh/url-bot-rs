@@ -11,10 +11,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get version
-        id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
-
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -28,11 +24,13 @@ jobs:
           override: true
 
       - name: Build Debian package
+        id: build_deb
         run: |
           cargo install cargo-deb
-          cargo deb
+          cargo deb > out
+          echo ::set-output name=DEB_PATH::$(cat out)
 
       - name: Test Debian package service start
         run: |
-          sudo dpkg -i target/debian/url-bot-rs_${{ steps.get_version.outputs.VERSION }}_amd64.deb
+          sudo dpkg -i ${{ steps.build_deb.outputs.DEB_PATH }}
           systemctl status url-bot-rs
