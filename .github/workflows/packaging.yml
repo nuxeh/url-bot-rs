@@ -43,3 +43,5 @@ jobs:
           sudo dpkg -i ${{ steps.build_deb.outputs.DEB_PATH }}
           sudo systemctl start url-bot-rs
           systemctl status url-bot-rs
+          sleep 20
+          systemctl status url-bot-rs
