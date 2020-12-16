@@ -44,4 +44,5 @@ jobs:
           sudo systemctl start url-bot-rs
           systemctl status url-bot-rs
           sleep 20
+          journalctl -u url-bot-rs
           systemctl status url-bot-rs
