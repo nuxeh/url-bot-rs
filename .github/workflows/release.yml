@@ -36,12 +36,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build and test
+      - name: Build
         run: |
-          cargo test --verbose
-          cargo clippy --verbose --all-features -- -D warnings
           cargo build --verbose --release
 
       - name: Build Debian package
