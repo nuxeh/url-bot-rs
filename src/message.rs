@@ -442,7 +442,7 @@ mod tests {
 
     fn serve_html() {
         let _ = thread::spawn(move || {
-            let srv = tiny_http::Server::http("127.0.0.1:8084").unwrap();
+            let srv = tiny_http::Server::http("127.0.0.1:28382").unwrap();
             loop {
                 let rq = srv.recv().unwrap();
                 let resp = match rq.url() {
@@ -468,7 +468,7 @@ mod tests {
 
     fn pt_n(n: usize) -> Vec<TitleResp> {
         let mut c = 0;
-        let m = iter::repeat("http://127.0.0.1:8084/")
+        let m = iter::repeat("http://127.0.0.1:28382/")
             .take(n)
             .map(|t| {c += 1; format!("{}{}", t, c)})
             .collect::<Vec<String>>()
@@ -480,16 +480,16 @@ mod tests {
     fn test_process_titles_count() {
         serve_html();
         assert_eq!(0, pt("").len());
-        assert_eq!(1, pt("http://127.0.0.1:8084/").len());
-        assert_eq!(2, pt("http://127.0.0.1:8084/1 http://127.0.0.1:8084/2").len());
+        assert_eq!(1, pt("http://127.0.0.1:28382/").len());
+        assert_eq!(2, pt("http://127.0.0.1:28382/1 http://127.0.0.1:28382/2").len());
         assert_eq!(4, pt_n(4).len());
         assert_eq!(8, pt_n(8).len());
     }
 
     #[test]
     fn test_process_titles_deduplicate() {
-        assert_eq!(1, pt("http://127.0.0.1:8084 http://127.0.0.1:8084").len());
-        let m = iter::repeat("http://127.0.0.1:8084/")
+        assert_eq!(1, pt("http://127.0.0.1:28382 http://127.0.0.1:28382").len());
+        let m = iter::repeat("http://127.0.0.1:28382/")
             .take(10)
             .collect::<Vec<&str>>()
             .join(" ");
@@ -507,7 +507,7 @@ mod tests {
 
     #[test]
     fn test_process_titles_value() {
-        pt("http://127.0.0.1:8084/")
+        pt("http://127.0.0.1:28382/")
             .iter()
             .for_each(|v| assert_eq!(&TITLE("⤷ |t|".to_string()), v));
     }
@@ -518,7 +518,7 @@ mod tests {
         feat!(rtd, history) = true;
         feat!(rtd, cross_channel_history) = false;
 
-        let msg = Msg::new(&rtd, "testnick", "#test", "http://127.0.0.1:8084/");
+        let msg = Msg::new(&rtd, "testnick", "#test", "http://127.0.0.1:28382/");
         let db = Database::open_in_memory().unwrap();
 
         let d = r#"( [[:alpha:]]{3}){2} \d{1,2} \d{2}:\d{2}:\d{2} \d{4}"#;
@@ -566,7 +566,7 @@ mod tests {
 
         feat!(rtd, mask_highlights) = false;
 
-        let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://127.0.0.1:8084/");
+        let msg2 = Msg::new(&rtd, "testnick", "#test2", "http://127.0.0.1:28382/");
 
         // cross-posted history is disabled
         let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
@@ -597,14 +597,14 @@ mod tests {
 
     #[test]
     fn test_process_titles_http_https_only() {
-        assert_eq!(0, pt("git://127.0.0.1:8084/").len());
-        assert_eq!(0, pt("ssh://127.0.0.1:8084/").len());
-        assert_eq!(0, pt("ftp://127.0.0.1:8084/").len());
+        assert_eq!(0, pt("git://127.0.0.1:28382/").len());
+        assert_eq!(0, pt("ssh://127.0.0.1:28382/").len());
+        assert_eq!(0, pt("ftp://127.0.0.1:28382/").len());
     }
 
     #[test]
     fn test_process_titles_unsafe_chars() {
-        assert_eq!(0, pt("http://127.0.0.1:8084/{}").len());
+        assert_eq!(0, pt("http://127.0.0.1:28382/{}").len());
     }
 
     fn err_val(r: &TitleResp, s: &str) -> bool {
@@ -615,10 +615,10 @@ mod tests {
 
     #[test]
     fn test_process_titles_resolve_error() {
-        assert!(err_val(&pt("http://127.0.0.1:8084/empty")[0],
-            "http://127.0.0.1:8084/empty: failed to parse title"));
-        assert!(err_val(&pt("http://127.0.0.1:8084/blank")[0],
-            "http://127.0.0.1:8084/blank: failed to parse title"));
+        assert!(err_val(&pt("http://127.0.0.1:28382/empty")[0],
+            "http://127.0.0.1:28382/empty: failed to parse title"));
+        assert!(err_val(&pt("http://127.0.0.1:28382/blank")[0],
+            "http://127.0.0.1:28382/blank: failed to parse title"));
     }
 
     #[test]
