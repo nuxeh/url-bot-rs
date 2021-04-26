@@ -23,7 +23,7 @@ built = { version = "0.4.4", features = ["git2"] }
 man = "0.3.0"
 
 [dev-dependencies]
-tiny_http = "0.8.0"
+tiny_http = "0.8.1"
 diff = "0.1.12"
 tempfile = "3.2.0"
 
