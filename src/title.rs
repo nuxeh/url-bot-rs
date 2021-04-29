@@ -157,6 +157,10 @@ mod tests {
             Some(String::from("this title contains &")),
             parse_title("<title>this title contains &</title>")
         );
+        assert_eq!(
+            Some(String::from("this title contains >>")),
+            parse_title("<title>this title contains >></title>")
+        );
     }
 
     #[test]
