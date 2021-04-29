@@ -241,7 +241,7 @@ impl Rtd {
     }
 
     /// Set the configuration file path.
-    pub fn conf(mut self, path: &PathBuf) -> Self {
+    pub fn conf(mut self, path: &Path) -> Self {
         self.paths.conf = expand_tilde(path);
         self
     }
@@ -384,7 +384,7 @@ mod tests {
     /// test that the example configuration file parses without error
     fn load_example_conf() {
         Rtd::new()
-            .conf(&"example.config.toml".into())
+            .conf(&PathBuf::from("example.config.toml"))
             .load()
             .unwrap();
     }

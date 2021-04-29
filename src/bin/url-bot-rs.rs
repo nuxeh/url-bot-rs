@@ -17,7 +17,7 @@ use irc::client::prelude::*;
 use std::process;
 use std::thread;
 use std::time::Duration;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
 use directories::ProjectDirs;
@@ -140,7 +140,7 @@ fn get_cli_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
 }
 
 /// Run an instance, handling restart if configured.
-fn run_instance(conf: &PathBuf) -> Result<(), Error> {
+fn run_instance(conf: &Path) -> Result<(), Error> {
     let rtd: Rtd = Rtd::new()
         .conf(conf)
         .load()?
