@@ -81,8 +81,8 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
 
 #[derive(Debug, PartialEq)]
 enum TitleResp {
-    TITLE(String),
-    ERROR(String),
+    Title(String),
+    Error(String),
 }
 
 #[derive(Debug)]
@@ -122,8 +122,8 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
 
     for resp in &titles {
         match resp {
-            TitleResp::TITLE(t) => respond(client, rtd, msg, t),
-            TitleResp::ERROR(e) => respond_error(client, rtd, msg, e),
+            TitleResp::Title(t) => respond(client, rtd, msg, t),
+            TitleResp::Error(e) => respond_error(client, rtd, msg, e),
         }
     }
 
@@ -201,7 +201,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
                 Ok(title) => title,
                 Err(err) => {
                     error!("{:?}", err);
-                    responses.push(TitleResp::ERROR(err.to_string()));
+                    responses.push(TitleResp::Error(err.to_string()));
                     continue;
                 },
             }
@@ -273,7 +273,7 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
 
         info!("[{}] {}", rtd.conf.network.name, msg);
 
-        responses.push(TitleResp::TITLE(msg.to_string()));
+        responses.push(TitleResp::Title(msg.to_string()));
 
         dedup_urls.insert(url);
 
@@ -438,7 +438,7 @@ mod tests {
     use std::thread;
     use std::time::Duration;
     use tiny_http::Response;
-    use super::TitleResp::{TITLE, ERROR};
+    use super::TitleResp::{Title, Error};
 
     fn serve_html() {
         let _ = thread::spawn(move || {
@@ -509,7 +509,7 @@ mod tests {
     fn test_process_titles_value() {
         pt("http://127.0.0.1:28382/")
             .iter()
-            .for_each(|v| assert_eq!(&TITLE("⤷ |t|".to_string()), v));
+            .for_each(|v| assert_eq!(&Title("⤷ |t|".to_string()), v));
     }
 
     #[test]
@@ -527,20 +527,20 @@ mod tests {
         // no pre-post
         let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
         assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
+        assert!(if let Title(_) = res[0] { true } else { false });
 
         res.iter()
-            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), *v));
+            .for_each(|v| assert_eq!(Title("⤷ |t|".to_string()), *v));
 
         // pre-post
         let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
         assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
+        assert!(if let Title(_) = res[0] { true } else { false });
 
         res.iter()
             .for_each(|v| {
                 println!("{:?}", v);
-                if let TITLE(s) = v {
+                if let Title(s) = v {
                     assert!(s.starts_with("⤷ |t| → "));
                     assert!(date.is_match(&s));
                     assert!(s.ends_with(" testnick (#test)"));
@@ -552,12 +552,12 @@ mod tests {
 
         let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
         assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
+        assert!(if let Title(_) = res[0] { true } else { false });
 
         res.iter()
             .for_each(|v| {
                 println!("{:?}", v);
-                if let TITLE(s) = v {
+                if let Title(s) = v {
                     assert!(s.starts_with("⤷ |t| → "));
                     assert!(date.is_match(&s));
                     assert!(s.ends_with(" t\u{200c}estnick (#test)"));
@@ -571,22 +571,22 @@ mod tests {
         // cross-posted history is disabled
         let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
         assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
+        assert!(if let Title(_) = res[0] { true } else { false });
 
         res.iter()
-            .for_each(|v| assert_eq!(TITLE("⤷ |t|".to_string()), *v));
+            .for_each(|v| assert_eq!(Title("⤷ |t|".to_string()), *v));
 
         // cross-posted history is enabled
         feat!(rtd, cross_channel_history) = true;
 
         let res: Vec<_> = process_titles(&rtd, &db, &msg2).collect();
         assert_eq!(1, res.len());
-        assert!(if let TITLE(_) = res[0] { true } else { false });
+        assert!(if let Title(_) = res[0] { true } else { false });
 
         res.iter()
             .for_each(|v| {
                 println!("{:?}", v);
-                if let TITLE(s) = v {
+                if let Title(s) = v {
                     assert!(s.starts_with("⤷ |t| → "));
                     assert!(date.is_match(&s));
                     assert!(s.ends_with(" testnick (#test)"));
@@ -608,7 +608,7 @@ mod tests {
     }
 
     fn err_val(r: &TitleResp, s: &str) -> bool {
-        if let ERROR(st) = r {
+        if let Error(st) = r {
             st == s
         } else { false }
     }
