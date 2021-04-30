@@ -3,7 +3,7 @@ use std::{
     io::Read,
     thread,
 };
-use failure::Error;
+use failure::{bail, format_err, Error};
 use reqwest::{
     header::{
         HeaderMap,
@@ -18,11 +18,10 @@ use reqwest::{
 use mime::{Mime, IMAGE, TEXT, HTML};
 use humansize::{FileSize, file_size_opts as options};
 use log::{debug, trace};
-use failure::bail;
 
 use crate::{
     config::Rtd,
-    title::{parse_title, get_mime, get_image_metadata}
+    title::{get_image_metadata, get_mime, get_pdf_metadata, parse_title},
 };
 
 const CHUNK_BYTES: u64 = 100 * 1024; // 100kB
@@ -198,6 +197,18 @@ pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, E
     resp.headers().iter().for_each(|(k, v)| {
         trace!("[{}] {}", k, v.to_str().unwrap());
     });
+
+    if let Some(mime) = content_type.clone() {
+        if mime == mime::APPLICATION_PDF {
+            let mut body = Vec::new();
+            if let Err(err) = resp.read_to_end(&mut body) {
+                return Err(format_err!("failed to read pdf body: {}", err));
+            }
+            return get_pdf_metadata(&rtd, &body)
+                .or_else(|| get_mime(&rtd, &mime, &size))
+                .ok_or(format_err!("{}: failed to parse title", resp.url()));
+        }
+    }
 
     // vector to hold page content, which is progressively built from chunks of
     // downloaded data until a title is found (up to CHUNKS_MAX chunks)

@@ -5,6 +5,7 @@ use image::{
     io::Reader,
 };
 use mime::Mime;
+use pdf::file;
 use scraper::{Html, Selector};
 
 use crate::{
@@ -51,6 +52,23 @@ pub fn get_image_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
         Some(format!("{} {}×{}", m.to_string(), w, h))
     } else {
         None
+    }
+}
+
+/// Attempt to get metadata from a PDF
+pub fn get_pdf_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
+    if !feat!(rtd, report_metadata) {
+        return None;
+    }
+
+    let f = file::File::from_data(body).ok()?;
+    match f.trailer.info_dict.and_then(|dict| {
+        dict.get("Title")
+            .and_then(|val| val.as_string().ok())
+            .and_then(|s| s.clone().into_string().ok())
+    }) {
+        Some(t) if t.as_str() == "" => None, // treat empty string as missing
+        t => t,
     }
 }
 
@@ -200,6 +218,29 @@ mod tests {
             None,
             get_image_metadata(&rtd, &body)
         );
+    }
+
+    #[test]
+    fn get_metadata_from_local_pdfs() {
+        for test in vec![
+            ("./test/other/test.pdf", None),
+            ("./test/other/titled.pdf", Some("Testing title".to_owned())),
+        ] {
+            get_local_pdf_metadata(test.0, test.1);
+        }
+    }
+
+    fn get_local_pdf_metadata(file: impl AsRef<Path>, result: Option<String>) {
+        let mut rtd: Rtd = Rtd::default();
+
+        let mut body = Vec::new();
+        File::open(file).unwrap().read_to_end(&mut body).unwrap();
+
+        feat!(rtd, report_metadata) = true;
+        assert_eq!(result, get_pdf_metadata(&rtd, &body));
+
+        feat!(rtd, report_metadata) = false;
+        assert_eq!(None, get_pdf_metadata(&rtd, &body));
     }
 
     #[test]
