@@ -28,7 +28,7 @@ diff = "0.1.12"
 tempfile = "3.2.0"
 
 [dependencies]
-irc = "0.13.6"
+irc = "0.15.0"
 tokio-core = "0.1.18"
 rusqlite = "0.14.0"
 chrono = "0.4.19"
