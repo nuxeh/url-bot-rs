@@ -4,6 +4,9 @@ api_key = ""
 [plugins.youtube]
 api_key = ""
 
+[plugins.vimeo]
+api_key = ""
+
 [network]
 name = "default"
 enable = true
