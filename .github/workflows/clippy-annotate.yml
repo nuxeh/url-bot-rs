@@ -28,4 +28,4 @@ jobs:
         args: --all-features -- -D warnings
 
     - name: Run clippy
-      run: cargo clippy --all-features -- -D warnings --features "sqlite_bundled"
+      run: cargo clippy --all-features -- -D warnings

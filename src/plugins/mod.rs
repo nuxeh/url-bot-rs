@@ -16,6 +16,7 @@ pub trait TitlePlugin {
 /// Plugin includes
 pub mod imgur;
 pub mod youtube;
+pub mod vimeo;
 
 /// Plugin configuration structures
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -23,12 +24,14 @@ pub mod youtube;
 pub struct PluginConfig {
     imgur: imgur::Config,
     youtube: youtube::Config,
+    vimeo: vimeo::Config,
 }
 
 /// Plugin instantiations (as trait objects)
-pub const TITLE_PLUGINS: [&dyn TitlePlugin; 2] = [
+pub const TITLE_PLUGINS: [&dyn TitlePlugin; 3] = [
     &imgur::ImgurPlugin {},
     &youtube::YouTubePlugin {},
+    &vimeo::VimeoPlugin {},
 ];
 
 #[macro_export]

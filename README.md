@@ -222,6 +222,13 @@ configuration file(s).
   api_key = "your API key"
   ```
 
+- Vimeo
+
+  ```
+  [plugins.vimeo]
+  api_key = "your API key"
+  ```
+
 In each case, once a valid API key is present in the configuration, the plugin
 will work automatically. For debugging, it may be helpful to use the
 `url-bot-get` tool, using the `--plugin` option.
