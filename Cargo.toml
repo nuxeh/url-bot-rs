@@ -39,11 +39,11 @@ itertools = "0.10.0"
 regex = "1.4.6"
 lazy_static = "1.4.0"
 failure = "0.1.8"
-reqwest = { version = "0.11.0", features = ["blocking", "cookies", "json"] }
+reqwest = { version = "0.11.4", features = ["blocking", "cookies", "json"] }
 serde_rusqlite = "0.14.0"
 mime = "0.3.16"
 humansize = "1.1.0"
-unicode-segmentation = "1.7.1"
+unicode-segmentation = "1.8.0"
 toml = "0.5.8"
 directories = "3.0.1"
 log = "0.4.13"
