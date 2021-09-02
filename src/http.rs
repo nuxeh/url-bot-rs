@@ -222,10 +222,10 @@ pub fn get_title(resp: &mut Response, rtd: &Rtd, dump: bool) -> Result<String, E
                 match (mime.type_(), mime.subtype()) {
                     (TEXT, HTML) => parse_title(&contents),
                     (IMAGE, _) => parse_title(&contents)
-                        .or_else(|| get_image_metadata(&rtd, &body))
-                        .or_else(|| get_mime(&rtd, &mime, &size)),
+                        .or_else(|| get_image_metadata(rtd, &body))
+                        .or_else(|| get_mime(rtd, &mime, &size)),
                     _ => parse_title(&contents)
-                        .or_else(|| get_mime(&rtd, &mime, &size)),
+                        .or_else(|| get_mime(rtd, &mime, &size)),
                 }
             },
         };
@@ -319,7 +319,7 @@ mod tests {
                     .with_header(
                         tiny_http::Header {
                             field: "Content-Type".parse().unwrap(),
-                            value: get_ctype(&Path::new(path)).parse().unwrap(),
+                            value: get_ctype(Path::new(path)).parse().unwrap(),
                         }
                     );
 
@@ -426,9 +426,7 @@ mod tests {
             .all(|header| {
                 expected
                     .iter()
-                    .fold(false, |acc, v| {
-                        acc || v.field == header.field && v.value == header.value
-                    })
+                    .any(|v| v.field == header.field && v.value == header.value)
             });
 
         assert!(headers_match);
@@ -452,7 +450,7 @@ mod tests {
         let bind = "127.0.0.1:28270";
         let url = format!("http://{}/rlim", bind);
         let url_bytes = url.clone().into_bytes();
-        let header = Header::from_bytes("location", url_bytes.clone()).unwrap();
+        let header = Header::from_bytes("location", url_bytes).unwrap();
         let timeout = Duration::from_millis(200);
 
         // throttle between runs
@@ -499,8 +497,8 @@ mod tests {
         let bind = "127.0.0.1:28280";
         let url = format!("http://{}/r_abs", bind);
         let url2 = format!("http://{}/r_abs_r", bind);
-        let url2_bytes = url2.clone().into_bytes();
-        let h_loc = Header::from_bytes("location", url2_bytes.clone()).unwrap();
+        let url2_bytes = url2.into_bytes();
+        let h_loc = Header::from_bytes("location", url2_bytes).unwrap();
 
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http(bind).unwrap();
@@ -621,7 +619,7 @@ mod tests {
         let bind = "127.0.0.1:28286";
         let url = format!("http://{}/rcookie", bind);
         let url_bytes = url.clone().into_bytes();
-        let h_loc = Header::from_bytes("location", url_bytes.clone()).unwrap();
+        let h_loc = Header::from_bytes("location", url_bytes).unwrap();
         let h_setc = Header::from_bytes("set-cookie", "c00k13=data").unwrap();
         let cookie = Header::from_bytes("cookie", "c00k13=data").unwrap();
 

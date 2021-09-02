@@ -25,12 +25,12 @@ pub fn handle_message(client: &IrcClient, message: &Message, rtd: &mut Rtd, db: 
     let target = message.response_target();
 
     match &message.command {
-        Command::KICK(chan, nick, _) => kick(client, rtd, &chan, &nick),
-        Command::INVITE(nick, chan) => invite(client, rtd, &nick, &chan),
+        Command::KICK(chan, nick, _) => kick(client, rtd, chan, nick),
+        Command::INVITE(nick, chan) => invite(client, rtd, nick, chan),
         Command::PRIVMSG(tgt, msg) => {
             let sender = sender.unwrap();
-            let target = target.unwrap_or(&tgt);
-            let message = Msg::new(rtd, sender, target, &msg);
+            let target = target.unwrap_or(tgt);
+            let message = Msg::new(rtd, sender, target, msg);
             privmsg(client, rtd, db, &message)
         },
         _ => {},
@@ -100,7 +100,7 @@ impl<'a> Msg<'a> {
 
         Msg {
             is_chanmsg: target.starts_with('#'),
-            is_ping: is_ping(&our_nick, text),
+            is_ping: is_ping(our_nick, text),
             sender,
             target,
             text,
@@ -111,7 +111,7 @@ impl<'a> Msg<'a> {
 fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
     // ignore messages sent to status channels
     if param!(rtd, status_channels).contains(&msg.target.to_string()) {
-        if msg.is_ping || contains_urls(&msg.text) {
+        if msg.is_ping || contains_urls(msg.text) {
             let m = format!("ignoring messages in channel {}", msg.target);
             client.send_privmsg(&msg.sender, m).unwrap();
         }
@@ -129,7 +129,7 @@ fn privmsg(client: &IrcClient, rtd: &Rtd, db: &Database, msg: &Msg) {
 
     // if we had no url message and got a ping send nick response
     if titles.is_empty() && msg.is_ping {
-        respond(client, rtd, &msg, &param!(rtd, nick_response_str));
+        respond(client, rtd, msg, &param!(rtd, nick_response_str));
     }
 
 }
@@ -139,7 +139,7 @@ fn process_plugins(rtd: &Rtd, url: &Url) -> Option<String> {
     let result: String = TITLE_PLUGINS
         .iter()
         .filter(|p| p.check(&rtd.conf.plugins, url))
-        .filter_map(|p| p.evaluate(&rtd, url).ok())
+        .filter_map(|p| p.evaluate(rtd, url).ok())
         .take(1)
         .collect();
 
@@ -211,8 +211,8 @@ fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = T
         let entry = NewLogEntry {
             title: &title,
             url: token,
-            user: &msg.sender,
-            channel: &msg.target,
+            user: msg.sender,
+            channel: msg.target,
         };
 
         // check for pre-post
@@ -310,7 +310,7 @@ where
     // reply with error, if message was sent in a channel
     // always reply with errors in queries
     if !msg.is_chanmsg || feat!(rtd, reply_with_errors) {
-        respond(client, rtd, &msg, &text);
+        respond(client, rtd, msg, &text);
     };
 
     // send errors to poster by query
@@ -383,7 +383,7 @@ pub fn add_scheme_for_tld(token: &str) -> Option<String> {
             return None;
         }
 
-        if REPEATED_DOTS.is_match(&token) {
+        if REPEATED_DOTS.is_match(token) {
             return None;
         }
 
@@ -522,7 +522,7 @@ mod tests {
         let db = Database::open_in_memory().unwrap();
 
         let d = r#"( [[:alpha:]]{3}){2} \d{1,2} \d{2}:\d{2}:\d{2} \d{4}"#;
-        let date = Regex::new(&d).unwrap();
+        let date = Regex::new(d).unwrap();
 
         // no pre-post
         let res: Vec<_> = process_titles(&rtd, &db, &msg).collect();
@@ -542,7 +542,7 @@ mod tests {
                 println!("{:?}", v);
                 if let Title(s) = v {
                     assert!(s.starts_with("⤷ |t| → "));
-                    assert!(date.is_match(&s));
+                    assert!(date.is_match(s));
                     assert!(s.ends_with(" testnick (#test)"));
                 }
             });
@@ -559,7 +559,7 @@ mod tests {
                 println!("{:?}", v);
                 if let Title(s) = v {
                     assert!(s.starts_with("⤷ |t| → "));
-                    assert!(date.is_match(&s));
+                    assert!(date.is_match(s));
                     assert!(s.ends_with(" t\u{200c}estnick (#test)"));
                 }
             });
@@ -588,7 +588,7 @@ mod tests {
                 println!("{:?}", v);
                 if let Title(s) = v {
                     assert!(s.starts_with("⤷ |t| → "));
-                    assert!(date.is_match(&s));
+                    assert!(date.is_match(s));
                     assert!(s.ends_with(" testnick (#test)"));
                 }
             });

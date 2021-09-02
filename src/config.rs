@@ -261,7 +261,7 @@ impl Rtd {
             .redirect_limit(conf.max_redirections.into());
 
         if let Some(ref user_agent) = conf.user_agent {
-            builder = builder.user_agent(&user_agent);
+            builder = builder.user_agent(user_agent);
         };
 
         self.client = Some(builder.build()?);

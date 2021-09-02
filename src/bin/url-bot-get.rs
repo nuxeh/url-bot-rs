@@ -185,10 +185,10 @@ fn scrape_title(args: &Args) -> Result<(), Error> {
         )
         .timeout(args.flag_timeout.unwrap_or(conf.timeout_s))
         .redirect_limit(args.flag_redirect.unwrap_or(conf.max_redirections).into())
-        .accept_lang(&args.flag_accept_lang.as_ref().unwrap_or(&conf.accept_lang));
+        .accept_lang(args.flag_accept_lang.as_ref().unwrap_or(&conf.accept_lang));
 
     if let Some(v) = user_agent {
-        builder = builder.user_agent(&v);
+        builder = builder.user_agent(v);
     }
 
     let mut resp = builder

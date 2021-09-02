@@ -112,7 +112,7 @@ fn add_default_configs(configs: &mut Vec<PathBuf>) {
     let default_conf_dir = dirs.config_dir();
 
     if configs.is_empty() {
-        if let Ok(dir_confs) = find_configs_in_dir(&default_conf_dir) {
+        if let Ok(dir_confs) = find_configs_in_dir(default_conf_dir) {
             configs.extend(dir_confs)
         }
     }
