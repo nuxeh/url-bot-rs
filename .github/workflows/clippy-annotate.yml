@@ -1,5 +1,6 @@
 name: clippy
 on: [push, pull_request]
+concurrency: clippy_concurrency_group
 
 jobs:
   clippy:
