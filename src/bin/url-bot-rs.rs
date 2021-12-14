@@ -7,7 +7,13 @@
 
 use url_bot_rs::VERSION;
 use url_bot_rs::sqlite::Database;
-use url_bot_rs::config::{Rtd, find_configs_in_dir};
+use url_bot_rs::config::{
+    Rtd,
+    Conf,
+    find_configs_in_dir,
+    ensure_parent_dir,
+    load_flattened_configs,
+};
 use url_bot_rs::message::handle_message;
 use url_bot_rs::{feat, param};
 
@@ -17,7 +23,7 @@ use irc::client::prelude::*;
 use std::process;
 use std::thread;
 use std::time::Duration;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
 use directories::ProjectDirs;
@@ -76,20 +82,31 @@ fn main() {
         .init()
         .unwrap();
 
-    // find configs in locations specified on command line
-    let mut configs = get_cli_configs(&args).unwrap_or_else(|e| {
+    run(args).unwrap_or_else(|e| {
         error!("{}", e);
         process::exit(1);
     });
+}
 
-    add_default_configs(&mut configs);
+fn run(args: Args) -> Result<(), Error> {
+    // find configs in locations specified on command line
+    let mut config_paths: Vec<PathBuf> = get_cli_configs(&args)?;
+
+    // add configurations in default paths
+    add_default_configs(&mut config_paths);
+
+    // create defaults for non-existent paths
+    create_default_configs(&config_paths)?;
+
+    // create a list of configurations
+    let configs: Vec<Conf> = load_flattened_configs(config_paths);
 
     // threaded instances
     let threads: Vec<_> = configs
         .into_iter()
         .map(|conf| {
             thread::spawn(move || {
-                run_instance(&conf).unwrap_or_else(|e| {
+                run_instance(conf).unwrap_or_else(|e| {
                     error!("{}", e);
                     process::exit(1);
                 });
@@ -100,6 +117,8 @@ fn main() {
     for thread in threads {
         thread.join().ok();
     }
+
+    Ok(())
 }
 
 /// Add configurations from default sources.
@@ -139,23 +158,48 @@ fn get_cli_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
     Ok([&dir_configs[..], &args.flag_conf[..]].concat())
 }
 
+/// Create a default valued configuration file, if config path doesn't exist
+fn create_default_configs(paths: &Vec<PathBuf>) -> Result<(), Error> {
+    for p in paths {
+        ensure_parent_dir(p)?;
+
+        // create a default-valued config if it doesn't exist
+        if !p.exists() {
+            info!(
+                "Configuration `{}` doesn't exist, creating default",
+                p.to_str().unwrap()
+            );
+            warn!(
+                "You should modify this file to include a useful IRC \
+                configuration"
+            );
+            Conf::default().write(p)?;
+        }
+    };
+
+    Ok(())
+}
+
 /// Run an instance, handling restart if configured.
-fn run_instance(conf: &Path) -> Result<(), Error> {
+fn run_instance(conf: Conf) -> Result<(), Error> {
+    let net = conf.network.name.clone();
+
+    if let Some(ref path) = conf.path {
+        if conf.network.enable {
+            info!("[{}] using configuration: {}", net, path.display());
+        } else {
+            warn!("[{}] ignoring configuration in: {}", net, path.display());
+            return Ok(());
+        }
+    }
+
     let rtd: Rtd = Rtd::new()
         .conf(conf)
         .load()?
         .init_http_client()?;
 
-    let net = &rtd.conf.network.name;
     let timeout = param!(rtd, reconnect_timeout);
     let sleep_dur = Duration::from_secs(timeout);
-
-    if rtd.conf.network.enable {
-        info!("[{}] using configuration: {}", net, conf.display());
-    } else {
-        warn!("ignoring configuration: {}", conf.display());
-        return Ok(());
-    }
 
     loop {
         match connect_instance(&rtd) {

@@ -49,9 +49,6 @@ fn kick(client: &IrcClient, rtd: &mut Rtd, chan: &str, nick: &str) {
     info!("kicked from {}", chan);
 
     rtd.conf.remove_channel(chan);
-    rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
-        error!("error writing config: {}", err);
-    });
 }
 
 fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
@@ -72,9 +69,6 @@ fn invite(client: &IrcClient, rtd: &mut Rtd, nick: &str, chan: &str) {
 
         if feat!(rtd, autosave) {
             rtd.conf.add_channel(chan.to_string());
-            rtd.conf.write(&rtd.paths.conf).unwrap_or_else(|err| {
-                error!("error writing config: {}", err);
-            });
         };
     };
 }

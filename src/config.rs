@@ -11,7 +11,7 @@ use irc::client::data::Config as IrcConfig;
 use failure::{Error, bail};
 use directories::{BaseDirs, ProjectDirs};
 use serde_derive::{Serialize, Deserialize};
-use log::{info, warn};
+use log::info;
 
 use crate::{
     VERSION,
@@ -155,13 +155,17 @@ pub struct Conf {
     pub database: Database,
     #[serde(rename = "connection")]
     pub client: IrcConfig,
+    #[serde(skip)]
+    pub path: Option<PathBuf>,
 }
 
 impl Conf {
     /// load configuration TOML from a file
     pub fn load(path: impl AsRef<Path>) -> Result<Self, Error> {
         let conf = fs::read_to_string(path.as_ref())?;
-        let conf: Conf = toml::de::from_str(&conf)?;
+        let mut conf: Conf = toml::de::from_str(&conf)?;
+        // insert the path the config was loaded from
+        conf.path = Some(path.as_ref().to_path_buf());
         Ok(conf)
     }
 
@@ -214,7 +218,36 @@ impl Default for Conf {
                 user_info: Some("Feed me URLs.".to_string()),
                 ..IrcConfig::default()
             },
+            path: None,
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ConfSet {
+    #[serde(rename = "net")]
+    pub configs: Vec<Conf>,
+}
+
+impl ConfSet {
+    /// load configuration TOML from a file
+    pub fn load(path: impl AsRef<Path>) -> Result<Self, Error> {
+        let conf_string = fs::read_to_string(path.as_ref())?;
+        let mut conf_set: ConfSet = toml::de::from_str(&conf_string)?;
+
+        // populate path field of all configs
+        conf_set.configs
+            .iter_mut()
+            .for_each(|c| c.path = Some(path.as_ref().to_path_buf()));
+
+        Ok(conf_set)
+    }
+
+    /// write configuration to a file
+    pub fn write(&self, path: impl AsRef<Path>) -> Result<(), Error> {
+        let mut file = File::create(path)?;
+        file.write_all(toml::ser::to_string(&self)?.as_bytes())?;
+        Ok(())
     }
 }
 
@@ -231,7 +264,6 @@ pub struct Rtd {
 
 #[derive(Default, Clone)]
 pub struct Paths {
-    pub conf: PathBuf,
     pub db: Option<PathBuf>,
 }
 
@@ -240,9 +272,9 @@ impl Rtd {
         Rtd::default()
     }
 
-    /// Set the configuration file path.
-    pub fn conf(mut self, path: &Path) -> Self {
-        self.paths.conf = expand_tilde(path);
+    /// Set the configuration
+    pub fn conf(mut self, c: Conf) -> Self {
+        self.conf = c;
         self
     }
 
@@ -280,20 +312,7 @@ impl Rtd {
 
     /// Load the configuration file and return an Rtd.
     pub fn load(mut self) -> Result<Self, Error> {
-        ensure_parent_dir(&self.paths.conf)?;
-
-        // create a default-valued config if it doesn't exist
-        if !self.paths.conf.exists() {
-            info!("Configuration `{}` doesn't exist, creating default",
-                self.paths.conf.to_str().unwrap());
-            warn!("You should modify this file to include a useful IRC \
-                configuration");
-            Conf::default().write(&self.paths.conf)?;
-        }
-
-        // load config file
-        self.conf = Conf::load(&self.paths.conf)?;
-
+        // get a database path
         self.paths.db = self.get_db_path().map(|p| expand_tilde(&p));
 
         if let Some(dp) = &self.paths.db {
@@ -338,7 +357,7 @@ impl Rtd {
     }
 }
 
-fn ensure_parent_dir(file: &Path) -> Result<bool, Error> {
+pub fn ensure_parent_dir(file: &Path) -> Result<bool, Error> {
     let without_path = file.components().count() == 1;
 
     match file.parent() {
@@ -368,8 +387,24 @@ pub fn find_configs_in_dir(dir: &Path) -> Result<impl Iterator<Item = PathBuf>, 
     Ok(fs::read_dir(dir)?
         .flatten()
         .map(|e| e.path())
-        .filter(|e| !e.is_dir() && Conf::load(e).is_ok())
+        .filter(|e| !e.is_dir() && (Conf::load(e).is_ok() || ConfSet::load(e).is_ok()))
         .take(32))
+}
+
+/// Take a vector of paths to either configurations, or configuration sets,
+/// and return a vector of configurations
+pub fn load_flattened_configs(paths: Vec<PathBuf>) -> Vec<Conf> {
+    let mut configs: Vec<Conf> = paths.iter()
+        .filter_map(|p| Conf::load(p).ok())
+        .collect();
+
+    let mut set_configs: Vec<Conf> = paths.iter()
+        .filter_map(|p| ConfSet::load(p).ok())
+        .flat_map(|s| s.configs)
+        .collect();
+
+    configs.append(&mut set_configs);
+    configs
 }
 
 #[cfg(test)]
