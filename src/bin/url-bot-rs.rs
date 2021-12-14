@@ -159,7 +159,7 @@ fn get_cli_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
 }
 
 /// Create a default valued configuration file, if config path doesn't exist
-fn create_default_configs(paths: &Vec<PathBuf>) -> Result<(), Error> {
+fn create_default_configs(paths: &[PathBuf]) -> Result<(), Error> {
     for p in paths {
         ensure_parent_dir(p)?;
 
