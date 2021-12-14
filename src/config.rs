@@ -418,8 +418,9 @@ mod tests {
     #[test]
     /// test that the example configuration file parses without error
     fn load_example_conf() {
+        let conf = Conf::load(&PathBuf::from("example.config.toml")).unwrap();
         Rtd::new()
-            .conf(&PathBuf::from("example.config.toml"))
+            .conf(conf)
             .load()
             .unwrap();
     }
@@ -429,10 +430,8 @@ mod tests {
         let tmp_dir = tempdir().unwrap();
         let cfg_path = tmp_dir.path().join("config.toml");
 
-        Rtd::new()
-            .conf(&cfg_path)
-            .load()
-            .unwrap();
+        let conf = Conf::default();
+        conf.write(&cfg_path).unwrap();
 
         let example = fs::read_to_string("example.config.toml").unwrap();
         let written = fs::read_to_string(cfg_path).unwrap();
@@ -453,8 +452,9 @@ mod tests {
         cfg.database.db_type = DbType::Sqlite;
         cfg.write(&cfg_path).unwrap();
 
+        let conf = Conf::load(&cfg_path).unwrap();
         let rtd = Rtd::new()
-            .conf(&cfg_path)
+            .conf(conf)
             .db(Some(&db_path))
             .load()
             .unwrap();
@@ -475,8 +475,9 @@ mod tests {
         cfg.database.path = Some(db_path_cfg.to_str().unwrap().to_string());
         cfg.write(&cfg_path).unwrap();
 
+        let conf = Conf::load(&cfg_path).unwrap();
         let rtd = Rtd::new()
-            .conf(&cfg_path)
+            .conf(conf)
             .db(Some(&db_path))
             .load()
             .unwrap();
@@ -496,8 +497,9 @@ mod tests {
         cfg.database.path = Some("".to_string());
         cfg.write(&cfg_path).unwrap();
 
+        let conf = Conf::load(&cfg_path).unwrap();
         let rtd = Rtd::new()
-            .conf(&cfg_path)
+            .conf(conf)
             .db(Some(&db_path))
             .load()
             .unwrap();
@@ -515,8 +517,9 @@ mod tests {
         cfg.database.db_type = DbType::Sqlite;
         cfg.write(&cfg_path).unwrap();
 
+        let conf = Conf::load(&cfg_path).unwrap();
         let rtd = Rtd::new()
-            .conf(&cfg_path)
+            .conf(conf)
             .load()
             .unwrap();
 
@@ -528,8 +531,9 @@ mod tests {
         cfg.network.name = "test_net".to_string();
         cfg.write(&cfg_path).unwrap();
 
+        let conf = Conf::load(&cfg_path).unwrap();
         let rtd = Rtd::new()
-            .conf(&cfg_path)
+            .conf(conf)
             .load()
             .unwrap();
 
@@ -540,8 +544,9 @@ mod tests {
         cfg.database.path = Some("".to_string());
         cfg.write(&cfg_path).unwrap();
 
+        let conf = Conf::load(&cfg_path).unwrap();
         let rtd = Rtd::new()
-            .conf(&cfg_path)
+            .conf(conf)
             .load()
             .unwrap();
 
@@ -560,8 +565,9 @@ mod tests {
         cfg.database.path = Some(db_path_cfg.to_str().unwrap().to_string());
         cfg.write(&cfg_path).unwrap();
 
+        let conf = Conf::load(&cfg_path).unwrap();
         let rtd = Rtd::new()
-            .conf(&cfg_path)
+            .conf(conf)
             .load()
             .unwrap();
 
@@ -714,11 +720,7 @@ mod tests {
         let mut f = File::create(&cfg_path).unwrap();
         f.write_all(b"[this]\nis = \"valid toml\"").unwrap();
 
-        let rtd = Rtd::new()
-            .conf(&cfg_path)
-            .load();
-
-        assert!(rtd.is_err());
+        assert!(Conf::load(&cfg_path).is_err());
     }
 
     #[test]
@@ -728,10 +730,7 @@ mod tests {
         let mut f = File::create(&cfg_path).unwrap();
         f.write_all(b"[connection]\n[features]\n[parameters]\n").unwrap();
 
-        Rtd::new()
-            .conf(&cfg_path)
-            .load()
-            .unwrap();
+        Conf::load(&cfg_path).unwrap();
     }
 
     #[test]
