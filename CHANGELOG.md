@@ -1,3 +1,10 @@
+# v0.3.2
+
+- Add Imgur plugin
+- Add Systemd hardening
+- Youtube plugin: Parse music.youtube.com URLs
+- Add snap packaging
+
 # v0.3.1
 
 - Add YouTube plugin
