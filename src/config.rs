@@ -417,12 +417,9 @@ mod tests {
 
     #[test]
     /// test that the example configuration file parses without error
-    fn load_example_conf() {
-        let conf = Conf::load(&PathBuf::from("example.config.toml")).unwrap();
-        Rtd::new()
-            .conf(conf)
-            .load()
-            .unwrap();
+    fn load_example_configs() {
+        Conf::load(&PathBuf::from("example.config.toml")).unwrap();
+        ConfSet::load(&PathBuf::from("example.multi.config.toml")).unwrap();
     }
 
     #[test]
@@ -434,6 +431,33 @@ mod tests {
         conf.write(&cfg_path).unwrap();
 
         let example = fs::read_to_string("example.config.toml").unwrap();
+        let written = fs::read_to_string(cfg_path).unwrap();
+
+        example.lines()
+            .zip(written.lines())
+            .for_each(|(a, b)| assert_eq!(a, b));
+    }
+
+    fn get_test_confset() -> ConfSet {
+        let mut confset = ConfSet {
+            configs: vec![Conf::default(), Conf::default()]
+        };
+
+        confset.configs[0].network.name = String::from("foo");
+        confset.configs[1].network.name = String::from("bar");
+
+        confset
+    }
+
+    #[test]
+    fn load_write_default_set() {
+        let tmp_dir = tempdir().unwrap();
+        let cfg_path = tmp_dir.path().join("config.toml");
+
+        let conf = get_test_confset();
+        conf.write(&cfg_path).unwrap();
+
+        let example = fs::read_to_string("example.multi.config.toml").unwrap();
         let written = fs::read_to_string(cfg_path).unwrap();
 
         example.lines()
@@ -616,12 +640,7 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    #[test]
-    /// test that the example configuration matches default values
-    fn example_conf_data_matches_generated_default_values() {
-        let example = fs::read_to_string("example.config.toml").unwrap();
-        let default = toml::ser::to_string(&Conf::default()).unwrap();
-
+    fn print_diff(example: &str, default: &str) {
         // print diff (on failure)
         println!("Configuration diff (- example, + default):");
         for diff in diff::lines(&example, &default) {
@@ -631,6 +650,31 @@ mod tests {
                 diff::Result::Right(r) => println!("+{}", r)
             }
         }
+    }
+
+    #[test]
+    /// test that the example configuration matches default values
+    fn example_conf_data_matches_generated_default_values() {
+        let example = fs::read_to_string("example.config.toml").unwrap();
+        let default = toml::ser::to_string(&Conf::default()).unwrap();
+
+        print_diff(&example, &default);
+
+        default.lines()
+            .zip(example.lines())
+            .for_each(|(a, b)| assert_eq!(a, b));
+    }
+
+    #[test]
+    /// test that the example configuration matches default values
+    fn example_conf_data_matches_generated_expected_values() {
+        // construct the example
+        let confset = get_test_confset();
+
+        let example = fs::read_to_string("example.multi.config.toml").unwrap();
+        let default = toml::ser::to_string(&confset).unwrap();
+
+        print_diff(&example, &default);
 
         default.lines()
             .zip(example.lines())
@@ -748,5 +792,29 @@ mod tests {
 
         rtd.conf.features.reconnect = true;
         assert!(feat!(rtd, reconnect));
+    }
+
+    #[test]
+    fn test_load_flattened_configs() {
+        let tmp_dir = tempdir().unwrap();
+        let mut paths: Vec<PathBuf> = vec![];
+
+        // make 10 normal configuration files
+        for c in 0..10 {
+            let path = tmp_dir.path().join(format!("conf_{}.toml", c));
+            Conf::default().write(&path).unwrap();
+            paths.push(path);
+        }
+
+        // make 10 configuration sets
+        let set = get_test_confset();
+        for c in 0..10 {
+            let path = tmp_dir.path().join(format!("conf_multi_{}.toml", c));
+            set.write(&path).unwrap();
+            paths.push(path);
+        }
+
+        let res = load_flattened_configs(paths);
+        assert_eq!(res.iter().count(), 30);
     }
 }
