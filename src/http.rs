@@ -616,7 +616,7 @@ mod tests {
 
     #[test]
     fn redirect_with_cookie() {
-        let bind = "127.0.0.1:28286";
+        let bind = "127.0.0.1:28287";
         let url = format!("http://{}/rcookie", bind);
         let url_bytes = url.clone().into_bytes();
         let h_loc = Header::from_bytes("location", url_bytes).unwrap();
