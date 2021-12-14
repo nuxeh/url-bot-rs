@@ -1,3 +1,8 @@
+# v0.4.0-rc.1
+
+- Add config set configuration format, allowing multiple configurations in the
+  same file
+
 # v0.3.2
 
 - Add Imgur plugin
