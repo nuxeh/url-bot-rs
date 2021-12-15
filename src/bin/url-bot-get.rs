@@ -1,55 +1,87 @@
-const USAGE: &str = "
+const ABOUT: &str = "\
 URL munching IRC bot, web page title fetching tool.
 
 Retrieve the title or some content from web addresses, primarily a debugging
 tool for `url-bot-rs`.
+";
 
-Usage:
-    url-bot-get [options] [-v...] [<url>]
-
-Options:
-    -h --help                     Show this help message.
-    --version                     Print version.
-    -v --verbose                  Show extra information.
-    -q --quiet                    Quiet.
-    -u=<val> --user-agent=<val>   Specify user-agent.
-    -l=<val> --accept-lang=<val>  Specify accept-lang.
-    -t=<val> --timeout=<val>      Specify request timeout.
-    -r=<val> --redirect=<val>     Specify redirection limit.
-    -R=<val> --retries=<val>      Specify retry limit.
-    -T=<val> --retry-delay=<val>  Specify redirection limit.
-    --metadata=<val>              Enable metadata [default: true].
-    --mime=<val>                  Enable mime reporting [default: true].
-    --curl                        Behave like curl, post page content to stdout.
-    --plugins                     List available plugins.
-    --conf=<path>                 Provide a plugin configuration file.
-    --generate                    Generate a template plugin configuration.
-    --plugin=<name>               Run named plugin.
-
-Examples:
+const EXAMPLES: &str = "\
+EXAMPLES:
     url-bot-get https://google.com
     url-bot-get --conf plugins.toml --generate
     url-bot-get --conf plugins.toml --plugin imgur <url>
 ";
 
-#[derive(Debug, Deserialize, Default, Clone)]
+#[derive(Debug, Deserialize, Default, Clone, StructOpt)]
+#[structopt(
+    name = "url-bot-get",
+    about = ABOUT,
+    version = VERSION.as_str(),
+    after_help = EXAMPLES,
+)]
 pub struct Args {
-    flag_verbose: usize,
-    flag_quiet: bool,
-    arg_url: String,
-    flag_user_agent: Option<String>,
-    flag_accept_lang: Option<String>,
-    flag_timeout: Option<u64>,
-    flag_redirect: Option<u8>,
-    flag_metadata: bool,
-    flag_mime: bool,
-    flag_curl: bool,
-    flag_plugins: bool,
-    flag_conf: Option<PathBuf>,
-    flag_generate: bool,
-    flag_plugin: Option<String>,
-    flag_retries: Option<u8>,
-    flag_retry_delay: Option<u64>,
+    /// Show extra information.
+    #[structopt(short, long, parse(from_occurrences))]
+    verbose: usize,
+
+    /// Quiet.
+    #[structopt(short, long)]
+    quiet: bool,
+
+    /// The URL to retrieve.
+    url: String,
+
+    /// Specify user-agent.
+    #[structopt(short, long)]
+    user_agent: Option<String>,
+
+    /// Specify accept-lang.
+    #[structopt(short = "l", long)]
+    accept_lang: Option<String>,
+
+    /// Specify request timeout.
+    #[structopt(short, long)]
+    timeout: Option<u64>,
+
+    /// Specify redirection limit.
+    #[structopt(short, long)]
+    redirect: Option<u8>,
+
+    /// Enable mime reporting.
+    #[structopt(long)]
+    metadata: bool,
+
+    /// Enable mime reporting.
+    #[structopt(long)]
+    mime: bool,
+
+    /// Behave like curl, post page content to stdout.
+    #[structopt(long)]
+    curl: bool,
+
+    /// List available plugins.
+    #[structopt(long)]
+    plugins: bool,
+
+    /// Provide a plugin configuration file.
+    #[structopt(long)]
+    conf: Option<PathBuf>,
+
+    /// Generate a template plugin configuration.
+    #[structopt(long)]
+    generate: bool,
+
+    /// Run named plugin.
+    #[structopt(long)]
+    plugin: Option<String>,
+
+    /// Specify retry limit.
+    #[structopt(short = "R", long)]
+    retries: Option<u8>,
+
+    /// Specify redirection limit.
+    #[structopt(short = "T", long)]
+    retry_delay: Option<u64>,
 }
 
 use std::{
@@ -59,7 +91,7 @@ use std::{
     io::Write,
     path::PathBuf,
 };
-use docopt::Docopt;
+use structopt::StructOpt;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
 use serde_derive::Deserialize;
@@ -78,9 +110,8 @@ use url_bot_rs::{
 const MIN_VERBOSITY: usize = 2;
 
 fn main() {
-    let args: Args = Docopt::new(USAGE)
-        .and_then(|d| d.version(Some(VERSION.to_string())).deserialize())
-        .unwrap_or_else(|e| e.exit());
+    // parse command line arguments with structopt
+    let args = Args::from_args();
 
     // don't output colours on stderr if piped
     let coloured_output = if is(Stream::Stderr) {
@@ -96,8 +127,8 @@ fn main() {
             "url_bot_rs::http",
         ])
         .timestamp(Timestamp::Off)
-        .quiet(args.flag_quiet)
-        .verbosity(args.flag_verbose + MIN_VERBOSITY)
+        .quiet(args.quiet)
+        .verbosity(args.verbose + MIN_VERBOSITY)
         .color(coloured_output)
         .init()
         .unwrap();
@@ -108,11 +139,11 @@ fn main() {
 }
 
 fn run(args: &Args) -> Result<(), Error> {
-    if args.flag_generate {
+    if args.generate {
         generate_plugin_config(args)?;
-    } else if let Some(p) = &args.flag_plugin {
+    } else if let Some(p) = &args.plugin {
         run_plugin(args, p)?;
-    } else if args.flag_plugins {
+    } else if args.plugins {
         list_plugins();
     } else {
         scrape_title(args)?;
@@ -126,7 +157,7 @@ fn run(args: &Args) -> Result<(), Error> {
 /// The contents depend on currently available plugins, but may include, for
 /// example, API keys.
 fn generate_plugin_config(args: &Args) -> Result<(), Error> {
-    if let Some(path) = &args.flag_conf {
+    if let Some(path) = &args.conf {
         let mut file = File::create(path)?;
         file.write_all(toml::ser::to_string(&PluginConfig::default())?.as_bytes())?;
         Ok(())
@@ -145,14 +176,14 @@ fn list_plugins() {
 /// Run a named title plugin
 fn run_plugin(args: &Args, name: &str) -> Result<(), Error> {
     // Read plugin configuration from TOML
-    let path = match &args.flag_conf {
+    let path = match &args.conf {
         Some(p) => p,
         _ => bail!("No plugin configuration file provided"),
     };
     let conf = fs::read_to_string(path)?;
     let conf: PluginConfig = toml::de::from_str(&conf)?;
 
-    let url = args.arg_url.parse::<Url>()?;
+    let url = args.url.parse::<Url>()?;
 
     let mut rtd = Rtd::new()
         .init_http_client()?;
@@ -174,18 +205,18 @@ fn run_plugin(args: &Args, name: &str) -> Result<(), Error> {
 /// Scrape a web page for its title
 fn scrape_title(args: &Args) -> Result<(), Error> {
     let conf = Http::default();
-    let token = add_scheme_for_tld(&args.arg_url).unwrap_or_else(|| args.arg_url.clone());
-    let user_agent = args.flag_user_agent.as_ref()
+    let token = add_scheme_for_tld(&args.url).unwrap_or_else(|| args.url.clone());
+    let user_agent = args.user_agent.as_ref()
         .or_else(|| conf.user_agent.as_ref());
 
     let mut builder = RetrieverBuilder::new()
         .retry(
-            args.flag_retries.unwrap_or(conf.max_retries).into(),
-            args.flag_retry_delay.unwrap_or(conf.retry_delay_s)
+            args.retries.unwrap_or(conf.max_retries).into(),
+            args.retry_delay.unwrap_or(conf.retry_delay_s)
         )
-        .timeout(args.flag_timeout.unwrap_or(conf.timeout_s))
-        .redirect_limit(args.flag_redirect.unwrap_or(conf.max_redirections).into())
-        .accept_lang(args.flag_accept_lang.as_ref().unwrap_or(&conf.accept_lang));
+        .timeout(args.timeout.unwrap_or(conf.timeout_s))
+        .redirect_limit(args.redirect.unwrap_or(conf.max_redirections).into())
+        .accept_lang(args.accept_lang.as_ref().unwrap_or(&conf.accept_lang));
 
     if let Some(v) = user_agent {
         builder = builder.user_agent(v);
@@ -200,12 +231,12 @@ fn scrape_title(args: &Args) -> Result<(), Error> {
         });
 
     let mut rtd: Rtd = Rtd::default();
-    feat!(rtd, report_metadata) = args.flag_metadata;
-    feat!(rtd, report_mime) = args.flag_mime;
+    feat!(rtd, report_metadata) = args.metadata;
+    feat!(rtd, report_mime) = args.mime;
 
-    let ret = match get_title(&mut resp, &rtd, args.flag_curl) {
+    let ret = match get_title(&mut resp, &rtd, args.curl) {
         Ok(t) => {
-            if !args.flag_curl { println!("{}", t) };
+            if !args.curl { println!("{}", t) };
             0
         },
         Err(e) => {
