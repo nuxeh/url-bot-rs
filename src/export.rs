@@ -15,10 +15,21 @@ pub fn export(configs: &[Conf], format: ExportFormat) -> Result<String, Error> {
 }
 
 fn serialise_nix(set: &ConfSet) -> Result<String, Error> {
-    Ok(
-        serde_json::ser::to_string_pretty(&set)?
+    let string = serde_json::ser::to_string_pretty(&set)?
         .replace(":", " =")
-    )
+        .replace(",", "");
+
+    // add semi-colons, except within arrays (with a very cludgy parser)
+    let mut in_array = false;
+    for mut l in string.lines() {
+        if l.contains("= [") { in_array = true };
+        if l.contains("]") { in_array = false };
+        if !in_array {
+            l.push(";");
+        }
+    }
+
+    Ok(string)
 }
 
 #[cfg(test)]
