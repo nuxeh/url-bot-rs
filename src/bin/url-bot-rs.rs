@@ -30,6 +30,21 @@ use directories::ProjectDirs;
 use log::{info, warn, error};
 
 #[derive(Debug, StructOpt)]
+pub enum ExportFormat {
+    /// Configuration set
+    #[structopt(name = "set")]
+    ConfigurationSet,
+
+    /// Nix expression
+    #[structopt(name = "nix")]
+    NixExpression,
+
+    /// JSON
+    #[structopt(name = "json")]
+    Json,
+}
+
+#[derive(Debug, StructOpt)]
 #[structopt(name = "url-bot-rs", about = "URL munching IRC bot.", version = VERSION.as_str())]
 pub struct Args {
     /// Show extra information.
@@ -47,6 +62,14 @@ pub struct Args {
     /// Search for configuration file(s) in <conf-dir>.
     #[structopt(short = "d", long, parse(from_os_str))]
     conf_dir: Vec<PathBuf>,
+
+    /// Export configurations
+    #[structopt(long)]
+    export: bool,
+
+    /// Export format
+    #[structopt(long)]
+    format: ExportFormat,
 }
 
 const MIN_VERBOSITY: usize = 2;

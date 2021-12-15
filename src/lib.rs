@@ -7,6 +7,7 @@ pub mod config;
 pub mod message;
 pub mod tld;
 pub mod plugins;
+pub mod export;
 pub mod buildinfo {
    include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }
