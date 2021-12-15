@@ -1,18 +1,17 @@
-[[net]]
-[net.plugins.imgur]
+[bar.plugins.imgur]
 api_key = ""
 
-[net.plugins.youtube]
+[bar.plugins.youtube]
 api_key = ""
 
-[net.plugins.vimeo]
+[bar.plugins.vimeo]
 api_key = ""
 
-[net.network]
-name = "foo"
+[bar.network]
+name = "bar"
 enable = true
 
-[net.features]
+[bar.features]
 report_metadata = false
 report_mime = false
 mask_highlights = false
@@ -27,23 +26,23 @@ partial_urls = false
 nick_response = false
 reconnect = false
 
-[net.parameters]
+[bar.parameters]
 url_limit = 10
 status_channels = []
 nick_response_str = ""
 reconnect_timeout = 10
 
-[net.http]
+[bar.http]
 timeout_s = 10
 max_redirections = 10
 max_retries = 3
 retry_delay_s = 5
 accept_lang = "en"
 
-[net.database]
+[bar.database]
 type = "in-memory"
 
-[net.connection]
+[bar.connection]
 nickname = "url-bot-rs"
 nick_password = ""
 alt_nicks = ["url-bot-rs_"]
@@ -55,22 +54,20 @@ password = ""
 use_ssl = false
 channels = ["#url-bot-rs"]
 user_info = "Feed me URLs."
-
-[[net]]
-[net.plugins.imgur]
+[foo.plugins.imgur]
 api_key = ""
 
-[net.plugins.youtube]
+[foo.plugins.youtube]
 api_key = ""
 
-[net.plugins.vimeo]
+[foo.plugins.vimeo]
 api_key = ""
 
-[net.network]
-name = "bar"
+[foo.network]
+name = "foo"
 enable = true
 
-[net.features]
+[foo.features]
 report_metadata = false
 report_mime = false
 mask_highlights = false
@@ -85,23 +82,23 @@ partial_urls = false
 nick_response = false
 reconnect = false
 
-[net.parameters]
+[foo.parameters]
 url_limit = 10
 status_channels = []
 nick_response_str = ""
 reconnect_timeout = 10
 
-[net.http]
+[foo.http]
 timeout_s = 10
 max_redirections = 10
 max_retries = 3
 retry_delay_s = 5
 accept_lang = "en"
 
-[net.database]
+[foo.database]
 type = "in-memory"
 
-[net.connection]
+[foo.connection]
 nickname = "url-bot-rs"
 nick_password = ""
 alt_nicks = ["url-bot-rs_"]
