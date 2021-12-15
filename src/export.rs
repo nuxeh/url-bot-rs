@@ -6,7 +6,11 @@ use serde_json::Error;
 
 pub fn export(configs: &[Conf], format: ExportFormat) -> Result<String, Error> {
     let set = ConfSet::from_slice(configs);
-    serde_json::ser::to_string(&set)
+
+    Ok(
+        serde_json::ser::to_string_pretty(&set)?
+        .replace(":", " =")
+    )
 }
 
 #[cfg(test)]
