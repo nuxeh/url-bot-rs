@@ -16,8 +16,12 @@ use url_bot_rs::config::{
 };
 use url_bot_rs::message::handle_message;
 use url_bot_rs::{feat, param};
+//use url_bot_rs::export::ExportFormat;
 
-use structopt::StructOpt;
+use structopt::{
+    StructOpt,
+    clap::arg_enum
+};
 use failure::Error;
 use irc::client::prelude::*;
 use std::process;
@@ -29,20 +33,14 @@ use atty::{is, Stream};
 use directories::ProjectDirs;
 use log::{info, warn, error};
 
-#[derive(Debug, StructOpt)]
-pub enum ExportFormat {
-    /// Configuration set
-    #[structopt(name = "set")]
-    ConfigurationSet,
-
-    /// Nix expression
-    #[structopt(name = "nix")]
-    NixExpression,
-
-    /// JSON
-    #[structopt(name = "json")]
-    Json,
-}
+arg_enum!(
+    #[derive(Debug, StructOpt)]
+    pub enum ExportFormat {
+        TOML,
+        Json,
+        Nix,
+    }
+);
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "url-bot-rs", about = "URL munching IRC bot.", version = VERSION.as_str())]
@@ -63,13 +61,9 @@ pub struct Args {
     #[structopt(short = "d", long, parse(from_os_str))]
     conf_dir: Vec<PathBuf>,
 
-    /// Export configurations
-    #[structopt(long)]
-    export: bool,
-
     /// Export format
-    #[structopt(long)]
-    format: ExportFormat,
+    #[structopt(name = "export", long, case_insensitive = true)]
+    export_format: Option<ExportFormat>,
 }
 
 const MIN_VERBOSITY: usize = 2;
@@ -116,6 +110,12 @@ fn run(args: Args) -> Result<(), Error> {
 
     // create a list of configurations
     let configs: Vec<Conf> = load_flattened_configs(config_paths);
+
+    // Export
+    if let Some(e) = args.export_format {
+        //export(
+        process::exit(1);
+    }
 
     // threaded instances
     let threads: Vec<_> = configs
