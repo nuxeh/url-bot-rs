@@ -22,7 +22,7 @@ fn serialise_nix(set: &ConfSet) -> Result<String, Error> {
     // add semi-colons, except within arrays (with a very cludgy parser)
     string = string.lines()
         .fold((String::new(), false), |(mut s, mut in_array), l| {
-            s = s + l.trim();
+            s = s + l.trim_end();
             if l.contains("= [") { in_array = true };
             if l.contains("]") { in_array = false };
             if !in_array {
