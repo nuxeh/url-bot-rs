@@ -6,6 +6,7 @@ use std::{
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
+    collections::HashMap,
 };
 use irc::client::data::Config as IrcConfig;
 use failure::{Error, bail};
@@ -225,8 +226,8 @@ impl Default for Conf {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ConfSet {
-    #[serde(rename = "net")]
-    pub configs: Vec<Conf>,
+    #[serde(flatten)]
+    pub configs: HashMap<String, Conf>,
 }
 
 impl ConfSet {
@@ -238,7 +239,7 @@ impl ConfSet {
         // populate path field of all configs
         conf_set.configs
             .iter_mut()
-            .for_each(|c| c.path = Some(path.as_ref().to_path_buf()));
+            .for_each(|(_, c)| c.path = Some(path.as_ref().to_path_buf()));
 
         Ok(conf_set)
     }
@@ -398,9 +399,9 @@ pub fn load_flattened_configs(paths: Vec<PathBuf>) -> Vec<Conf> {
         .filter_map(|p| Conf::load(p).ok())
         .collect();
 
-    let mut set_configs: Vec<Conf> = paths.iter()
+    let mut set_configs: Vec<Conf> = paths.into_iter()
         .filter_map(|p| ConfSet::load(p).ok())
-        .flat_map(|s| s.configs)
+        .flat_map(|s| s.configs.values().cloned().collect::<Vec<Conf>>())
         .collect();
 
     configs.append(&mut set_configs);
@@ -440,11 +441,14 @@ mod tests {
 
     fn get_test_confset() -> ConfSet {
         let mut confset = ConfSet {
-            configs: vec![Conf::default(), Conf::default()]
+            configs: HashMap::new()
         };
 
-        confset.configs[0].network.name = String::from("foo");
-        confset.configs[1].network.name = String::from("bar");
+        let mut conf = Conf::default();
+        conf.network.name = String::from("foo");
+        confset.configs.insert("foo".to_string(), conf.clone());
+        conf.network.name = String::from("bar");
+        confset.configs.insert("bar".to_string(), conf);
 
         confset
     }
