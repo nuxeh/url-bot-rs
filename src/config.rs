@@ -20,7 +20,7 @@ use crate::{
     http::{Retriever, RetrieverBuilder},
 };
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Network {
     pub name: String,
     pub enable: bool,
@@ -35,7 +35,7 @@ impl Default for Network {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct Features {
     pub report_metadata: bool,
@@ -61,7 +61,7 @@ macro_rules! feat {
 }
 
 
-#[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum DbType {
     InMemory,
@@ -74,7 +74,7 @@ impl Default for DbType {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 #[serde(default)]
 pub struct Database {
     #[serde(rename = "type")]
@@ -82,7 +82,7 @@ pub struct Database {
     pub path: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct Parameters {
     pub url_limit: u8,
@@ -109,7 +109,7 @@ macro_rules! param {
     };
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct Http {
     pub timeout_s: u64,
@@ -140,7 +140,7 @@ macro_rules! http {
     };
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Conf {
     #[serde(default)]
     pub plugins: PluginConfig,
@@ -224,7 +224,7 @@ impl Default for Conf {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ConfSet {
     #[serde(flatten)]
     pub configs: BTreeMap<String, Conf>,

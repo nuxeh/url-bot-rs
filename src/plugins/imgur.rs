@@ -8,7 +8,7 @@ use crate::{
 };
 
 /// Imgur title plugin configuration structure
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 #[serde(default)]
 pub struct Config {
     api_key: String,

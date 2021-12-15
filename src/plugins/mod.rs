@@ -19,7 +19,7 @@ pub mod youtube;
 pub mod vimeo;
 
 /// Plugin configuration structures
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 #[serde(default)]
 pub struct PluginConfig {
     imgur: imgur::Config,
