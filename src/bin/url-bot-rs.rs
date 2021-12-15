@@ -5,7 +5,6 @@
  *
  */
 
-use url_bot_rs::VERSION;
 use url_bot_rs::sqlite::Database;
 use url_bot_rs::config::{
     Rtd,
@@ -16,12 +15,10 @@ use url_bot_rs::config::{
 };
 use url_bot_rs::message::handle_message;
 use url_bot_rs::{feat, param};
+use url_bot_rs::cli::url_bot_rs::Args;
 //use url_bot_rs::export::ExportFormat;
 
-use structopt::{
-    StructOpt,
-    clap::arg_enum
-};
+use structopt::StructOpt;
 use failure::Error;
 use irc::client::prelude::*;
 use std::process;
@@ -32,39 +29,6 @@ use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
 use directories::ProjectDirs;
 use log::{info, warn, error};
-
-arg_enum!(
-    #[derive(Debug, StructOpt)]
-    pub enum ExportFormat {
-        TOML,
-        Json,
-        Nix,
-    }
-);
-
-#[derive(Debug, StructOpt)]
-#[structopt(name = "url-bot-rs", about = "URL munching IRC bot.", version = VERSION.as_str())]
-pub struct Args {
-    /// Show extra information.
-    #[structopt(short, long, parse(from_occurrences))]
-    verbose: usize,
-
-    /// Force timestamps.
-    #[structopt(short, long)]
-    timestamp: bool,
-
-    /// Use configuration file(s) at <conf>.
-    #[structopt(short, long, parse(from_os_str))]
-    conf: Vec<PathBuf>,
-
-    /// Search for configuration file(s) in <conf-dir>.
-    #[structopt(short = "d", long, parse(from_os_str))]
-    conf_dir: Vec<PathBuf>,
-
-    /// Export all loaded configurations in various formats
-    #[structopt(name = "export", long, case_insensitive = true)]
-    export_format: Option<ExportFormat>,
-}
 
 const MIN_VERBOSITY: usize = 2;
 

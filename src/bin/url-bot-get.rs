@@ -1,110 +1,23 @@
-const ABOUT: &str = "\
-URL munching IRC bot, web page title fetching tool.
-
-Retrieve the title or some content from web addresses, primarily a debugging
-tool for `url-bot-rs`.
-";
-
-const EXAMPLES: &str = "\
-EXAMPLES:
-    url-bot-get https://google.com
-    url-bot-get --conf plugins.toml --generate
-    url-bot-get --conf plugins.toml --plugin imgur <url>
-";
-
-#[derive(Debug, Deserialize, Default, Clone, StructOpt)]
-#[structopt(
-    name = "url-bot-get",
-    about = ABOUT,
-    version = VERSION.as_str(),
-    after_help = EXAMPLES,
-)]
-pub struct Args {
-    /// Show extra information.
-    #[structopt(short, long, parse(from_occurrences))]
-    verbose: usize,
-
-    /// Quiet.
-    #[structopt(short, long)]
-    quiet: bool,
-
-    /// The URL to retrieve.
-    url: String,
-
-    /// Specify user-agent.
-    #[structopt(short, long)]
-    user_agent: Option<String>,
-
-    /// Specify accept-lang.
-    #[structopt(short = "l", long)]
-    accept_lang: Option<String>,
-
-    /// Specify request timeout.
-    #[structopt(short, long)]
-    timeout: Option<u64>,
-
-    /// Specify redirection limit.
-    #[structopt(short, long)]
-    redirect: Option<u8>,
-
-    /// Enable mime reporting.
-    #[structopt(long)]
-    metadata: bool,
-
-    /// Enable mime reporting.
-    #[structopt(long)]
-    mime: bool,
-
-    /// Behave like curl, post page content to stdout.
-    #[structopt(long)]
-    curl: bool,
-
-    /// List available plugins.
-    #[structopt(long)]
-    plugins: bool,
-
-    /// Provide a plugin configuration file.
-    #[structopt(long)]
-    conf: Option<PathBuf>,
-
-    /// Generate a template plugin configuration.
-    #[structopt(long)]
-    generate: bool,
-
-    /// Run named plugin.
-    #[structopt(long)]
-    plugin: Option<String>,
-
-    /// Specify retry limit.
-    #[structopt(short = "R", long)]
-    retries: Option<u8>,
-
-    /// Specify redirection limit.
-    #[structopt(short = "T", long)]
-    retry_delay: Option<u64>,
-}
-
 use std::{
     process,
     fs,
     fs::File,
     io::Write,
-    path::PathBuf,
 };
 use structopt::StructOpt;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
-use serde_derive::Deserialize;
 use log::error;
 use failure::{Error, bail};
 use reqwest::Url;
 
 use url_bot_rs::{
-    VERSION, feat,
+    feat,
     config::{Rtd, Http},
     http::{RetrieverBuilder, get_title},
     message::add_scheme_for_tld,
     plugins::{TITLE_PLUGINS, PluginConfig},
+    cli::url_bot_get::Args
 };
 
 const MIN_VERBOSITY: usize = 2;
