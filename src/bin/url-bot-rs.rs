@@ -77,7 +77,7 @@ fn run(args: Args) -> Result<(), Error> {
 
     // Export
     if let Some(e) = args.export_format {
-        println!("{}", export(&configs, e));
+        println!("{}", export(&configs, e)?);
         process::exit(1);
     }
 
