@@ -3,14 +3,8 @@ use crate::{
     cli::url_bot_rs::ExportFormat
 };
 
-pub fn export(configs: &[Conf], format: ExportFormat) -> String {
-    let mut set = ConfSet::new();
 
-    configs.iter()
-        .for_each(|c| {
-            set.configs.insert(c.network.name.clone(), c.clone());
-            ()
-        });
+pub fn export(configs: &[Conf], format: ExportFormat) -> String {
 
     String::from("foo")
 }

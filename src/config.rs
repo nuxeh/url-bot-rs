@@ -235,6 +235,18 @@ impl ConfSet {
         ConfSet { configs: BTreeMap::new() }
     }
 
+    pub fn from_slice(configs: &[Conf]) -> Self {
+        let mut set = ConfSet::new();
+
+        configs.iter()
+            .for_each(|c| {
+                set.configs.insert(c.network.name.clone(), c.clone());
+                ()
+            });
+
+        set
+    }
+
     /// load configuration TOML from a file
     pub fn load(path: impl AsRef<Path>) -> Result<Self, Error> {
         let conf_string = fs::read_to_string(path.as_ref())?;
@@ -822,5 +834,16 @@ mod tests {
 
         let res = load_flattened_configs(paths);
         assert_eq!(res.iter().count(), 30);
+    }
+
+    #[test]
+    fn test_confset_from_slice() {
+        let set = get_test_confset();
+        let mut vec = vec![Conf::default(); 2];
+        vec[0].network.name = String::from("foo");
+        vec[1].network.name = String::from("bar");
+
+        assert_eq!(set, ConfSet::from_slice(&vec));
+
     }
 }
