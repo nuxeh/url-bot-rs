@@ -17,7 +17,7 @@ use url_bot_rs::config::{
 use url_bot_rs::message::handle_message;
 use url_bot_rs::{feat, param};
 
-use docopt::Docopt;
+use structopt::StructOpt;
 use failure::Error;
 use irc::client::prelude::*;
 use std::process;
@@ -27,43 +27,36 @@ use std::path::PathBuf;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
 use directories::ProjectDirs;
-use serde_derive::Deserialize;
 use log::{info, warn, error};
 
-// docopt usage string
-const USAGE: &str = "
-URL munching IRC bot.
-
-Usage:
-    url-bot-rs [options] [-v...] [--conf=PATH...] [--conf-dir=DIR...]
-
-Options:
-    -h --help           Show this help message.
-    --version           Print version.
-    -v --verbose        Show extra information.
-    -c --conf=PATH      Use configuration file(s) at PATH.
-    -d --conf-dir=DIR   Search for configuration file(s) in DIR.
-    -t --timestamp      Force timestamps.
-";
-
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, StructOpt)]
+#[structopt(name = "url-bot-rs", about = "URL munching IRC bot.", version = VERSION.as_str())]
 pub struct Args {
-    flag_verbose: usize,
-    flag_conf: Vec<PathBuf>,
-    flag_conf_dir: Vec<PathBuf>,
-    flag_timestamp: bool,
+    /// Show extra information.
+    #[structopt(short, long, parse(from_occurrences))]
+    verbose: usize,
+
+    /// Force timestamps.
+    #[structopt(short, long)]
+    timestamp: bool,
+
+    /// Use configuration file(s) at <conf>.
+    #[structopt(short, long, parse(from_os_str))]
+    conf: Vec<PathBuf>,
+
+    /// Search for configuration file(s) in <conf-dir>.
+    #[structopt(short = "d", long, parse(from_os_str))]
+    conf_dir: Vec<PathBuf>,
 }
 
 const MIN_VERBOSITY: usize = 2;
 
 fn main() {
     // parse command line arguments with docopt
-    let args: Args = Docopt::new(USAGE)
-        .and_then(|d| d.version(Some(VERSION.to_string())).deserialize())
-        .unwrap_or_else(|e| e.exit());
+    let args = Args::from_args();
 
     // avoid timestamping when piped, e.g. systemd
-    let timestamp = if is(Stream::Stderr) || args.flag_timestamp {
+    let timestamp = if is(Stream::Stderr) || args.timestamp {
         Timestamp::Second
     } else {
         Timestamp::Off
@@ -76,7 +69,7 @@ fn main() {
             "url_bot_rs::config",
             "url_bot_rs::http",
         ])
-        .verbosity(args.flag_verbose + MIN_VERBOSITY)
+        .verbosity(args.verbose + MIN_VERBOSITY)
         .timestamp(timestamp)
         .color(ColorChoice::Never)
         .init()
@@ -147,7 +140,7 @@ fn add_default_configs(configs: &mut Vec<PathBuf>) {
 /// Get all configurations specified with `--conf`, and all configs found in
 /// search paths specified with `--conf-dir`
 fn get_cli_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
-    let dir_configs = args.flag_conf_dir
+    let dir_configs = args.conf_dir
         .iter()
         .try_fold(vec![], |mut result, dir| -> Result<_, Error> {
             let dir_configs = find_configs_in_dir(dir)?;
@@ -155,7 +148,7 @@ fn get_cli_configs(args: &Args) -> Result<Vec<PathBuf>, Error> {
             Ok(result)
         })?;
 
-    Ok([&dir_configs[..], &args.flag_conf[..]].concat())
+    Ok([&dir_configs[..], &args.conf[..]].concat())
 }
 
 /// Create a default valued configuration file, if config path doesn't exist
@@ -264,7 +257,7 @@ mod tests {
         let cfg_dir = tmp_dir.path();
 
         let mut args = Args::default();
-        args.flag_conf_dir = vec![cfg_dir.to_path_buf()];
+        args.conf_dir = vec![cfg_dir.to_path_buf()];
 
         // dir is empty
         assert_eq!(get_cli_configs(&args).unwrap().len(), 0);
@@ -276,12 +269,12 @@ mod tests {
         }
 
         // add --conf option
-        args.flag_conf.extend(vec![cfg_dir.join("c1.conf")]);
+        args.conf.extend(vec![cfg_dir.join("c1.conf")]);
         assert_eq!(get_cli_configs(&args).unwrap().len(), 11);
 
         // add more --conf options
         for i in 12..=20 {
-            args.flag_conf.extend(vec![cfg_dir.join(i.to_string() + ".toml")]);
+            args.conf.extend(vec![cfg_dir.join(i.to_string() + ".toml")]);
             assert_eq!(get_cli_configs(&args).unwrap().len(), i);
         }
     }
@@ -290,7 +283,7 @@ mod tests {
     fn test_get_cli_configs_failures() {
         // dir doesn't exist
         let mut args = Args::default();
-        args.flag_conf_dir = vec![PathBuf::from("/surely/no/way/this/exists")];
+        args.conf_dir = vec![PathBuf::from("/surely/no/way/this/exists")];
         assert!(get_cli_configs(&args).is_err());
     }
 
