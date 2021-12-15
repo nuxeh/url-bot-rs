@@ -1,3 +1,7 @@
+# v0.4.0-rc.2
+
+- Change format of multi network config, now a hash map
+
 # v0.4.0-rc.1
 
 - Add config set configuration format, allowing multiple configurations in the
