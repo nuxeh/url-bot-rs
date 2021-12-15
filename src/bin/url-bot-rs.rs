@@ -61,7 +61,7 @@ pub struct Args {
     #[structopt(short = "d", long, parse(from_os_str))]
     conf_dir: Vec<PathBuf>,
 
-    /// Export format
+    /// Export all loaded configurations in various formats
     #[structopt(name = "export", long, case_insensitive = true)]
     export_format: Option<ExportFormat>,
 }
