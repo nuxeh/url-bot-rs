@@ -6,7 +6,7 @@ use std::{
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
-    collections::HashMap,
+    collections::BTreeMap,
 };
 use irc::client::data::Config as IrcConfig;
 use failure::{Error, bail};
@@ -227,7 +227,7 @@ impl Default for Conf {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ConfSet {
     #[serde(flatten)]
-    pub configs: HashMap<String, Conf>,
+    pub configs: BTreeMap<String, Conf>,
 }
 
 impl ConfSet {
@@ -441,7 +441,7 @@ mod tests {
 
     fn get_test_confset() -> ConfSet {
         let mut confset = ConfSet {
-            configs: HashMap::new()
+            configs: BTreeMap::new()
         };
 
         let mut conf = Conf::default();
