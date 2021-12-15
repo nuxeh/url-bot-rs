@@ -25,7 +25,7 @@ fn serialise_nix(set: &ConfSet) -> Result<String, Error> {
             s = s + l.trim_end();
             if l.contains("= [") { in_array = true };
             if l.contains("]") { in_array = false };
-            if !in_array {
+            if !in_array && l.chars().last() != Some('{') {
                 s.push(';');
             };
             s.push('\n');
