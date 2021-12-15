@@ -15,7 +15,8 @@ include = [
   "Cargo.*",
   "README.md",
   "COPYING",
-  "example.config.toml"
+  "example.config.toml",
+  "example.multi.config.toml"
 ]
 
 [build-dependencies]
