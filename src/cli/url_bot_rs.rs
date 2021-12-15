@@ -5,7 +5,7 @@ use structopt::{StructOpt, clap::arg_enum};
 arg_enum!(
     #[derive(Debug, StructOpt)]
     pub enum ExportFormat {
-        TOML,
+        Toml,
         Json,
         Nix,
     }
