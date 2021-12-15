@@ -15,19 +15,22 @@ pub fn export(configs: &[Conf], format: ExportFormat) -> Result<String, Error> {
 }
 
 fn serialise_nix(set: &ConfSet) -> Result<String, Error> {
-    let string = serde_json::ser::to_string_pretty(&set)?
+    let mut string = serde_json::ser::to_string_pretty(&set)?
         .replace(":", " =")
         .replace(",", "");
 
     // add semi-colons, except within arrays (with a very cludgy parser)
-    let mut in_array = false;
-    for mut l in string.lines() {
-        if l.contains("= [") { in_array = true };
-        if l.contains("]") { in_array = false };
-        if !in_array {
-            l.push(";");
-        }
-    }
+    string = string.lines()
+        .fold((String::new(), false), |(mut s, mut in_array), l| {
+            s = s + l.trim();
+            if l.contains("= [") { in_array = true };
+            if l.contains("]") { in_array = false };
+            if !in_array {
+                s.push(';');
+            };
+            s.push('\n');
+            (s, in_array)
+        }).0;
 
     Ok(string)
 }
