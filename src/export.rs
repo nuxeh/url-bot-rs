@@ -4,7 +4,19 @@ use crate::{
 };
 
 pub fn export(configs: &[Conf], format: ExportFormat) -> String {
-    let set = ConfSet::new();
+    let mut set = ConfSet::new();
+
+    configs.iter()
+        .for_each(|c| {
+            set.configs.insert(c.network.name.clone(), c.clone());
+            ()
+        });
 
     String::from("foo")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
 }
