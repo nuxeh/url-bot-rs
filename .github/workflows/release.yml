@@ -48,7 +48,7 @@ jobs:
       - name: Build Debian package
         run: |
           cargo install cargo-deb
-          cargo deb
+          cargo deb --deb-version ${{ steps.get_version.outputs.VERSION }}
 
       - name: Create Github release
         id: make_release
