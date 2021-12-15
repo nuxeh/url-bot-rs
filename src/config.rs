@@ -231,6 +231,10 @@ pub struct ConfSet {
 }
 
 impl ConfSet {
+    pub fn new() -> Self {
+        ConfSet { configs: BTreeMap::new() }
+    }
+
     /// load configuration TOML from a file
     pub fn load(path: impl AsRef<Path>) -> Result<Self, Error> {
         let conf_string = fs::read_to_string(path.as_ref())?;
@@ -440,9 +444,7 @@ mod tests {
     }
 
     fn get_test_confset() -> ConfSet {
-        let mut confset = ConfSet {
-            configs: BTreeMap::new()
-        };
+        let mut confset = ConfSet::new();
 
         let mut conf = Conf::default();
         conf.network.name = String::from("foo");
