@@ -11,7 +11,7 @@ arg_enum!(
     }
 );
 
-#[derive(Debug, StructOpt)]
+#[derive(Default, Debug, StructOpt)]
 #[structopt(name = "url-bot-rs", about = "URL munching IRC bot.", version = VERSION.as_str())]
 pub struct Args {
     /// Show extra information.
