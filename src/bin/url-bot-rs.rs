@@ -16,7 +16,7 @@ use url_bot_rs::config::{
 use url_bot_rs::message::handle_message;
 use url_bot_rs::{feat, param};
 use url_bot_rs::cli::url_bot_rs::Args;
-//use url_bot_rs::export::ExportFormat;
+use url_bot_rs::export::export;
 
 use structopt::StructOpt;
 use failure::Error;
@@ -77,7 +77,7 @@ fn run(args: Args) -> Result<(), Error> {
 
     // Export
     if let Some(e) = args.export_format {
-        //export(
+        println!("{}", export(&configs, e));
         process::exit(1);
     }
 
