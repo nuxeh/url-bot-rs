@@ -52,7 +52,7 @@ pub struct Args {
 const MIN_VERBOSITY: usize = 2;
 
 fn main() {
-    // parse command line arguments with docopt
+    // parse command line arguments with structopt
     let args = Args::from_args();
 
     // avoid timestamping when piped, e.g. systemd
