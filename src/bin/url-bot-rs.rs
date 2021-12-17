@@ -28,7 +28,7 @@ use std::path::PathBuf;
 use stderrlog::{Timestamp, ColorChoice};
 use atty::{is, Stream};
 use directories::ProjectDirs;
-use log::{info, warn, error};
+use log::{info, trace, warn, error};
 
 const MIN_VERBOSITY: usize = 2;
 
@@ -167,6 +167,13 @@ fn run_instance(conf: Conf) -> Result<(), Error> {
     if let Some(ref path) = conf.path {
         if conf.network.enable {
             info!("[{}] using configuration: {}", net, path.display());
+            let server = &conf.client.server;
+            let port = &conf.client.port;
+            let nick = &conf.client.nickname;
+            if let (Some(s), Some(p), Some(n)) = (server, port, nick) {
+                trace!("[{}] connecting to: {}:{}", net, s, p);
+                trace!("[{}] connecting as: {}", net, n);
+            }
         } else {
             warn!("[{}] ignoring configuration in: {}", net, path.display());
             return Ok(());
