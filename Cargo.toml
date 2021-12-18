@@ -52,7 +52,7 @@ atty = "0.2.14"
 scraper = { version = "0.12.0", default-features = false, features = [] }
 phf = "0.7.24"
 structopt = { version = "0.3.25", default-features = false }
-serde_json = "*"
+serde_json = "1.0.72"
 
 [dependencies.image]
 version = "0.22.5"
