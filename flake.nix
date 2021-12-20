@@ -9,6 +9,6 @@
       name = "simple-flake";
       overlay = ./nix/overlay.nix;
       #config = ./module.nix;
-      #shell = ./default.nix;
+      shell = ./nix/shell.nix;
     };
 }
