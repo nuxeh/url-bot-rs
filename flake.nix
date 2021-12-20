@@ -8,7 +8,7 @@
       inherit self nixpkgs;
       name = "simple-flake";
       overlay = ./nix/overlay.nix;
-      config = ./nix/url-bot-rs.nix;
+      #config = ./module.nix;
       shell = ./nix/shell.nix;
     };
 }
