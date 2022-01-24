@@ -48,7 +48,7 @@ pub fn get_image_metadata(rtd: &Rtd, body: &[u8]) -> Option<String> {
     let mime = reader.format().and_then(get_image_mime);
 
     if let (Some(m), Ok((w, h))) = (mime, reader.into_dimensions()) {
-        Some(format!("{} {}×{}", m.to_string(), w, h))
+        Some(format!("{} {}×{}", m, w, h))
     } else {
         None
     }
