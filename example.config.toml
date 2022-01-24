@@ -31,6 +31,7 @@ url_limit = 10
 status_channels = []
 nick_response_str = ""
 reconnect_timeout = 10
+ignore_nicks = []
 
 [http]
 timeout_s = 10

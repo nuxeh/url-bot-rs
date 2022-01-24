@@ -89,6 +89,7 @@ pub struct Parameters {
     pub status_channels: Vec<String>,
     pub nick_response_str: String,
     pub reconnect_timeout: u64,
+    pub ignore_nicks: Vec<String>,
 }
 
 impl Default for Parameters {
@@ -98,6 +99,7 @@ impl Default for Parameters {
             status_channels: vec![],
             nick_response_str: "".to_string(),
             reconnect_timeout: 10,
+            ignore_nicks: vec![],
         }
     }
 }

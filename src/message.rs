@@ -146,6 +146,12 @@ fn process_plugins(rtd: &Rtd, url: &Url) -> Option<String> {
 
 /// find titles in a message and generate responses
 fn process_titles(rtd: &Rtd, db: &Database, msg: &Msg) -> impl Iterator<Item = TitleResp> {
+    // return an empty iterator for messages originating from a nick
+    // that is configured to be ignored
+    if param!(rtd, ignore_nicks).contains(&msg.sender.to_string()) {
+        return vec![].into_iter();
+    }
+
     let mut responses: Vec<TitleResp> = vec![];
 
     let mut num_processed = 0;
@@ -452,7 +458,11 @@ mod tests {
 
     fn pt(m: &str) -> Vec<TitleResp> {
         let rtd = Rtd::new().init_http_client().unwrap();
-        let msg = Msg::new(&rtd, "testnick", "#testchannel", m);
+        pt_with_rtd(m, &rtd)
+    }
+
+    fn pt_with_rtd(m: &str, rtd: &Rtd) -> Vec<TitleResp> {
+        let msg = Msg::new(rtd, "testnick", "#testchannel", m);
         let db = Database::open_in_memory().unwrap();
         let ret = process_titles(&rtd, &db, &msg).collect();
         println!("message: \"{}\"", m);
@@ -586,7 +596,6 @@ mod tests {
                     assert!(s.ends_with(" testnick (#test)"));
                 }
             });
-
     }
 
     #[test]
@@ -630,6 +639,25 @@ mod tests {
         let msg = Msg::new(&rtd, "testnick", "#test", "docs.rs");
         println!("{:?}", msg);
         assert_eq!(1, process_titles(&rtd, &db, &msg).count());
+    }
+
+    #[test]
+    fn test_process_titles_ignored_nicks() {
+        let mut rtd = Rtd::new().init_http_client().unwrap();
+        // no ignores
+        param!(rtd, ignore_nicks) = vec![];
+        assert_eq!(1, pt_with_rtd("http://127.0.0.1:28382/", &rtd).len());
+        // ignore "testnick" nick
+        param!(rtd, ignore_nicks) = vec!["testnick".to_string()];
+        assert!(pt_with_rtd("http://127.0.0.1:28382/", &rtd).is_empty());
+        param!(rtd, ignore_nicks) = vec![
+            "foo".to_string(),
+            "testnick".to_string(),
+            "bar".to_string(),
+            "baz".to_string(),
+            "qux".to_string()
+        ];
+        assert!(pt_with_rtd("http://127.0.0.1:28382/", &rtd).is_empty());
     }
 
     #[test]
