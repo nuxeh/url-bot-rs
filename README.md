@@ -180,6 +180,9 @@ The `[parameters]` section includes a number of tunable parameters:
   error messages produced from URL title retrieval.
 - `nick_response_str` (string) the message to send for the nick response feature.
 - `reconnect_timeout` (u32) amount of time to wait before reconnecting.
+- `ignore_nicks` (list) nicknames, messages from whom will result in no titles
+  being retrieved. For example to ignore messages from other bots in the same
+  channel.
 
 The `[http]` section contains options for HTTP requests used to obtain titles:
 
