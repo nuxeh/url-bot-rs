@@ -1,3 +1,7 @@
+# v0.4.0
+
+- Add option to ignore certain nicks when getting title results (#20)
+
 # v0.4.0-rc.2
 
 - Change format of multi network config, now a hash map
