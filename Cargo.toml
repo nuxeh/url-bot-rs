@@ -25,7 +25,7 @@ man = "0.3.0"
 [dev-dependencies]
 tiny_http = "0.10.0"
 diff = "0.1.12"
-tempfile = "3.2.0"
+tempfile = "3.3.0"
 
 [dependencies]
 irc = "0.13.6"
