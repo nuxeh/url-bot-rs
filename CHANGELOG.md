@@ -1,3 +1,8 @@
+# v0.4.1
+
+- Add `openssl_vendored` feature
+- Add static tarball asset to releases
+
 # v0.4.0
 
 - Add option to ignore certain nicks when getting title results (#20)
