@@ -77,3 +77,24 @@ jobs:
         run: |
           cargo login ${CRATES_IO_TOKEN}
           cargo publish
+
+      - name: Build static release tarball
+        run: |
+          sudo apt-get install make musl-tools
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+          source $HOME/.cargo/env
+          rustup update
+          rustup target add x86_64-unknown-linux-musl
+          cargo build --release --features "openssl_vendored,sqlite_bundled" --target x86_64-unknown-linux-musl
+          cp target/x86_64-unknown-linux-musl/release/url-bot-rs .
+          tar czf url-bot-rs_static_x86_64.tar.gz url-bot-rs README.md example.config.toml example.multi.config.toml COPYING
+
+      - name: Upload static tarball asset to Github
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.make_release.outputs.upload_url }}
+          asset_content_type: application/gzip
+          asset_path: url-bot-rs_static_x86_64.tar.gz
+          asset_name: url-bot-rs_static_x86_64.tar.gz
