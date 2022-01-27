@@ -279,6 +279,38 @@ OS.
     nix-shell
     cargo build
 
+## Static build
+
+### Debian/Ubuntu
+
+`url-bot-rs` can be built statically using `cargo` and `rustup`. For example:
+
+ - Install dependencies
+
+   ```
+   apt install make musl-tools
+   ```
+
+ - Install [`rustup`](https://rustup.rs/)
+
+   ```
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   source $HOME/.cargo/env
+   ```
+
+ - Add Musl target
+
+   ```
+   rustup update
+   rustup target add x86_64-unknown-linux-musl
+   ```
+
+ - Build `url-bot-rs`
+
+   ```
+   cargo build --release --features "openssl_vendored,sqlite_bundled" --target x86_64-unknown-linux-musl
+   ```
+
 ## Running as a service
 
 The bot can be run automatically as a service by `systemd`. This is set up
