@@ -1,4 +1,4 @@
-# v0.4.1
+# v0.4.2
 
 - Add `openssl_vendored` feature
 - Add static tarball asset to releases
