@@ -649,7 +649,7 @@ mod tests {
     fn print_diff(example: &str, default: &str) {
         // print diff (on failure)
         println!("Configuration diff (- example, + default):");
-        for diff in diff::lines(&example, &default) {
+        for diff in diff::lines(example, default) {
             match diff {
                 diff::Result::Left(l) => println!("-{}", l),
                 diff::Result::Both(l, _) => println!(" {}", l),
@@ -698,7 +698,7 @@ mod tests {
         rtd.conf.add_channel("#cheese-2".to_string());
         check_channels(&rtd, "#cheese-2", 3);
 
-        rtd.conf.remove_channel(&"#cheese-2".to_string());
+        rtd.conf.remove_channel("#cheese-2");
         let c = rtd.conf.client.channels.clone().unwrap();
 
         assert!(!c.contains(&"#cheese-2".to_string()));
@@ -821,6 +821,6 @@ mod tests {
         }
 
         let res = load_flattened_configs(paths);
-        assert_eq!(res.iter().count(), 30);
+        assert_eq!(res.len(), 30);
     }
 }

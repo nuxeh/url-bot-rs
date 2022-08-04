@@ -176,7 +176,7 @@ fn scrape_title(args: &Args) -> Result<(), Error> {
     let conf = Http::default();
     let token = add_scheme_for_tld(&args.arg_url).unwrap_or_else(|| args.arg_url.clone());
     let user_agent = args.flag_user_agent.as_ref()
-        .or_else(|| conf.user_agent.as_ref());
+        .or(conf.user_agent.as_ref());
 
     let mut builder = RetrieverBuilder::new()
         .retry(

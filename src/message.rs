@@ -464,7 +464,7 @@ mod tests {
     fn pt_with_rtd(m: &str, rtd: &Rtd) -> Vec<TitleResp> {
         let msg = Msg::new(rtd, "testnick", "#testchannel", m);
         let db = Database::open_in_memory().unwrap();
-        let ret = process_titles(&rtd, &db, &msg).collect();
+        let ret = process_titles(rtd, &db, &msg).collect();
         println!("message: \"{}\"", m);
         println!("{:?}", ret);
         ret

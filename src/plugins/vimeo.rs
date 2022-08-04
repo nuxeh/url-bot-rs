@@ -123,7 +123,7 @@ mod tests {
         let server_thread = thread::spawn(move || {
             let server = tiny_http::Server::http(bind).unwrap();
             let rq = server.recv().unwrap();
-            if rq.url().to_string().starts_with("/") {
+            if rq.url().to_string().starts_with('/') {
                     let resp = Response::from_string(response);
                     thread::sleep(Duration::from_millis(10));
                     rq.respond(resp).unwrap();
