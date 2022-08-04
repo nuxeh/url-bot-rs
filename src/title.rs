@@ -15,7 +15,7 @@ use crate::{
 /// Format a mime string
 pub fn get_mime(rtd: &Rtd, mime: &Mime, size: &str) -> Option<String> {
     if feat!(rtd, report_mime) {
-        Some(format!("{} {}", mime, size.replace(" ", "")))
+        Some(format!("{} {}", mime, size.replace(' ', "")))
     } else {
         None
     }
