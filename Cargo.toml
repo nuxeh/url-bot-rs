@@ -50,7 +50,7 @@ log = "0.4.17"
 stderrlog = "0.5.3"
 atty = "0.2.14"
 scraper = { version = "0.13.0", default-features = false, features = [] }
-phf = "0.7.24"
+phf = "0.10.1"
 openssl = { version = "0.10.41", features = ["vendored"], optional = true }
 
 [dependencies.image]
