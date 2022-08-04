@@ -47,7 +47,7 @@ unicode-segmentation = "1.8.0"
 toml = "0.5.8"
 directories = "4.0.1"
 log = "0.4.17"
-stderrlog = "0.5.1"
+stderrlog = "0.5.3"
 atty = "0.2.14"
 scraper = { version = "0.13.0", default-features = false, features = [] }
 phf = "0.7.24"
