@@ -39,7 +39,7 @@ itertools = "0.10.3"
 regex = "1.6.0"
 lazy_static = "1.4.0"
 failure = "0.1.8"
-reqwest = { version = "0.11.5", features = ["blocking", "cookies", "json"] }
+reqwest = { version = "0.11.11", features = ["blocking", "cookies", "json"] }
 serde_rusqlite = "0.14.0"
 mime = "0.3.16"
 humansize = "1.1.1"
